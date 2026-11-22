@@ -187,12 +187,16 @@ export interface NRGDrinkItem {
   description: string;
 }
 
+export type BootRarity = 'Base' | 'Pro' | 'Elite' | 'Lendária';
+
 export interface BootItem {
   id: string;
   name: string;
+  rarity?: BootRarity;
   price: number;
   durabilityMatches: number;
   matchesRemaining: number;
+  description?: string;
   bonus: {
     shooting?: number;
     pace?: number;
@@ -201,8 +205,95 @@ export interface BootItem {
     power?: number;
     technique?: number;
   };
+  bonusAttributes?: Partial<Record<keyof PlayerAttributes, number>>;
+  specialPerk?: string;
   icon: string;
   color?: string;
+  accentColor?: string;
+  glowClass?: string;
+}
+
+export type BallRarity = 'Comum' | 'Rara' | 'Especial' | 'Lendária';
+
+export interface BallItem {
+  id: string;
+  name: string;
+  subtitle: string;
+  rarity: BallRarity;
+  price: number;
+  description: string;
+  icon: string;
+  primaryColor: string;
+  secondaryColor: string;
+  accentColor?: string;
+  physics: {
+    frictionMultiplier: number; // Ex: 1.15 para +15% de atrito
+    curveMultiplier: number;    // Ex: 1.35 para +35% de curva (Jabulani)
+    speedMultiplier: number;    // Ex: 1.12 para +12% de velocidade (Meteoro)
+    precisionBonus: number;     // Ex: 0.10 para +10% de precisão (Brazuca / Ouro)
+    dribbleBonus: number;       // Ex: 0.08 para +8% de controle (Cyber Neon)
+    rainImmune?: boolean;       // Imune à penalidade de chuva (Laranja)
+    trailType: 'classic' | 'jabulani' | 'brazuca' | 'fire' | 'cyber' | 'gold' | 'neon';
+  };
+}
+
+export type DilemmaCategory = 'press' | 'locker' | 'personal' | 'sponsor' | 'board';
+export type DilemmaTone = 'humble' | 'cocky' | 'aggressive' | 'rational' | 'calm' | 'firm';
+
+export interface DilemmaConsequence {
+  // Modo Jogador
+  coachTrust?: number;        // -100 a +100
+  fanApproval?: number;       // -100 a +100
+  squadChemistry?: number;    // -100 a +100
+  familyHappiness?: number;   // -100 a +100
+  
+  // Modo Treinador
+  boardTrust?: number;
+  squadMorale?: number;
+  mediaReputation?: number;
+  
+  // Efeitos Gerais
+  money?: number;
+  moneyChange?: number;
+  energy?: number;
+  energyChange?: number;
+  morale?: number;
+  reputation?: number;
+  
+  // Status Especiais
+  isBenched?: boolean;
+  benched?: boolean;
+  isCaptain?: boolean;
+  tempMatchBonus?: number;
+  matchAttributeBonus?: Partial<Record<keyof PlayerAttributes, number>>;
+  
+  // Notícia gerada no feed se a resposta for polêmica/marcante
+  newsHeadline?: string;
+  newsBody?: string;
+  isBreakingNews?: boolean;
+}
+
+export interface DilemmaOption {
+  id: string;
+  text: string;
+  tone: DilemmaTone;
+  impactPreview: string; // Ex: "Técnico +10 🟢 | Torcida -5 🔴"
+  consequences: DilemmaConsequence;
+}
+
+export interface DilemmaEvent {
+  id: string;
+  title: string;
+  category: DilemmaCategory;
+  speaker: string;
+  speakerRole: string;
+  speakerAvatar: string;
+  situation: string;
+  description?: string;
+  forMode: 'player' | 'manager' | 'both';
+  triggerMoment: 'post_match' | 'pre_derby' | 'slump' | 'transfer_window' | 'weekly_random';
+  minWeek?: number;
+  options: DilemmaOption[];
 }
 
 export interface StaffMember {
@@ -279,10 +370,21 @@ export interface PlayerCareerProfile {
   morale: number;          // 0 a 100
   weeklyWage: number;      // Salário semanal em R$
   bankBalance: number;     // Saldo bancário acumulado em R$
+  money?: number;           // Alias compatível com bankBalance
   reputation: number;      // 0 a 100
   relationshipManager: number; // 0 a 100 com o técnico
   relationshipFans: number;    // 0 a 100 com a torcida
   relationshipFamily: number;  // 0 a 100 com a família
+  coachTrust?: number;         // Confiança do Técnico (0 a 100, fallback: relationshipManager ?? 60)
+  fanApproval?: number;        // Moral com a Torcida (0 a 100, fallback: relationshipFans ?? 60)
+  squadChemistry?: number;     // Entrosamento no Vestiário (0 a 100, fallback: 65)
+  familyHappiness?: number;    // Vida Pessoal/Família (0 a 100, fallback: relationshipFamily ?? 60)
+  isBenched?: boolean;         // Se o atleta virou reserva por baixa confiança do técnico (< 35)
+  equippedBootId?: string;     // ID da chuteira equipada
+  ownedBootIds?: string[];     // IDs das chuteiras compradas
+  equippedBallId?: string;     // ID da bola equipada
+  ownedBallIds?: string[];     // IDs das bolas compradas
+  tempMatchBonus?: Partial<Record<keyof PlayerAttributes, number>>; // Bônus temporário de preleção/dilema
   stats: {
     matchesPlayed: number;
     goals: number;
@@ -333,6 +435,13 @@ export interface ManagerCareerProfile {
   reputation: number;          // 0 a 100
   boardConfidence: number;     // 0 a 100 (confiança da diretoria)
   fansConfidence: number;      // 0 a 100 (confiança da torcida)
+  boardTrust?: number;         // Confiança da Diretoria (0 a 100, fallback: boardConfidence ?? 60)
+  fanApproval?: number;        // Moral com a Torcida (0 a 100, fallback: fansConfidence ?? 60)
+  squadMorale?: number;        // Moral do Vestiário (0 a 100, fallback: entrosamento ?? 65)
+  mediaReputation?: number;    // Reputação na Imprensa (0 a 100, fallback: reputation ?? 60)
+  equippedBallId?: string;     // ID da bola equipada
+  ownedBallIds?: string[];     // IDs das bolas compradas
+  lastLockerRoomMeetingWeek?: number; // Semana da última reunião de elenco
   scoutingLevel: number;       // 1 a 5
   medicalLevel: number;        // 1 a 5
   stats: {
@@ -674,6 +783,10 @@ export interface GameState {
   pendingTransferOffer?: TransferOffer;
   pendingControversy?: ControversyEvent;
   controversyHistory?: AnsweredControversy[];
+  pendingDilemma?: DilemmaEvent | null;
+  dilemmaHistory?: { dilemmaId: string; optionId: string; week?: number; timestamp?: number; answeredAtWeek?: number; seasonYear?: number; }[];
+  equippedBallId?: string;
+  ownedBallIds?: string[];
   seasonAwardsHistory?: SeasonAwards[];
   clubRankings?: ClubRankingItem[];
   fanPostsFeed?: FanPost[];

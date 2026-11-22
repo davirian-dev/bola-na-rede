@@ -5,6 +5,7 @@ import { CharacterAvatar } from '@/types/game';
 
 interface AvatarDisplayProps {
   avatar?: CharacterAvatar;
+  age?: number;
   size?: 'sm' | 'md' | 'lg' | 'xl';
   clubPrimaryColor?: string;
   clubSecondaryColor?: string;
@@ -13,6 +14,7 @@ interface AvatarDisplayProps {
 
 export function AvatarDisplay({
   avatar,
+  age = 22,
   size = 'md',
   clubPrimaryColor = '#10b981',
   clubSecondaryColor = '#ffffff',
@@ -33,15 +35,30 @@ export function AvatarDisplay({
 
   const skinTone = safeColor(avatar?.skinTone, '#e0a96d');
   const hairStyle = avatar?.hairStyle || 'short';
-  const hairColor = safeColor(avatar?.hairColor, '#18181b');
+  const rawHairColor = safeColor(avatar?.hairColor, '#18181b');
   const facialHair = avatar?.facialHair || 'none';
   const clothingStyle = avatar?.clothingStyle || 'jersey';
   const number = Math.max(1, Math.min(99, Math.round(Number(avatar?.jerseyNumber) || 10)));
   const primaryColor = safeColor(clubPrimaryColor, '#10b981');
   const secondaryColor = safeColor(clubSecondaryColor, '#ffffff');
 
+  // Envelhecimento visual proporcional à idade do atleta/treinador
+  const isYouth = age >= 16 && age <= 19;
+  const isPrime = age >= 20 && age <= 29;
+  const isExperienced = age >= 30 && age <= 36;
+  const isVeteran = age >= 37 && age <= 47;
+  const isLegend = age >= 48;
+
+  // Cor do cabelo adaptada aos fios grisalhos com a maturidade
+  let hairColor = rawHairColor;
+  if (isLegend) {
+    hairColor = rawHairColor === '#ffffff' ? '#ffffff' : '#e4e4e7'; // Majoritariamente prateado/branco
+  } else if (isVeteran) {
+    hairColor = rawHairColor === '#ffffff' ? '#ffffff' : '#71717a'; // Meio grisalho elegante
+  }
+
   // Garante contraste das sobrancelhas caso o cabelo seja platinado/branco
-  const isLightHair = hairColor === '#ffffff' || hairColor === '#f4f4f5' || hairColor === '#f5f5f5';
+  const isLightHair = hairColor === '#ffffff' || hairColor === '#f4f4f5' || hairColor === '#f5f5f5' || hairColor === '#e4e4e7';
   const eyebrowColor = isLightHair ? '#52525b' : hairColor;
 
   return (
@@ -251,28 +268,90 @@ export function AvatarDisplay({
         />
 
         {/* ============================================================ */}
+        {/* ENVELHECIMENTO VISUAL PROGRESSIVO (Rugas, Expressão e Óculos) */}
+        {/* ============================================================ */}
+        {/* Fios grisalhos nas têmporas (30 a 47 anos) */}
+        {(isExperienced || isVeteran) && hairStyle !== 'bald' && (
+          <g stroke="rgba(228, 228, 231, 0.65)" strokeWidth="1" strokeLinecap="round" fill="none">
+            <path d="M33 42 Q32 38 35 36" />
+            <path d="M67 42 Q68 38 65 36" />
+          </g>
+        )}
+
+        {/* Linhas de Expressão na Testa (30+ anos) */}
+        {(isExperienced || isVeteran || isLegend) && (
+          <g stroke="rgba(0,0,0,0.2)" strokeWidth="1" strokeLinecap="round" fill="none">
+            <path d="M42 35 Q50 33.5 58 35" />
+            {isLegend && <path d="M43 32 Q50 30.5 57 32" stroke="rgba(0,0,0,0.28)" />}
+          </g>
+        )}
+
+        {/* Pés de Galinha nos Olhos (30+ anos) */}
+        {(isExperienced || isVeteran || isLegend) && (
+          <g stroke="rgba(0,0,0,0.18)" strokeWidth="0.8" strokeLinecap="round" fill="none">
+            <path d="M38 46 L35 45" />
+            <path d="M38 47.5 L35 48.5" />
+            <path d="M62 46 L65 45" />
+            <path d="M62 47.5 L65 48.5" />
+          </g>
+        )}
+
+        {/* Sulco Nasolabial de Maturidade (37+ anos) */}
+        {(isVeteran || isLegend) && (
+          <g stroke="rgba(0,0,0,0.16)" strokeWidth="1" strokeLinecap="round" fill="none">
+            <path d="M44 54 Q43 57 44 60" />
+            <path d="M56 54 Q57 57 56 60" />
+          </g>
+        )}
+
+        {/* Óculos Clássicos de Treinador Lendário (48+ anos) */}
+        {isLegend && (
+          <g stroke="#d4d4d8" strokeWidth="1.2" fill="none">
+            {/* Lente Esquerda */}
+            <rect x="38" y="43" width="10" height="7.5" rx="2" fill="rgba(255,255,255,0.12)" />
+            {/* Lente Direita */}
+            <rect x="52" y="43" width="10" height="7.5" rx="2" fill="rgba(255,255,255,0.12)" />
+            {/* Ponte Central */}
+            <path d="M48 45.5 Q50 44.5 52 45.5" />
+            {/* Hastes */}
+            <path d="M38 45 L32 46" />
+            <path d="M62 45 L68 46" />
+          </g>
+        )}
+
+        {/* ============================================================ */}
         {/* CAMADA 6: BARBA E BIGODE */}
         {/* ============================================================ */}
         {facialHair === 'stubble' && (
           <path
             d="M36 51 Q50 68 64 51 Q50 63 36 51"
             fill="rgba(0,0,0,0.22)"
+            opacity={isYouth ? 0.45 : 1}
           />
         )}
         {facialHair === 'beard' && (
-          <g fill={hairColor}>
+          <g fill={hairColor} opacity={isYouth ? 0.4 : 0.95}>
             <path
               d="M34 50 Q50 71 66 50 Q50 64 34 50"
-              opacity="0.92"
             />
             {/* Bigode integrado à barba */}
             <path d="M43 55.5 Q50 53.5 57 55.5 Q50 57.5 43 55.5" />
+            {/* Mechas grisalhas na barba para veteranos */}
+            {(isVeteran || isLegend) && (
+              <path
+                d="M46 62 Q50 66 54 62"
+                stroke="rgba(255,255,255,0.6)"
+                strokeWidth="1.2"
+                fill="none"
+              />
+            )}
           </g>
         )}
         {facialHair === 'mustache' && (
           <path
             d="M43 55.5 Q50 53.5 57 55.5 Q50 57.5 43 55.5"
             fill={hairColor}
+            opacity={isYouth ? 0.4 : 1}
           />
         )}
       </svg>

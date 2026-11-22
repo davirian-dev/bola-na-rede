@@ -4,6 +4,7 @@ import React, { useRef, useEffect, useState, useCallback } from 'react';
 import confetti from 'canvas-confetti';
 import { useGameStore } from '@/store/gameStore';
 import { playWhistle, playGoal, playKick } from '@/lib/soundEffects';
+import { renderBallWithShadow } from '@/engine/ballPhysics';
 import { 
   RotateCcw, 
   Sparkles, 
@@ -321,14 +322,21 @@ export function NSSPassMinigame({
         }
       }
 
-      // Renderiza a Bola
-      ctx.fillStyle = '#ffffff';
-      ctx.beginPath();
-      ctx.arc(s.ball.x, s.ball.y, s.ball.radius, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.strokeStyle = '#0f172a';
-      ctx.lineWidth = 1.5;
-      ctx.stroke();
+      // Renderiza a Bola Oficial Personalizada
+      const activeBallId = playerProfile?.equippedBallId || (useGameStore.getState().equippedBallId) || 'classic_capotao';
+      renderBallWithShadow(ctx, {
+        x: s.ball.x,
+        y: s.ball.y,
+        z: 0,
+        vx: 0,
+        vy: 0,
+        vz: 0,
+        radius: s.ball.radius || 6,
+        rotationAngle: 0,
+        ballId: activeBallId,
+        trailPoints: [],
+        hasMotionTrail: false,
+      } as any);
 
       animId = requestAnimationFrame(render);
     };

@@ -1,7 +1,11 @@
 // ==============================================================================
 // BOLA NA REDE: CARREIRA - MOTOR DE FÍSICA E ANIMAÇÃO REALISTA DA BOLA (CANVAS 2D)
 // Física proporcional de força (fraco vs bomba), rastro visual, efeito 3D de sombra e altura
+// Integração completa com Catálogo de Bolas (Jabulani, Brazuca, Fogo, Cyber, Ouro, etc.)
 // ==============================================================================
+
+import { BallItem } from '@/types/game';
+import { getBallById } from '@/data/balls';
 
 export type ShotType = 'weak' | 'medium' | 'power' | 'lob';
 
@@ -10,6 +14,7 @@ export interface BallPoint {
   y: number;
   z: number;
   alpha: number;
+  sparkle?: boolean;
 }
 
 export interface BallPhysicsState {
@@ -35,6 +40,7 @@ export interface BallPhysicsState {
   inFlight: boolean;
   bouncedCount: number;
   impactDescription?: string;
+  ballId?: string;     // ID da bola equipada
 }
 
 export interface ShotPhysicsInput {
@@ -49,6 +55,7 @@ export interface ShotPhysicsInput {
   composureAttr?: number;// 40 a 99
   preferredFoot?: 'right' | 'left' | 'both';
   isLob?: boolean;       // Chapéu / Cavaadinha
+  ballId?: string;       // ID da bola equipada
 }
 
 export interface ShotPhysicsResult {
@@ -75,7 +82,11 @@ export function calculateShotPhysics(input: ShotPhysicsInput): ShotPhysicsResult
     composureAttr = 65,
     preferredFoot = 'right',
     isLob = false,
+    ballId,
   } = input;
+
+  const equippedBall = getBallById(ballId);
+  const { physics: ballPhysics } = equippedBall;
 
   const dx = targetX - startX;
   const dy = targetY - startY;
@@ -105,9 +116,9 @@ export function calculateShotPhysics(input: ShotPhysicsInput): ShotPhysicsResult
     impactLabel = preferredFoot === 'right' ? 'Curva de Chapa para a Esquerda' : 'Efeito Trivela para a Esquerda';
   }
 
-  // Combinação ponderada de curva do ponto de impacto com curva manual
-  const combinedCurve = curveFromImpact !== 0 ? (curveFromImpact + curve * 0.35) : curve;
-  const totalCurve = Math.max(-1.5, Math.min(1.5, combinedCurve));
+  // Combinação ponderada de curva do ponto de impacto com curva manual e multiplicador da bola (ex: Jabulani +35%)
+  const combinedCurve = (curveFromImpact !== 0 ? (curveFromImpact + curve * 0.35) : curve) * ballPhysics.curveMultiplier;
+  const totalCurve = Math.max(-1.8, Math.min(1.8, combinedCurve));
 
   // 2. Altura da Bola (Subida ou Mergulho) derivado de bater por baixo, no meio ou em cima
   if (impY > 0.25) {
@@ -132,10 +143,10 @@ export function calculateShotPhysics(input: ShotPhysicsInput): ShotPhysicsResult
 
   // Classificação do Chute pela Barra de Força
   let shotType: ShotType = 'medium';
-  let speedMultiplier = 1.0;
-  let hasMotionTrail = false;
+  let speedMultiplier = 1.0 * ballPhysics.speedMultiplier;
+  let hasMotionTrail = ballPhysics.trailType !== 'classic' || power >= 65;
   let screenShake = 0;
-  let friction = 0.985;
+  let friction = 0.985 / ballPhysics.frictionMultiplier;
   let gravity = 0.26 * gravityMultiplier;
   let initialVz = 1.8 + verticalBoost;
   let isOffTarget = false;
@@ -224,6 +235,7 @@ export function calculateShotPhysics(input: ShotPhysicsInput): ShotPhysicsResult
     inFlight: true,
     bouncedCount: 0,
     impactDescription: impactLabel,
+    ballId: equippedBall.id,
   };
 
   return {
@@ -292,25 +304,91 @@ export function updateBallPhysicsStep(ball: BallPhysicsState): void {
 }
 
 /**
- * Renderiza o rastro visual (Motion Trail) em chutes bomba ou lances velozes.
+ * Renderiza o rastro visual (Motion Trail) em chutes bomba ou bolas especiais.
  */
-export function renderMotionTrail(ctx: CanvasRenderingContext2D, points: BallPoint[]): void {
+export function renderMotionTrail(ctx: CanvasRenderingContext2D, points: BallPoint[], ballId?: string): void {
   if (!points || points.length < 2) return;
+
+  const ball = getBallById(ballId);
+  const trailType = ball.physics.trailType;
 
   for (const [i, p] of points.entries()) {
     if (p.alpha <= 0.05) continue;
 
     ctx.save();
-    ctx.fillStyle = `rgba(251, 191, 36, ${p.alpha * 0.6})`; // Brilho âmbar / fogo suave
-    ctx.beginPath();
-    ctx.arc(p.x, p.y - p.z * 0.7, 4 + (i * 0.6), 0, Math.PI * 2);
-    ctx.fill();
+    const size = 3 + (i * 0.7);
+    const posY = p.y - p.z * 0.7;
+
+    if (trailType === 'fire') {
+      // Meteoro de fogo: faíscas e chamas vermelho-laranja-ouro
+      const fireColor = i % 2 === 0 ? 'rgba(239, 68, 68, ' : 'rgba(249, 115, 22, ';
+      ctx.fillStyle = `${fireColor}${p.alpha * 0.8})`;
+      ctx.beginPath();
+      ctx.arc(p.x, posY, size * 1.3, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Faíscas estalando
+      if (p.sparkle) {
+        ctx.fillStyle = `rgba(254, 240, 138, ${p.alpha * 0.9})`;
+        ctx.beginPath();
+        ctx.arc(p.x + (Math.sin(i * 3) * 6), posY - (i * 2), 2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    } else if (trailType === 'cyber') {
+      // Cyber Neon: rastro ciano holográfico neon
+      ctx.fillStyle = `rgba(6, 182, 212, ${p.alpha * 0.75})`;
+      ctx.beginPath();
+      ctx.arc(p.x, posY, size, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.strokeStyle = `rgba(34, 211, 238, ${p.alpha * 0.9})`;
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    } else if (trailType === 'gold') {
+      // Bola de Ouro: partículas douradas e estrelas reluzentes
+      ctx.fillStyle = `rgba(234, 179, 8, ${p.alpha * 0.85})`;
+      ctx.beginPath();
+      ctx.arc(p.x, posY, size, 0, Math.PI * 2);
+      ctx.fill();
+
+      if (p.sparkle) {
+        ctx.fillStyle = `rgba(254, 240, 138, ${p.alpha})`;
+        ctx.fillRect(p.x + (Math.sin(i) * 5), posY - 3, 3, 3);
+      }
+    } else if (trailType === 'brazuca') {
+      // Brasilidade Pro: faixas verde e amarelo suaves
+      const color = i % 2 === 0 ? 'rgba(22, 163, 74, ' : 'rgba(234, 179, 8, ';
+      ctx.fillStyle = `${color}${p.alpha * 0.65})`;
+      ctx.beginPath();
+      ctx.arc(p.x, posY, size, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (trailType === 'neon') {
+      // Laranja alta visibilidade
+      ctx.fillStyle = `rgba(255, 102, 0, ${p.alpha * 0.75})`;
+      ctx.beginPath();
+      ctx.arc(p.x, posY, size, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (trailType === 'jabulani') {
+      // Jabulani: azul celeste e dourado
+      ctx.fillStyle = `rgba(2, 132, 199, ${p.alpha * 0.7})`;
+      ctx.beginPath();
+      ctx.arc(p.x, posY, size, 0, Math.PI * 2);
+      ctx.fill();
+    } else {
+      // Clássico âmbar
+      ctx.fillStyle = `rgba(251, 191, 36, ${p.alpha * 0.6})`;
+      ctx.beginPath();
+      ctx.arc(p.x, posY, size, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
     ctx.restore();
   }
 }
 
 /**
  * Renderiza a bola com sombra proporcional, projeção de altura realista em 2D e giro do spin.
+ * Adapta texturas e cores conforme o modelo de bola equipado.
  */
 export function renderBallWithShadow(
   ctx: CanvasRenderingContext2D,
@@ -318,10 +396,11 @@ export function renderBallWithShadow(
   options?: { perspectiveProgress?: number; customScale?: number }
 ): void {
   const { perspectiveProgress = 1, customScale = 1 } = options || {};
+  const ballItem = getBallById(ball.ballId);
 
-  // Rastro visual se for chute bomba
+  // Rastro visual se for chute bomba ou bola especial
   if (ball.hasMotionTrail && ball.trailPoints.length > 0) {
-    renderMotionTrail(ctx, ball.trailPoints);
+    renderMotionTrail(ctx, ball.trailPoints, ball.ballId);
   }
 
   // Altura Z simula bola no alto
@@ -347,44 +426,104 @@ export function renderBallWithShadow(
   ctx.translate(ball.x, ballVisualY);
   ctx.rotate(ball.rotationAngle || 0);
 
-  // Corpo branco da bola
-  ctx.fillStyle = '#ffffff';
+  // Corpo base da bola com cor do modelo equipado
+  ctx.fillStyle = ballItem.primaryColor;
   ctx.beginPath();
   ctx.arc(0, 0, visualRadius, 0, Math.PI * 2);
   ctx.fill();
 
-  // Contorno
-  ctx.strokeStyle = '#18181b';
-  ctx.lineWidth = Math.max(1, visualRadius * 0.15);
+  // Contorno da bola
+  ctx.strokeStyle = ballItem.secondaryColor || '#18181b';
+  ctx.lineWidth = Math.max(1, visualRadius * 0.14);
   ctx.stroke();
 
-  // Gomo pentagonal central clássico de futebol
-  ctx.fillStyle = '#18181b';
-  ctx.beginPath();
-  const innerR = visualRadius * 0.42;
-  for (let i = 0; i < 5; i++) {
-    const angle = (i * Math.PI * 2) / 5 - Math.PI / 2;
-    const px = Math.cos(angle) * innerR;
-    const py = Math.sin(angle) * innerR;
-    if (i === 0) ctx.moveTo(px, py);
-    else ctx.lineTo(px, py);
-  }
-  ctx.closePath();
-  ctx.fill();
-
-  // Traços dos gomos laterais conectando à borda
-  ctx.strokeStyle = '#27272a';
-  ctx.lineWidth = Math.max(1, visualRadius * 0.08);
-  for (let i = 0; i < 5; i++) {
-    const angle = (i * Math.PI * 2) / 5 - Math.PI / 2;
-    const px = Math.cos(angle) * innerR;
-    const py = Math.sin(angle) * innerR;
-    const outerX = Math.cos(angle) * visualRadius;
-    const outerY = Math.sin(angle) * visualRadius;
+  // Gomo central e detalhes específicos de textura por modelo
+  if (ballItem.id === 'varzea_heavy') {
+    // Bola de várzea: costuras cruzadas de couro cru
+    ctx.strokeStyle = ballItem.accentColor || '#d97706';
+    ctx.lineWidth = Math.max(1, visualRadius * 0.1);
     ctx.beginPath();
-    ctx.moveTo(px, py);
-    ctx.lineTo(outerX, outerY);
+    ctx.moveTo(-visualRadius * 0.7, 0);
+    ctx.lineTo(visualRadius * 0.7, 0);
+    ctx.moveTo(0, -visualRadius * 0.7);
+    ctx.lineTo(0, visualRadius * 0.7);
     ctx.stroke();
+  } else if (ballItem.id === 'cyber_neon') {
+    // Cyber Neon: anel concêntrico ciano e traços tecnológicos
+    ctx.strokeStyle = ballItem.accentColor || '#22d3ee';
+    ctx.lineWidth = Math.max(1, visualRadius * 0.12);
+    ctx.beginPath();
+    ctx.arc(0, 0, visualRadius * 0.55, 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.fillStyle = '#06b6d4';
+    ctx.beginPath();
+    ctx.arc(0, 0, visualRadius * 0.22, 0, Math.PI * 2);
+    ctx.fill();
+  } else if (ballItem.id === 'golden_ball') {
+    // Bola de Ouro: gomo central dourado metálico escuro com reflexo estelar
+    ctx.fillStyle = '#ca8a04';
+    ctx.beginPath();
+    const innerR = visualRadius * 0.44;
+    for (let i = 0; i < 5; i++) {
+      const angle = (i * Math.PI * 2) / 5 - Math.PI / 2;
+      const px = Math.cos(angle) * innerR;
+      const py = Math.sin(angle) * innerR;
+      if (i === 0) ctx.moveTo(px, py);
+      else ctx.lineTo(px, py);
+    }
+    ctx.closePath();
+    ctx.fill();
+  } else if (ballItem.id === 'brazuca_pro') {
+    // Brazuca: faixas fluidas verde e azul
+    ctx.fillStyle = '#16a34a';
+    ctx.beginPath();
+    ctx.ellipse(0, 0, visualRadius * 0.7, visualRadius * 0.35, Math.PI / 4, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = '#0284c7';
+    ctx.beginPath();
+    ctx.ellipse(0, 0, visualRadius * 0.4, visualRadius * 0.2, -Math.PI / 4, 0, Math.PI * 2);
+    ctx.fill();
+  } else if (ballItem.id === 'fire_meteor') {
+    // Meteoro de fogo: núcleo vulcânico incandescente
+    const grad = ctx.createRadialGradient(0, 0, visualRadius * 0.1, 0, 0, visualRadius);
+    grad.addColorStop(0, '#fef08a');
+    grad.addColorStop(0.5, '#f97316');
+    grad.addColorStop(1, '#dc2626');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(0, 0, visualRadius * 0.75, 0, Math.PI * 2);
+    ctx.fill();
+  } else {
+    // Padrão clássico / pentagonal
+    ctx.fillStyle = ballItem.secondaryColor || '#18181b';
+    ctx.beginPath();
+    const innerR = visualRadius * 0.42;
+    for (let i = 0; i < 5; i++) {
+      const angle = (i * Math.PI * 2) / 5 - Math.PI / 2;
+      const px = Math.cos(angle) * innerR;
+      const py = Math.sin(angle) * innerR;
+      if (i === 0) ctx.moveTo(px, py);
+      else ctx.lineTo(px, py);
+    }
+    ctx.closePath();
+    ctx.fill();
+
+    // Traços dos gomos laterais conectando à borda
+    ctx.strokeStyle = ballItem.secondaryColor || '#27272a';
+    ctx.lineWidth = Math.max(1, visualRadius * 0.08);
+    for (let i = 0; i < 5; i++) {
+      const angle = (i * Math.PI * 2) / 5 - Math.PI / 2;
+      const px = Math.cos(angle) * innerR;
+      const py = Math.sin(angle) * innerR;
+      const outerX = Math.cos(angle) * visualRadius;
+      const outerY = Math.sin(angle) * visualRadius;
+      ctx.beginPath();
+      ctx.moveTo(px, py);
+      ctx.lineTo(outerX, outerY);
+      ctx.stroke();
+    }
   }
 
   // Brilho de iluminação no topo

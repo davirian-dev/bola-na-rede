@@ -87,6 +87,9 @@ export function AvatarCreatorModal({
   );
 
   const [mounted, setMounted] = useState(false);
+  const [previewAge, setPreviewAge] = useState<number>(
+    mode === 'player' ? (playerProfile?.age || 18) : (managerProfile?.age || 42)
+  );
 
   useEffect(() => {
     setMounted(true);
@@ -157,10 +160,11 @@ export function AvatarCreatorModal({
           </button>
         </div>
 
-        {/* Prévia do Avatar Central com Nome e Clube Reais */}
+        {/* Prévia do Avatar Central com Nome, Clube e Envelhecimento */}
         <div className="flex flex-col items-center justify-center py-4 bg-secondary/40 rounded-2xl border border-border/60 mb-5 relative">
           <AvatarDisplay
             avatar={avatar}
+            age={previewAge}
             size="xl"
             clubPrimaryColor={primaryCol}
             clubSecondaryColor={secondaryCol}
@@ -171,6 +175,45 @@ export function AvatarCreatorModal({
           <span className="text-xs font-semibold text-emerald-400">
             {displayClub}
           </span>
+
+          {/* Controle de Prévia de Idade / Envelhecimento */}
+          <div className="w-full px-4 sm:px-8 mt-3 pt-3 border-t border-border/50">
+            <div className="flex items-center justify-between text-xs mb-1.5">
+              <span className="font-bold text-muted-foreground flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                Simulação de Envelhecimento:
+              </span>
+              <span className="font-black text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/30">
+                {previewAge} anos {previewAge <= 19 ? '• Promessa' : previewAge <= 29 ? '• Auge' : previewAge <= 36 ? '• Experiente' : previewAge <= 47 ? '• Veterano' : '• Comandante'}
+              </span>
+            </div>
+
+            <input
+              type="range"
+              min={16}
+              max={65}
+              value={previewAge}
+              onChange={(e) => setPreviewAge(Number(e.target.value))}
+              className="w-full accent-emerald-500 cursor-pointer h-2 bg-secondary rounded-lg"
+            />
+
+            <div className="flex items-center justify-between gap-1 mt-2">
+              {[17, 24, 34, 42, 55].map((agePreset) => (
+                <button
+                  key={agePreset}
+                  type="button"
+                  onClick={() => setPreviewAge(agePreset)}
+                  className={`text-[10px] font-bold py-1 px-2 rounded-lg border transition-all cursor-pointer ${
+                    previewAge === agePreset
+                      ? 'bg-emerald-500 text-zinc-950 border-emerald-500 font-black'
+                      : 'bg-secondary/60 border-border text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  {agePreset}a
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
 
         {/* Opções de Customização */}

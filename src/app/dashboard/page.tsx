@@ -26,6 +26,7 @@ import { AchievementsModal } from '@/components/game/AchievementsModal';
 import { NationalTeamModal } from '@/components/game/NationalTeamModal';
 import { AvatarDisplay } from '@/components/game/AvatarDisplay';
 import { AvatarCreatorModal } from '@/components/game/AvatarCreatorModal';
+import { DilemmaModal } from '@/components/game/DilemmaModal';
 import { TacticsBoard } from '@/components/game/TacticsBoard';
 import { ManagerRosterModal } from '@/components/manager/ManagerRosterModal';
 import { ManagerTacticsModal } from '@/components/manager/ManagerTacticsModal';
@@ -38,6 +39,8 @@ import { LIFESTYLE_CATALOG } from '@/data/lifestyleSeed';
 import { calculateCareerScore } from '@/engine/scoringEngine';
 import { formatCurrency } from '@/lib/calculations';
 import { getPlayStyleGoldById } from '@/data/playStylesSeed';
+import { getBootById } from '@/data/boots';
+import { getBallById } from '@/data/balls';
 import { NRG_DRINKS_CATALOG } from '@/data/nssCatalogSeed';
 import { EPIC_SKILLS_CATALOG } from '@/data/epicSkillsSeed';
 import { NRGType } from '@/types/game';
@@ -104,10 +107,15 @@ export default function DashboardPage() {
   const drinkEnergyCan = useGameStore((s) => s.drinkEnergyCan);
   const applyMinigameResult = useGameStore((s) => s.applyMinigameResult);
   const togglePlayerTacticalRole = useGameStore((s) => s.togglePlayerTacticalRole);
+  const pendingDilemma = useGameStore((s) => s.pendingDilemma);
+  const dismissDilemma = useGameStore((s) => s.dismissDilemma);
+  const holdLockerRoomMeeting = useGameStore((s) => s.holdLockerRoomMeeting);
+  const equippedBallId = useGameStore((s) => s.equippedBallId);
   const fullState = useGameStore();
 
   const [activeTab, setActiveTab] = useState<'overview' | 'roster' | 'table' | 'life'>('overview');
   const [advancing, setAdvancing] = useState(false);
+  const [meetingToast, setMeetingToast] = useState<{ message: string; success: boolean } | null>(null);
   const [isControversyModalOpen, setIsControversyModalOpen] = useState(false);
   const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
   const [isLiveMatchOpen, setIsLiveMatchOpen] = useState(false);
@@ -355,6 +363,7 @@ export default function DashboardPage() {
                     >
                       <AvatarDisplay 
                         avatar={mode === 'player' ? playerProfile?.avatar : managerProfile?.avatar} 
+                        age={mode === 'player' ? playerProfile?.age : managerProfile?.age}
                         size="md" 
                         className="ring-2 ring-emerald-500/50 hover:ring-emerald-400 transition-all rounded-full shadow-lg" 
                       />
@@ -382,21 +391,44 @@ export default function DashboardPage() {
                           {mode === 'player' ? playerProfile?.name : managerProfile?.name}
                         </h2>
                         {mode === 'player' && playerProfile && (
-                          <div className="flex items-center gap-1.5">
-                            {/* Badge 1: Status no Elenco (NSS 1st Team) */}
-                            <span className={`px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider border ${
-                              playerProfile.isYouthTeam 
-                                ? 'bg-amber-500/15 border-amber-500/30 text-amber-400' 
-                                : playerProfile.overall >= 60 && (playerProfile.relationshipManager || 80) >= 45
-                                ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400'
-                                : 'bg-secondary border-border text-muted-foreground'
-                            }`}>
-                              {playerProfile.isYouthTeam 
-                                ? 'Reserves / Sub-20' 
-                                : playerProfile.overall >= 60 && (playerProfile.relationshipManager || 80) >= 45
-                                ? '1st Team (Titular)'
-                                : 'Banco de Reservas'}
-                            </span>
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            {/* Titularidade Dinâmica baseada em Confiança do Técnico (coachTrust) */}
+                            {(() => {
+                              const trust = playerProfile.coachTrust ?? playerProfile.relationshipManager ?? 60;
+                              const isBenched = playerProfile.isBenched || trust < 35;
+                              const isCaptain = playerProfile.isCaptain || trust >= 80;
+
+                              if (playerProfile.isYouthTeam) {
+                                return (
+                                  <span className="px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider border bg-amber-500/15 border-amber-500/30 text-amber-400">
+                                    Reserves / Sub-20
+                                  </span>
+                                );
+                              }
+
+                              if (isBenched) {
+                                return (
+                                  <span className="px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider border bg-rose-500/15 border-rose-500/30 text-rose-400 animate-pulse">
+                                    🔴 Reserva (Barrado pelo Técnico)
+                                  </span>
+                                );
+                              }
+
+                              if (isCaptain) {
+                                return (
+                                  <span className="px-2 py-0.5 rounded-md bg-amber-400 text-zinc-950 text-[10px] font-black uppercase tracking-wider flex items-center gap-1 shadow-sm">
+                                    <span>©️</span>
+                                    <span>Capitão Titular</span>
+                                  </span>
+                                );
+                              }
+
+                              return (
+                                <span className="px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider border bg-emerald-500/15 border-emerald-500/30 text-emerald-400">
+                                  🟢 Titular Absoluto
+                                </span>
+                              );
+                            })()}
 
                             {/* Badge 2: Match Fit (NSS Condição Física) */}
                             <span className={`px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider border ${
@@ -415,15 +447,23 @@ export default function DashboardPage() {
                               <span>{(playerProfile.overall / 18).toFixed(1)}</span>
                             </span>
 
-                            {/* Badge 4: Capitão (©️) */}
-                            {playerProfile.isCaptain && (
-                              <span className="px-2 py-0.5 rounded-md bg-amber-400 text-zinc-950 text-[10px] font-black uppercase tracking-wider flex items-center gap-1 shadow-sm">
-                                <span>©️</span>
-                                <span>Capitão</span>
-                              </span>
-                            )}
+                            {/* Badge 4: Chuteira Equipada */}
+                            {(() => {
+                              const b = getBootById(playerProfile.equippedBootId || 'classic_black');
+                              return b ? (
+                                <button
+                                  type="button"
+                                  onClick={() => setIsShopModalOpen(true)}
+                                  className="px-2 py-0.5 rounded-md bg-secondary border border-border text-foreground hover:border-emerald-500/40 text-[10px] font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                                  title="Clique para gerenciar chuteiras na Loja"
+                                >
+                                  <span>{b.icon}</span>
+                                  <span>{b.name}</span>
+                                </button>
+                              ) : null;
+                            })()}
 
-                            {/* Badge 5: Cobrador de Pênalti (🎯) */}
+                            {/* Badge 5: Cobrador de Pênalti */}
                             {playerProfile.isPenaltyTaker && (
                               <span className="px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
                                 <span>🎯</span>
@@ -431,7 +471,7 @@ export default function DashboardPage() {
                               </span>
                             )}
 
-                            {/* Badge 6: Cobrador de Falta (☄️) */}
+                            {/* Badge 6: Cobrador de Falta */}
                             {playerProfile.isFreeKickTaker && (
                               <span className="px-2 py-0.5 rounded-md bg-sky-500/20 text-sky-400 border border-sky-500/40 text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
                                 <span>☄️</span>
@@ -456,19 +496,19 @@ export default function DashboardPage() {
                     </div>
                   </div>
 
-                  {/* Barras de Status Oficiais do Atleta (Torcida, Técnico, Moral, Fama e Energia) */}
+                  {/* Barras de Status Oficiais do Atleta (4 Relacionamentos + Energia + Salário) */}
                   {mode === 'player' && playerProfile && (
                     <div className="grid grid-cols-3 sm:grid-cols-6 gap-2.5 pt-3 md:pt-0 border-t md:border-t-0 border-border">
                       {/* 1. Torcida */}
                       <div className="text-center p-2 rounded-xl bg-secondary/50 border border-border">
                         <div className="flex items-center justify-center gap-1 text-[11px] font-black text-blue-400 mb-1">
                           <Users className="w-3 h-3" />
-                          <span>{playerProfile.relationshipFans || 75}%</span>
+                          <span>{playerProfile.fanApproval ?? playerProfile.relationshipFans ?? 75}%</span>
                         </div>
                         <div className="w-full h-1.5 bg-secondary rounded-full overflow-hidden">
                           <div
                             className="h-full bg-blue-500 rounded-full transition-all"
-                            style={{ width: `${playerProfile.relationshipFans || 75}%` }}
+                            style={{ width: `${playerProfile.fanApproval ?? playerProfile.relationshipFans ?? 75}%` }}
                           />
                         </div>
                         <span className="text-[9px] text-muted-foreground block mt-1 uppercase font-bold">
@@ -480,12 +520,12 @@ export default function DashboardPage() {
                       <div className="text-center p-2 rounded-xl bg-secondary/50 border border-border">
                         <div className="flex items-center justify-center gap-1 text-[11px] font-black text-emerald-400 mb-1">
                           <Target className="w-3 h-3" />
-                          <span>{playerProfile.relationshipManager || 80}%</span>
+                          <span>{playerProfile.coachTrust ?? playerProfile.relationshipManager ?? 80}%</span>
                         </div>
                         <div className="w-full h-1.5 bg-secondary rounded-full overflow-hidden">
                           <div
                             className="h-full bg-emerald-500 rounded-full transition-all"
-                            style={{ width: `${playerProfile.relationshipManager || 80}%` }}
+                            style={{ width: `${playerProfile.coachTrust ?? playerProfile.relationshipManager ?? 80}%` }}
                           />
                         </div>
                         <span className="text-[9px] text-muted-foreground block mt-1 uppercase font-bold">
@@ -493,37 +533,37 @@ export default function DashboardPage() {
                         </span>
                       </div>
 
-                      {/* 3. Moral */}
+                      {/* 3. Elenco / Vestiário */}
                       <div className="text-center p-2 rounded-xl bg-secondary/50 border border-border">
                         <div className="flex items-center justify-center gap-1 text-[11px] font-black text-amber-400 mb-1">
                           <Flame className="w-3 h-3" />
-                          <span>{playerProfile.morale || 85}%</span>
+                          <span>{playerProfile.squadChemistry ?? 65}%</span>
                         </div>
                         <div className="w-full h-1.5 bg-secondary rounded-full overflow-hidden">
                           <div
                             className="h-full bg-amber-500 rounded-full transition-all"
-                            style={{ width: `${playerProfile.morale || 85}%` }}
+                            style={{ width: `${playerProfile.squadChemistry ?? 65}%` }}
                           />
                         </div>
                         <span className="text-[9px] text-muted-foreground block mt-1 uppercase font-bold">
-                          Moral
+                          Elenco
                         </span>
                       </div>
 
-                      {/* 4. Fama / Reputação */}
+                      {/* 4. Família / Pessoal */}
                       <div className="text-center p-2 rounded-xl bg-secondary/50 border border-border">
-                        <div className="flex items-center justify-center gap-1 text-[11px] font-black text-purple-400 mb-1">
-                          <Star className="w-3 h-3 fill-purple-400" />
-                          <span>{playerProfile.reputation || 50}%</span>
+                        <div className="flex items-center justify-center gap-1 text-[11px] font-black text-rose-400 mb-1">
+                          <Star className="w-3 h-3 fill-rose-400 text-rose-400" />
+                          <span>{playerProfile.familyHappiness ?? playerProfile.relationshipFamily ?? 60}%</span>
                         </div>
                         <div className="w-full h-1.5 bg-secondary rounded-full overflow-hidden">
                           <div
-                            className="h-full bg-purple-500 rounded-full transition-all"
-                            style={{ width: `${playerProfile.reputation || 50}%` }}
+                            className="h-full bg-rose-500 rounded-full transition-all"
+                            style={{ width: `${playerProfile.familyHappiness ?? playerProfile.relationshipFamily ?? 60}%` }}
                           />
                         </div>
                         <span className="text-[9px] text-muted-foreground block mt-1 uppercase font-bold">
-                          Fama
+                          Família
                         </span>
                       </div>
 
@@ -557,18 +597,19 @@ export default function DashboardPage() {
                     </div>
                   )}
 
-                  {/* Barras de Status do Treinador */}
+                  {/* Barras de Relacionamento do Treinador */}
                   {mode === 'manager' && managerProfile && (
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-3 md:pt-0 border-t md:border-t-0 border-border">
+                      {/* 1. Torcida */}
                       <div className="text-center p-2 rounded-xl bg-secondary/50 border border-border">
                         <div className="flex items-center justify-center gap-1 text-xs font-black text-blue-400 mb-1">
                           <Users className="w-3.5 h-3.5" />
-                          <span>{managerProfile.fansConfidence}%</span>
+                          <span>{managerProfile.fanApproval ?? managerProfile.fansConfidence ?? 65}%</span>
                         </div>
                         <div className="w-full h-1.5 bg-secondary rounded-full overflow-hidden">
                           <div
                             className="h-full bg-blue-500 rounded-full transition-all"
-                            style={{ width: `${managerProfile.fansConfidence}%` }}
+                            style={{ width: `${managerProfile.fanApproval ?? managerProfile.fansConfidence ?? 65}%` }}
                           />
                         </div>
                         <span className="text-[9px] text-muted-foreground block mt-1 uppercase font-bold">
@@ -576,15 +617,16 @@ export default function DashboardPage() {
                         </span>
                       </div>
 
+                      {/* 2. Diretoria */}
                       <div className="text-center p-2 rounded-xl bg-secondary/50 border border-border">
                         <div className="flex items-center justify-center gap-1 text-xs font-black text-emerald-400 mb-1">
                           <Target className="w-3.5 h-3.5" />
-                          <span>{managerProfile.boardConfidence}%</span>
+                          <span>{managerProfile.boardTrust ?? managerProfile.boardConfidence ?? 70}%</span>
                         </div>
                         <div className="w-full h-1.5 bg-secondary rounded-full overflow-hidden">
                           <div
                             className="h-full bg-emerald-500 rounded-full transition-all"
-                            style={{ width: `${managerProfile.boardConfidence}%` }}
+                            style={{ width: `${managerProfile.boardTrust ?? managerProfile.boardConfidence ?? 70}%` }}
                           />
                         </div>
                         <span className="text-[9px] text-muted-foreground block mt-1 uppercase font-bold">
@@ -592,29 +634,37 @@ export default function DashboardPage() {
                         </span>
                       </div>
 
+                      {/* 3. Vestiário / Moral */}
+                      <div className="text-center p-2 rounded-xl bg-secondary/50 border border-border">
+                        <div className="flex items-center justify-center gap-1 text-xs font-black text-amber-400 mb-1">
+                          <Flame className="w-3.5 h-3.5 text-amber-400" />
+                          <span>{managerProfile.squadMorale ?? 65}%</span>
+                        </div>
+                        <div className="w-full h-1.5 bg-secondary rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-amber-500 rounded-full transition-all"
+                            style={{ width: `${managerProfile.squadMorale ?? 65}%` }}
+                          />
+                        </div>
+                        <span className="text-[9px] text-muted-foreground block mt-1 uppercase font-bold">
+                          Moral Vestiário
+                        </span>
+                      </div>
+
+                      {/* 4. Imprensa */}
                       <div className="text-center p-2 rounded-xl bg-secondary/50 border border-border">
                         <div className="flex items-center justify-center gap-1 text-xs font-black text-purple-400 mb-1">
                           <Star className="w-3.5 h-3.5 fill-purple-400" />
-                          <span>{managerProfile.reputation}%</span>
+                          <span>{managerProfile.mediaReputation ?? managerProfile.reputation ?? 60}%</span>
                         </div>
                         <div className="w-full h-1.5 bg-secondary rounded-full overflow-hidden">
                           <div
                             className="h-full bg-purple-500 rounded-full transition-all"
-                            style={{ width: `${managerProfile.reputation}%` }}
+                            style={{ width: `${managerProfile.mediaReputation ?? managerProfile.reputation ?? 60}%` }}
                           />
                         </div>
                         <span className="text-[9px] text-muted-foreground block mt-1 uppercase font-bold">
-                          Fama / Rep
-                        </span>
-                      </div>
-
-                      <div className="text-center p-2 rounded-xl bg-secondary/50 border border-border">
-                        <div className="flex items-center justify-center gap-1 text-xs font-black text-foreground mb-1">
-                          <Coins className="w-3.5 h-3.5 text-emerald-500" />
-                          <span>{currentClub ? formatCurrency(currentClub.budget) : 'R$ 0'}</span>
-                        </div>
-                        <span className="text-[9px] text-muted-foreground block mt-2.5 uppercase font-bold">
-                          Orçamento
+                          Imprensa / Mídia
                         </span>
                       </div>
                     </div>
@@ -695,6 +745,52 @@ export default function DashboardPage() {
                       <span className="text-[10px] text-zinc-400">Ficha & Troféus</span>
                     </button>
                   </div>
+
+                  {/* Ações Especiais de Vestiário & Bola Oficial */}
+                  <div className="pt-2 border-t border-zinc-800 flex flex-wrap items-center justify-between gap-2.5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const res = holdLockerRoomMeeting();
+                        setMeetingToast({ message: res.message, success: res.success });
+                        setTimeout(() => setMeetingToast(null), 3500);
+                      }}
+                      className="py-2 px-3.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-300 font-bold text-xs flex items-center gap-1.5 transition cursor-pointer"
+                    >
+                      <span>🗣️</span>
+                      <span>Reunião de Vestiário (+15 Moral)</span>
+                    </button>
+
+                    <div className="flex items-center gap-2">
+                      <span className="text-[11px] text-zinc-400">Bola da Partida:</span>
+                      {(() => {
+                        const ball = getBallById(equippedBallId || 'classic_capotao');
+                        return (
+                          <button
+                            type="button"
+                            onClick={() => setIsShopModalOpen(true)}
+                            className="py-1 px-2.5 rounded-lg bg-zinc-900 border border-zinc-700 hover:border-emerald-500/50 text-xs font-bold text-white flex items-center gap-1.5 cursor-pointer transition-colors"
+                          >
+                            <span>{ball?.icon || '⚽'}</span>
+                            <span>{ball?.name || 'Capotão'}</span>
+                            <span className="text-[10px] text-emerald-400">({ball?.rarity || 'Comum'})</span>
+                          </button>
+                        );
+                      })()}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* FEEDBACK DE REUNIÃO DE VESTIÁRIO */}
+              {meetingToast && (
+                <div className={`p-3.5 rounded-2xl border text-xs font-black flex items-center justify-center gap-2 animate-in zoom-in-95 duration-200 shadow-lg ${
+                  meetingToast.success 
+                    ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-400 shadow-emerald-500/10' 
+                    : 'bg-rose-500/20 border-rose-500/40 text-rose-400 shadow-rose-500/10'
+                }`}>
+                  <Users className="w-4 h-4" />
+                  <span>{meetingToast.message}</span>
                 </div>
               )}
 
@@ -1540,64 +1636,95 @@ export default function DashboardPage() {
                     </div>
                   </div>
 
-                  {/* Grid Completo dos 14 Atributos Requeridos */}
-                  <div>
-                    <span className="text-[11px] font-black uppercase text-muted-foreground tracking-wider block mb-2.5">
-                      Tabela de Atributos Oficiais (Escala 0 a 99)
-                    </span>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-2.5">
-                      {[
-                        { name: 'Velocidade', val: playerProfile.attributes.pace, icon: '⚡', highlight: playerProfile.position === 'PE' || playerProfile.position === 'PD' },
-                        { name: 'Drible', val: playerProfile.attributes.dribbling, icon: '⚽', highlight: playerProfile.position === 'PE' || playerProfile.position === 'PD' },
-                        { name: 'Desarme', val: playerProfile.attributes.tackling ?? playerProfile.attributes.defending, icon: '🛡️', highlight: playerProfile.position === 'ZAG' || playerProfile.position === 'VOL' },
-                        { name: 'Defesa', val: playerProfile.attributes.defending, icon: '🧱', highlight: playerProfile.position === 'ZAG' || playerProfile.position === 'VOL' },
-                        { name: 'Ataque', val: playerProfile.attributes.attacking ?? playerProfile.attributes.shooting, icon: '⚔️', highlight: playerProfile.position === 'ATA' },
-                        { name: 'Finalização', val: playerProfile.attributes.finishing ?? playerProfile.attributes.shooting, icon: '🎯', highlight: playerProfile.position === 'ATA' || playerProfile.position === 'PE' || playerProfile.position === 'PD' },
-                        { name: 'Passe', val: playerProfile.attributes.passing, icon: '👟', highlight: playerProfile.position === 'MC' || playerProfile.position === 'MEI' },
-                        { name: 'Posicionamento', val: playerProfile.attributes.positioning ?? 50, icon: '📍', highlight: playerProfile.position === 'ATA' || playerProfile.position === 'GOL' },
-                        { name: 'Cabeceio', val: playerProfile.attributes.heading ?? playerProfile.attributes.physical ?? 50, icon: '👤', highlight: playerProfile.position === 'ATA' || playerProfile.position === 'ZAG' },
-                        { name: 'Cruzamento', val: playerProfile.attributes.crossing ?? playerProfile.attributes.passing, icon: '↗️', highlight: playerProfile.position === 'PE' || playerProfile.position === 'PD' || playerProfile.position === 'LE' || playerProfile.position === 'LD' },
-                        { name: 'Chute', val: playerProfile.attributes.shooting, icon: '🚀', highlight: playerProfile.position === 'ATA' || playerProfile.position === 'MEI' },
-                        { name: 'Salto', val: playerProfile.attributes.jumping ?? playerProfile.attributes.physical ?? 50, icon: '🦘', highlight: playerProfile.position === 'ZAG' || playerProfile.position === 'GOL' },
-                        { name: 'Armador', val: playerProfile.attributes.playmaker ?? playerProfile.attributes.vision ?? 50, icon: '🪄', highlight: playerProfile.position === 'MEI' || playerProfile.position === 'MC' },
-                        { 
-                          name: 'Elasticidade', 
-                          val: playerProfile.attributes.elasticity ?? playerProfile.attributes.gkReflexes ?? 50, 
-                          icon: '🧤', 
-                          highlight: playerProfile.position === 'GOL',
-                          isGK: true 
-                        },
-                      ].map((attr) => (
-                        <div
-                          key={attr.name}
-                          className={`p-3 rounded-2xl border flex flex-col justify-between gap-1 transition-all ${
-                            attr.isGK && playerProfile.position === 'GOL'
-                              ? 'bg-amber-500/20 border-amber-500 text-amber-300 shadow-md ring-1 ring-amber-500/50'
-                              : attr.highlight
-                              ? 'bg-emerald-500/15 border-emerald-500/40 text-foreground'
-                              : 'bg-secondary/60 border-border text-foreground hover:bg-secondary'
-                          }`}
-                        >
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm">{attr.icon}</span>
-                            <span className="font-mono text-base font-black text-foreground">
-                              {attr.val}
-                            </span>
-                          </div>
-                          <div>
-                            <span className="text-[11px] font-bold text-muted-foreground block truncate">
-                              {attr.name}
-                            </span>
-                            {attr.isGK && (
-                              <span className="text-[9px] uppercase font-black text-amber-400 block -mt-0.5">
-                                Goleiro
-                              </span>
-                            )}
-                          </div>
+                  {/* Grid Completo dos 14 Atributos Requeridos com Bônus da Chuteira Equipada */}
+                  {(() => {
+                    const activeBoot = getBootById(playerProfile.equippedBootId || 'classic_black');
+                    const bootBonus = activeBoot?.bonusAttributes || {};
+
+                    const attributesList = [
+                      { name: 'Velocidade', val: playerProfile.attributes.pace, bonus: bootBonus.pace || 0, icon: '⚡', highlight: playerProfile.position === 'PE' || playerProfile.position === 'PD' },
+                      { name: 'Drible', val: playerProfile.attributes.dribbling, bonus: bootBonus.dribbling || 0, icon: '⚽', highlight: playerProfile.position === 'PE' || playerProfile.position === 'PD' },
+                      { name: 'Desarme', val: playerProfile.attributes.tackling ?? playerProfile.attributes.defending, bonus: bootBonus.defending || 0, icon: '🛡️', highlight: playerProfile.position === 'ZAG' || playerProfile.position === 'VOL' },
+                      { name: 'Defesa', val: playerProfile.attributes.defending, bonus: bootBonus.defending || 0, icon: '🧱', highlight: playerProfile.position === 'ZAG' || playerProfile.position === 'VOL' },
+                      { name: 'Ataque', val: playerProfile.attributes.attacking ?? playerProfile.attributes.shooting, bonus: (bootBonus.finishing || 0) + ((bootBonus as any).shotPower || bootBonus.shooting || 0), icon: '⚔️', highlight: playerProfile.position === 'ATA' },
+                      { name: 'Finalização', val: playerProfile.attributes.finishing ?? playerProfile.attributes.shooting, bonus: bootBonus.finishing || 0, icon: '🎯', highlight: playerProfile.position === 'ATA' || playerProfile.position === 'PE' || playerProfile.position === 'PD' },
+                      { name: 'Passe', val: playerProfile.attributes.passing, bonus: bootBonus.passing || 0, icon: '👟', highlight: playerProfile.position === 'MC' || playerProfile.position === 'MEI' },
+                      { name: 'Posicionamento', val: playerProfile.attributes.positioning ?? 50, bonus: bootBonus.positioning || 0, icon: '📍', highlight: playerProfile.position === 'ATA' || playerProfile.position === 'GOL' },
+                      { name: 'Cabeceio', val: playerProfile.attributes.heading ?? playerProfile.attributes.physical ?? 50, bonus: bootBonus.physical || 0, icon: '👤', highlight: playerProfile.position === 'ATA' || playerProfile.position === 'ZAG' },
+                      { name: 'Cruzamento', val: playerProfile.attributes.crossing ?? playerProfile.attributes.passing, bonus: bootBonus.passing || 0, icon: '↗️', highlight: playerProfile.position === 'PE' || playerProfile.position === 'PD' || playerProfile.position === 'LE' || playerProfile.position === 'LD' },
+                      { name: 'Chute', val: playerProfile.attributes.shooting, bonus: (bootBonus as any).shotPower || bootBonus.shooting || 0, icon: '🚀', highlight: playerProfile.position === 'ATA' || playerProfile.position === 'MEI' },
+                      { name: 'Salto', val: playerProfile.attributes.jumping ?? playerProfile.attributes.physical ?? 50, bonus: bootBonus.physical || 0, icon: '🦘', highlight: playerProfile.position === 'ZAG' || playerProfile.position === 'GOL' },
+                      { name: 'Armador', val: playerProfile.attributes.playmaker ?? playerProfile.attributes.vision ?? 50, bonus: bootBonus.vision || 0, icon: '🪄', highlight: playerProfile.position === 'MEI' || playerProfile.position === 'MC' },
+                      { 
+                        name: 'Elasticidade', 
+                        val: playerProfile.attributes.elasticity ?? playerProfile.attributes.gkReflexes ?? 50, 
+                        bonus: bootBonus.positioning || 0,
+                        icon: '🧤', 
+                        highlight: playerProfile.position === 'GOL',
+                        isGK: true 
+                      },
+                    ];
+
+                    return (
+                      <div>
+                        <div className="flex items-center justify-between mb-2.5">
+                          <span className="text-[11px] font-black uppercase text-muted-foreground tracking-wider block">
+                            Tabela de Atributos Oficiais (Escala 0 a 99)
+                          </span>
+                          {activeBoot && (
+                            <button
+                              type="button"
+                              onClick={() => setIsShopModalOpen(true)}
+                              className="text-[11px] font-bold text-emerald-400 hover:text-emerald-300 flex items-center gap-1 cursor-pointer bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/30 transition-colors"
+                            >
+                              <span>{activeBoot.icon} Chuteira:</span>
+                              <strong className="text-white">{activeBoot.name}</strong>
+                              <span className="text-[10px] text-emerald-300">({activeBoot.rarity})</span>
+                            </button>
+                          )}
                         </div>
-                      ))}
-                    </div>
-                  </div>
+
+                        <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-2.5">
+                          {attributesList.map((attr) => (
+                            <div
+                              key={attr.name}
+                              className={`p-3 rounded-2xl border flex flex-col justify-between gap-1 transition-all ${
+                                attr.isGK && playerProfile.position === 'GOL'
+                                  ? 'bg-amber-500/20 border-amber-500 text-amber-300 shadow-md ring-1 ring-amber-500/50'
+                                  : attr.highlight
+                                  ? 'bg-emerald-500/15 border-emerald-500/40 text-foreground'
+                                  : 'bg-secondary/60 border-border text-foreground hover:bg-secondary'
+                              }`}
+                            >
+                              <div className="flex items-center justify-between">
+                                <span className="text-sm">{attr.icon}</span>
+                                <div className="flex items-baseline gap-1">
+                                  <span className="font-mono text-base font-black text-foreground">
+                                    {attr.val + (attr.bonus || 0)}
+                                  </span>
+                                  {attr.bonus > 0 && (
+                                    <span className="font-mono text-[10px] font-black text-emerald-400">
+                                      (+{attr.bonus})
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                              <div>
+                                <span className="text-[11px] font-bold text-muted-foreground block truncate">
+                                  {attr.name}
+                                </span>
+                                {attr.isGK && (
+                                  <span className="text-[9px] uppercase font-black text-amber-400 block -mt-0.5">
+                                    Goleiro
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })()}
 
                   {/* SEÇÃO ESPECIAL: FUNÇÕES TÁTICAS OFICIAIS DO CRAQUE (Capitão, Pênalti & Falta) */}
                   <div className="p-5 rounded-2xl bg-secondary/50 border border-border space-y-4">
@@ -2460,6 +2587,15 @@ export default function DashboardPage() {
       <ManagerCareerModal
         isOpen={isManagerCareerOpen}
         onClose={() => setIsManagerCareerOpen(false)}
+      />
+
+      {/* ============================================================ */}
+      {/* MODAL 11: DILEMAS, COLETIVAS E ENTREVISTAS COM CONSEQUÊNCIAS */}
+      {/* ============================================================ */}
+      <DilemmaModal
+        isOpen={!!pendingDilemma}
+        dilemma={pendingDilemma}
+        onClose={dismissDilemma}
       />
 
       <MobileBottomNav />

@@ -1,0 +1,178 @@
+// ==============================================================================
+// BOLA NA REDE: CARREIRA - CATÁLOGO OFICIAL DE BOLAS (src/data/balls.ts)
+// 8 Bolas com Física Real, Rastro Visual no Canvas, Efeitos e Texturas
+// ==============================================================================
+
+import { BallItem } from '@/types/game';
+
+export const OFFICIAL_BALLS_CATALOG: BallItem[] = [
+  {
+    id: 'classic_capotao',
+    name: 'Capotão Clássica',
+    subtitle: 'A bola raiz de gomos pretos e brancos',
+    rarity: 'Comum',
+    price: 0,
+    description: 'Equilíbrio padrão e comportamento fiel às leis tradicionais da física do futebol.',
+    icon: '⚽',
+    primaryColor: '#ffffff',
+    secondaryColor: '#18181b',
+    physics: {
+      frictionMultiplier: 1.0,
+      curveMultiplier: 1.0,
+      speedMultiplier: 1.0,
+      precisionBonus: 0.0,
+      dribbleBonus: 0.0,
+      trailType: 'classic',
+    },
+  },
+  {
+    id: 'varzea_heavy',
+    name: 'Bola de Várzea Pesada',
+    subtitle: 'Couro cru envelhecido e costura reforçada',
+    rarity: 'Comum',
+    price: 500,
+    description: '+15% de atrito com o solo e menor oscilação aérea. Perfeita para pancadas rasteiras.',
+    icon: '🟤',
+    primaryColor: '#78350f',
+    secondaryColor: '#451a03',
+    accentColor: '#d97706',
+    physics: {
+      frictionMultiplier: 1.15,
+      curveMultiplier: 0.85,
+      speedMultiplier: 0.96,
+      precisionBonus: 0.02,
+      dribbleBonus: 0.0,
+      trailType: 'classic',
+    },
+  },
+  {
+    id: 'jabulani_2010',
+    name: 'Caos 2010',
+    subtitle: 'Inspirada na lendária Jabulani',
+    rarity: 'Rara',
+    price: 8000,
+    description: '+35% de efeito de curva e desvio no ar. Movimento imprevisível que deixa goleiros desesperados.',
+    icon: '🌀',
+    primaryColor: '#ffffff',
+    secondaryColor: '#0284c7',
+    accentColor: '#eab308',
+    physics: {
+      frictionMultiplier: 0.95,
+      curveMultiplier: 1.35,
+      speedMultiplier: 1.06,
+      precisionBonus: -0.02,
+      dribbleBonus: 0.0,
+      trailType: 'jabulani',
+    },
+  },
+  {
+    id: 'brazuca_pro',
+    name: 'Brasilidade Pro',
+    subtitle: 'Inspirada nas fitas onduladas da Brazuca',
+    rarity: 'Rara',
+    price: 10000,
+    description: '+10% de precisão em chutes colocados e trajetória aérea estável com rastro verde e amarelo.',
+    icon: '🇧🇷',
+    primaryColor: '#ffffff',
+    secondaryColor: '#16a34a',
+    accentColor: '#0284c7',
+    physics: {
+      frictionMultiplier: 0.98,
+      curveMultiplier: 1.1,
+      speedMultiplier: 1.04,
+      precisionBonus: 0.1,
+      dribbleBonus: 0.03,
+      trailType: 'brazuca',
+    },
+  },
+  {
+    id: 'neon_orange',
+    name: 'Laranja Alta Visibilidade',
+    subtitle: 'Edição de inverno e temporal',
+    rarity: 'Rara',
+    price: 3000,
+    description: 'Imune à perda de controle em gramados molhados ou jogos sob chuva intensa.',
+    icon: '🟠',
+    primaryColor: '#ff6600',
+    secondaryColor: '#18181b',
+    accentColor: '#ffffff',
+    physics: {
+      frictionMultiplier: 1.0,
+      curveMultiplier: 1.05,
+      speedMultiplier: 1.02,
+      precisionBonus: 0.04,
+      dribbleBonus: 0.02,
+      rainImmune: true,
+      trailType: 'neon',
+    },
+  },
+  {
+    id: 'fire_meteor',
+    name: 'Meteoro de Fogo',
+    subtitle: 'Superfície vulcânica com rastro de chamas',
+    rarity: 'Especial',
+    price: 25000,
+    description: '+12% de velocidade de disparo e rastro de faíscas incandescentes em bombas no gol.',
+    icon: '🔥',
+    primaryColor: '#dc2626',
+    secondaryColor: '#f97316',
+    accentColor: '#fef08a',
+    physics: {
+      frictionMultiplier: 0.94,
+      curveMultiplier: 1.08,
+      speedMultiplier: 1.12,
+      precisionBonus: 0.05,
+      dribbleBonus: 0.0,
+      trailType: 'fire',
+    },
+  },
+  {
+    id: 'cyber_neon',
+    name: 'Cyber Neon 2077',
+    subtitle: 'Grafite escuro com circuitos ciano brilhantes',
+    rarity: 'Especial',
+    price: 20000,
+    description: '+8% de controle de bola no minigame de drible. Rastro holográfico deslumbrante no modo escuro.',
+    icon: '⚡',
+    primaryColor: '#09090b',
+    secondaryColor: '#06b6d4',
+    accentColor: '#22d3ee',
+    physics: {
+      frictionMultiplier: 0.96,
+      curveMultiplier: 1.12,
+      speedMultiplier: 1.05,
+      precisionBonus: 0.06,
+      dribbleBonus: 0.08,
+      trailType: 'cyber',
+    },
+  },
+  {
+    id: 'golden_ball',
+    name: 'Bola de Ouro Real',
+    subtitle: 'Folheada a ouro 24k com partículas áureas',
+    rarity: 'Lendária',
+    price: 50000,
+    description: '+8% de precisão e +8% de curva cirúrgica. Emite partículas cintilantes ao voar.',
+    icon: '🏆',
+    primaryColor: '#eab308',
+    secondaryColor: '#ca8a04',
+    accentColor: '#fef08a',
+    physics: {
+      frictionMultiplier: 0.95,
+      curveMultiplier: 1.08,
+      speedMultiplier: 1.08,
+      precisionBonus: 0.08,
+      dribbleBonus: 0.05,
+      trailType: 'gold',
+    },
+  },
+];
+
+/**
+ * Retorna uma bola por ID ou a Capotão Clássica como padrão
+ */
+export function getBallById(ballId?: string): BallItem {
+  if (!ballId) return OFFICIAL_BALLS_CATALOG[0];
+  const found = OFFICIAL_BALLS_CATALOG.find((b) => b.id === ballId);
+  return found || OFFICIAL_BALLS_CATALOG[0];
+}

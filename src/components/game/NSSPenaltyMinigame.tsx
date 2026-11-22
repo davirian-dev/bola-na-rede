@@ -459,7 +459,8 @@ export function NSSPenaltyMinigame({
     const dy = s.aim.targetY - s.ball.y;
     const dist = Math.hypot(dx, dy) || 1;
 
-    // Calcula física do chute realista com base nos atributos do atleta, barra de força e ponto de impacto
+    // Calcula física do chute realista com base nos atributos do atleta, barra de força e bola oficial equipada
+    const currentBallId = playerProfile?.equippedBallId || (useGameStore.getState().equippedBallId) || 'classic_capotao';
     const physics = calculateShotPhysics({
       startX: s.ball.x,
       startY: s.ball.y,
@@ -471,6 +472,7 @@ export function NSSPenaltyMinigame({
       finishingAttr: playerProfile?.attributes.shooting || 68,
       composureAttr: playerProfile?.attributes.dribbling || 65,
       preferredFoot: foot,
+      ballId: currentBallId,
     });
 
     s.ball.vx = physics.ball.vx;
@@ -484,6 +486,7 @@ export function NSSPenaltyMinigame({
     (s.ball as any).spinCurve = physics.ball.spinCurve;
     (s.ball as any).rotationSpeed = physics.ball.rotationSpeed;
     (s.ball as any).rotationAngle = 0;
+    (s.ball as any).ballId = physics.ball.ballId;
 
     if (physics.shotType === 'power') {
       setFeedbackText(`💣 BOMBAÇO! ${physics.impactLabel} (${power}% de força)!`);

@@ -52,6 +52,10 @@ import { generateWeeklyNews } from '@/engine/newsGenerator';
 import { processSeasonEnd } from '@/engine/seasonEnd';
 import { calculateCareerScore } from '@/engine/scoringEngine';
 import { getSupabase, isSupabaseConfigured } from '@/lib/supabase/client';
+import { OFFICIAL_BOOTS_CATALOG, getBootById } from '@/data/boots';
+import { OFFICIAL_BALLS_CATALOG, getBallById } from '@/data/balls';
+import { evaluateDilemmaTrigger, applyDilemmaResolution, DilemmaEvaluationContext } from '@/engine/dilemmaEngine';
+import { DILEMMAS_DATABASE } from '@/data/dilemmas';
 
 interface GameStoreActions {
   // Inicialização
@@ -165,6 +169,18 @@ interface GameStoreActions {
   syncCareerToLeaderboard: () => Promise<{ success: boolean; message: string; rank?: number; totalPoints?: number }>;
   fetchOnlineLeaderboard: (modeFilter?: 'player' | 'manager') => Promise<OnlineLeaderboardEntry[]>;
   applyCommunityPack: (packData: Record<string, Partial<Club>>) => { updatedCount: number };
+
+  // Equipamentos Oficiais (Chuteiras com Atributos Reais & Bolas com Física)
+  buyBoot: (bootId: string) => { success: boolean; message: string };
+  equipBoot: (bootId: string) => void;
+  buyBall: (ballId: string) => { success: boolean; message: string };
+  equipBall: (ballId: string) => void;
+
+  // Dilemas, Coletivas de Imprensa & Relacionamentos
+  answerDilemma: (dilemmaId: string, optionId: string) => void;
+  dismissDilemma: () => void;
+  triggerDilemmaCheck: (context?: DilemmaEvaluationContext) => void;
+  holdLockerRoomMeeting: () => { success: boolean; message: string };
 }
 
 export type GameStore = GameState & GameStoreActions;
@@ -212,6 +228,10 @@ export const useGameStore = create<GameStore>()(
         }
       ],
       trophies: [],
+      equippedBallId: 'classic_capotao',
+      ownedBallIds: ['classic_capotao'],
+      pendingDilemma: null,
+      dilemmaHistory: [],
       onlineStats: {
         elo: 1200,
         division: 'Prata',
@@ -1869,13 +1889,27 @@ export const useGameStore = create<GameStore>()(
           (f) => f.id !== userMatch?.id && f.competition === targetCompetition
         ).slice(0, 8);
 
-        // 7. COLETIVA DE IMPRENSA OBRIGATÓRIA PÓS-JOGO
+        // 7. COLETIVA DE IMPRENSA OBRIGATÓRIA PÓS-JOGO & DILEMAS DE CARREIRA
         let nextPendingControversy = state.pendingControversy;
         if (userMatch || !nextPendingControversy) {
           const answeredIds = (state.controversyHistory || []).map((h) => h.event.id);
           const unvisited = HISTORICAL_CONTROVERSIES.filter((c) => !answeredIds.includes(c.id));
           const pool = unvisited.length > 0 ? unvisited : HISTORICAL_CONTROVERSIES;
           nextPendingControversy = pool[Math.floor(Math.random() * pool.length)];
+        }
+
+        let nextDilemma = state.pendingDilemma;
+        if (!nextDilemma && Math.random() < 0.5) {
+          const isUserWin = userMatch?.isPlayed && ((userMatch.homeClubId === (updatedPlayerProfile?.clubId || updatedManagerProfile?.clubId) && (userMatch.homeGoals || 0) > (userMatch.awayGoals || 0)) || (userMatch.awayClubId === (updatedPlayerProfile?.clubId || updatedManagerProfile?.clubId) && (userMatch.awayGoals || 0) > (userMatch.homeGoals || 0)));
+          const isUserLoss = userMatch?.isPlayed && ((userMatch.homeClubId === (updatedPlayerProfile?.clubId || updatedManagerProfile?.clubId) && (userMatch.homeGoals || 0) < (userMatch.awayGoals || 0)) || (userMatch.awayClubId === (updatedPlayerProfile?.clubId || updatedManagerProfile?.clubId) && (userMatch.awayGoals || 0) < (userMatch.homeGoals || 0)));
+          
+          nextDilemma = evaluateDilemmaTrigger(
+            { ...state, playerProfile: updatedPlayerProfile, managerProfile: updatedManagerProfile },
+            {
+              isDerby: (userMatch as any)?.isDerby,
+              matchResult: isUserWin ? 'win' : isUserLoss ? 'loss' : 'draw',
+            }
+          );
         }
 
         set({
@@ -1888,6 +1922,7 @@ export const useGameStore = create<GameStore>()(
           playerProfile: updatedPlayerProfile,
           managerProfile: updatedManagerProfile,
           pendingControversy: nextPendingControversy,
+          pendingDilemma: nextDilemma,
           newsFeed: [...weeklyNews, ...state.newsFeed.slice(0, 30)],
           promotionModalOpen: promoted ? true : state.promotionModalOpen,
           lastRoundResult: {
@@ -2534,6 +2569,229 @@ export const useGameStore = create<GameStore>()(
         return {
           success: true,
           message: `${facilityName} aprimorado para o Nível ${currentLevel + 1} por R$ ${(cost / 1_000_000).toFixed(1)} mi!`,
+        };
+      },
+
+      // ==============================================================================
+      // EQUIPAMENTOS OFICIAIS (CHUTEIRAS COM ATRIBUTOS & BOLAS COM FÍSICA)
+      // ==============================================================================
+      buyBoot: (bootId: string) => {
+        const state = get();
+        const boot = getBootById(bootId);
+        if (!boot) return { success: false, message: 'Chuteira não encontrada no catálogo oficial!' };
+
+        if (!state.playerProfile) {
+          return { success: false, message: 'Disponível apenas no Modo Jogador!' };
+        }
+
+        const owned = state.playerProfile.ownedBootIds || ['classic_black'];
+        if (owned.includes(bootId)) {
+          return { success: false, message: 'Você já possui essa chuteira no seu armário!' };
+        }
+
+        const currentBalance = state.playerProfile.bankBalance ?? state.playerProfile.money ?? 0;
+        if (currentBalance < boot.price) {
+          return {
+            success: false,
+            message: `Saldo insuficiente! Você tem R$ ${currentBalance.toLocaleString('pt-BR')} e a chuteira custa R$ ${boot.price.toLocaleString('pt-BR')}.`,
+          };
+        }
+
+        const newOwned = [...owned, bootId];
+        const newMoney = currentBalance - boot.price;
+
+        set({
+          playerProfile: {
+            ...state.playerProfile,
+            bankBalance: newMoney,
+            money: newMoney,
+            ownedBootIds: newOwned,
+            equippedBootId: bootId,
+          },
+        });
+
+        return {
+          success: true,
+          message: `Chuteira "${boot.name}" comprada e equipada com sucesso! Bônus de atributos ativados.`,
+        };
+      },
+
+      equipBoot: (bootId: string) => {
+        const state = get();
+        if (!state.playerProfile) return;
+        const owned = state.playerProfile.ownedBootIds || ['classic_black'];
+        if (!owned.includes(bootId)) return;
+
+        set({
+          playerProfile: {
+            ...state.playerProfile,
+            equippedBootId: bootId,
+          },
+        });
+      },
+
+      buyBall: (ballId: string) => {
+        const state = get();
+        const ball = getBallById(ballId);
+        if (!ball) return { success: false, message: 'Bola não encontrada no catálogo oficial!' };
+
+        const currentOwned = state.ownedBallIds || ['classic_capotao'];
+        if (currentOwned.includes(ballId)) {
+          return { success: false, message: 'Você já possui esta bola oficial em sua coleção!' };
+        }
+
+        if (state.mode === 'player') {
+          if (!state.playerProfile) return { success: false, message: 'Perfil não encontrado!' };
+          const currentBalance = state.playerProfile.bankBalance ?? state.playerProfile.money ?? 0;
+          if (currentBalance < ball.price) {
+            return {
+              success: false,
+              message: `Saldo insuficiente! Necessário R$ ${ball.price.toLocaleString('pt-BR')}.`,
+            };
+          }
+
+          const newMoney = currentBalance - ball.price;
+          const newOwned = [...currentOwned, ballId];
+
+          set({
+            equippedBallId: ballId,
+            ownedBallIds: newOwned,
+            playerProfile: {
+              ...state.playerProfile,
+              bankBalance: newMoney,
+              money: newMoney,
+              equippedBallId: ballId,
+              ownedBallIds: newOwned,
+            },
+          });
+        } else {
+          if (!state.managerProfile) return { success: false, message: 'Perfil não encontrado!' };
+          const club = state.clubs[state.managerProfile.clubId];
+          if (!club) return { success: false, message: 'Clube não encontrado!' };
+
+          if ((club.budget || 0) < ball.price) {
+            return {
+              success: false,
+              message: `Orçamento do clube insuficiente! Necessário R$ ${ball.price.toLocaleString('pt-BR')}.`,
+            };
+          }
+
+          const newBudget = (club.budget || 0) - ball.price;
+          const newOwned = [...currentOwned, ballId];
+
+          set({
+            equippedBallId: ballId,
+            ownedBallIds: newOwned,
+            clubs: {
+              ...state.clubs,
+              [club.id]: {
+                ...club,
+                budget: newBudget,
+              },
+            },
+            managerProfile: {
+              ...state.managerProfile,
+              equippedBallId: ballId,
+              ownedBallIds: newOwned,
+            },
+          });
+        }
+
+        return {
+          success: true,
+          message: `Bola "${ball.name}" adquirida e definida como bola oficial de partida!`,
+        };
+      },
+
+      equipBall: (ballId: string) => {
+        const state = get();
+        const currentOwned = state.ownedBallIds || ['classic_capotao'];
+        if (!currentOwned.includes(ballId)) return;
+
+        set({
+          equippedBallId: ballId,
+          playerProfile: state.playerProfile ? {
+            ...state.playerProfile,
+            equippedBallId: ballId,
+          } : undefined,
+          managerProfile: state.managerProfile ? {
+            ...state.managerProfile,
+            equippedBallId: ballId,
+          } : undefined,
+        });
+      },
+
+      // ==============================================================================
+      // DILEMAS, COLETIVAS DE IMPRENSA & RELACIONAMENTOS
+      // ==============================================================================
+      answerDilemma: (dilemmaId: string, optionId: string) => {
+        const state = get();
+        const dilemma = DILEMMAS_DATABASE.find((d) => d.id === dilemmaId);
+        if (!dilemma) return;
+        const option = dilemma.options.find((o) => o.id === optionId);
+        if (!option) return;
+
+        const partialUpdates = applyDilemmaResolution(state, dilemma, option);
+        const newHistory = [
+          ...(state.dilemmaHistory || []),
+          {
+            dilemmaId,
+            optionId,
+            answeredAtWeek: state.currentWeek,
+            seasonYear: state.seasonYear,
+          },
+        ];
+
+        set({
+          ...partialUpdates,
+          pendingDilemma: null,
+          dilemmaHistory: newHistory,
+        });
+      },
+
+      dismissDilemma: () => {
+        set({ pendingDilemma: null });
+      },
+
+      triggerDilemmaCheck: (context?: DilemmaEvaluationContext) => {
+        const state = get();
+        if (state.pendingDilemma) return;
+        const candidate = evaluateDilemmaTrigger(state, context);
+        if (candidate) {
+          set({ pendingDilemma: candidate });
+        }
+      },
+
+      holdLockerRoomMeeting: () => {
+        const state = get();
+        if (state.mode !== 'manager' || !state.managerProfile) {
+          return { success: false, message: 'Disponível apenas no Modo Treinador!' };
+        }
+
+        const lastWeek = state.managerProfile.lastLockerRoomMeetingWeek || 0;
+        const currentWeek = state.currentWeek;
+        if (lastWeek > 0 && currentWeek - lastWeek < 4) {
+          const weeksLeft = 4 - (currentWeek - lastWeek);
+          return {
+            success: false,
+            message: `Você realizou uma reunião recentemente. Aguarde mais ${weeksLeft} semana(s) para uma nova conversa séria de vestiário.`,
+          };
+        }
+
+        const currentMorale = state.managerProfile.squadMorale ?? 65;
+        const newMorale = Math.min(100, currentMorale + 15);
+
+        set({
+          managerProfile: {
+            ...state.managerProfile,
+            squadMorale: newMorale,
+            lastLockerRoomMeetingWeek: currentWeek,
+          },
+        });
+
+        return {
+          success: true,
+          message: `Reunião de vestiário realizada com sucesso! Você motivou o grupo e a moral do elenco subiu para ${newMorale} (+15 pts).`,
         };
       },
     }),

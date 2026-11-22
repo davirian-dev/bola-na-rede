@@ -2,7 +2,9 @@
 
 import React, { useState } from 'react';
 import { useGameStore } from '@/store/gameStore';
-import { BOOTS_CATALOG, STAFF_CATALOG, SPONSOR_OFFERS, NRG_DRINKS_CATALOG } from '@/data/nssCatalogSeed';
+import { STAFF_CATALOG, SPONSOR_OFFERS, NRG_DRINKS_CATALOG } from '@/data/nssCatalogSeed';
+import { OFFICIAL_BOOTS_CATALOG, getBootById } from '@/data/boots';
+import { OFFICIAL_BALLS_CATALOG, getBallById } from '@/data/balls';
 import { formatCurrency } from '@/lib/calculations';
 import { NRGType } from '@/types/game';
 import { 
@@ -26,13 +28,18 @@ interface NSSPlayerShopModalProps {
 
 export function NSSPlayerShopModal({ isOpen, onClose }: NSSPlayerShopModalProps) {
   const playerProfile = useGameStore((s) => s.playerProfile);
-  const buyAndEquipBoot = useGameStore((s) => s.buyAndEquipBoot);
+  const buyBoot = useGameStore((s) => s.buyBoot);
+  const equipBoot = useGameStore((s) => s.equipBoot);
+  const buyBall = useGameStore((s) => s.buyBall);
+  const equipBall = useGameStore((s) => s.equipBall);
+  const globalEquippedBallId = useGameStore((s) => s.equippedBallId);
+  const globalOwnedBallIds = useGameStore((s) => s.ownedBallIds);
   const buyEnergyDrink = useGameStore((s) => s.buyEnergyDrink);
   const drinkEnergyCan = useGameStore((s) => s.drinkEnergyCan);
   const hireStaffMember = useGameStore((s) => s.hireStaffMember);
   const signSponsorContract = useGameStore((s) => s.signSponsorContract);
 
-  const [activeTab, setActiveTab] = useState<'boots' | 'nrg' | 'staff' | 'sponsors'>('boots');
+  const [activeTab, setActiveTab] = useState<'boots' | 'balls' | 'nrg' | 'staff' | 'sponsors'>('boots');
   const [feedback, setFeedback] = useState<string | null>(null);
 
   if (!isOpen || !playerProfile) return null;
@@ -41,6 +48,14 @@ export function NSSPlayerShopModal({ isOpen, onClose }: NSSPlayerShopModalProps)
     setFeedback(msg);
     setTimeout(() => setFeedback(null), 3000);
   };
+
+  const equippedBootId = playerProfile.equippedBootId || 'classic_black';
+  const ownedBootIds = playerProfile.ownedBootIds || ['classic_black'];
+  const activeBoot = getBootById(equippedBootId) || OFFICIAL_BOOTS_CATALOG[0];
+
+  const equippedBallId = playerProfile.equippedBallId || globalEquippedBallId || 'classic_capotao';
+  const ownedBallIds = playerProfile.ownedBallIds || globalOwnedBallIds || ['classic_capotao'];
+  const activeBall = getBallById(equippedBallId) || OFFICIAL_BALLS_CATALOG[0];
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-200">
@@ -88,8 +103,8 @@ export function NSSPlayerShopModal({ isOpen, onClose }: NSSPlayerShopModalProps)
           </div>
         )}
 
-        {/* Abas da Loja (Chuteiras, Energéticos, Staff, Patrocinadores) */}
-        <div className="grid grid-cols-4 gap-1.5 p-1 rounded-2xl bg-secondary mb-5 text-xs font-bold">
+        {/* Abas da Loja (Chuteiras, Bolas, Energéticos, Staff, Patrocinadores) */}
+        <div className="grid grid-cols-5 gap-1 p-1 rounded-2xl bg-secondary mb-5 text-[11px] font-bold">
           <button
             onClick={() => setActiveTab('boots')}
             className={`py-2 px-1 rounded-xl transition-all cursor-pointer ${
@@ -99,6 +114,16 @@ export function NSSPlayerShopModal({ isOpen, onClose }: NSSPlayerShopModalProps)
             }`}
           >
             👟 Chuteiras
+          </button>
+          <button
+            onClick={() => setActiveTab('balls')}
+            className={`py-2 px-1 rounded-xl transition-all cursor-pointer ${
+              activeTab === 'balls'
+                ? 'bg-emerald-500 text-zinc-950 font-black shadow-sm'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            ⚽ Bolas
           </button>
           <button
             onClick={() => setActiveTab('nrg')}
@@ -135,46 +160,94 @@ export function NSSPlayerShopModal({ isOpen, onClose }: NSSPlayerShopModalProps)
         {/* Conteúdo com Scroll */}
         <div className="overflow-y-auto pr-1 flex-1 space-y-4">
           {/* ======================================================== */}
-          {/* ABA 1: CHUTEIRAS COM DESGASTE E BÔNUS                    */}
+          {/* ABA 1: CHUTEIRAS OFICIAIS COM ATRIBUTOS REAIS           */}
           {/* ======================================================== */}
           {activeTab === 'boots' && (
             <div className="space-y-4">
               {/* Chuteira Atual Equipada */}
               <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
-                  <span className="text-3xl">{playerProfile.activeBoot?.icon || '👟'}</span>
+                  <span className="text-3xl">{activeBoot.icon}</span>
                   <div>
-                    <span className="text-[10px] font-black uppercase text-emerald-500 tracking-wider block">
-                      Chuteira em Uso
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-black uppercase text-emerald-500 tracking-wider">
+                        Chuteira em Uso
+                      </span>
+                      <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300">
+                        {activeBoot.rarity}
+                      </span>
+                    </div>
                     <h4 className="font-display text-base font-black text-foreground">
-                      {playerProfile.activeBoot?.name || 'NS-Basic Padrão'}
+                      {activeBoot.name}
                     </h4>
-                    <span className="text-xs text-muted-foreground">
-                      Durabilidade restante: <strong className="text-foreground">{playerProfile.activeBoot?.matchesRemaining || 15} partidas</strong>
-                    </span>
+                    <p className="text-xs text-muted-foreground">
+                      {activeBoot.description}
+                    </p>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-1.5 text-xs font-bold">
-                  {playerProfile.activeBoot?.bonus.shooting && (
-                    <span className="px-2 py-0.5 rounded bg-card border border-border text-emerald-400">
-                      Chute +{playerProfile.activeBoot.bonus.shooting}
-                    </span>
-                  )}
-                  {playerProfile.activeBoot?.bonus.pace && (
-                    <span className="px-2 py-0.5 rounded bg-card border border-border text-emerald-400">
-                      Ritmo +{playerProfile.activeBoot.bonus.pace}
-                    </span>
-                  )}
+                <div className="flex flex-wrap items-center justify-end gap-1.5 text-xs font-bold max-w-xs">
+                  {(() => {
+                    const bAttrs = (activeBoot.bonusAttributes || {}) as any;
+                    return (
+                      <>
+                        {bAttrs.pace && (
+                          <span className="px-2 py-0.5 rounded bg-card border border-border text-emerald-400">
+                            Ritmo +{bAttrs.pace}
+                          </span>
+                        )}
+                        {bAttrs.finishing && (
+                          <span className="px-2 py-0.5 rounded bg-card border border-border text-emerald-400">
+                            Finalização +{bAttrs.finishing}
+                          </span>
+                        )}
+                        {bAttrs.passing && (
+                          <span className="px-2 py-0.5 rounded bg-card border border-border text-emerald-400">
+                            Passe +{bAttrs.passing}
+                          </span>
+                        )}
+                        {bAttrs.dribbling && (
+                          <span className="px-2 py-0.5 rounded bg-card border border-border text-emerald-400">
+                            Drible +{bAttrs.dribbling}
+                          </span>
+                        )}
+                        {bAttrs.defending && (
+                          <span className="px-2 py-0.5 rounded bg-card border border-border text-emerald-400">
+                            Defesa +{bAttrs.defending}
+                          </span>
+                        )}
+                        {bAttrs.physical && (
+                          <span className="px-2 py-0.5 rounded bg-card border border-border text-emerald-400">
+                            Físico +{bAttrs.physical}
+                          </span>
+                        )}
+                        {bAttrs.vision && (
+                          <span className="px-2 py-0.5 rounded bg-card border border-border text-emerald-400">
+                            Visão +{bAttrs.vision}
+                          </span>
+                        )}
+                        {bAttrs.shooting && (
+                          <span className="px-2 py-0.5 rounded bg-card border border-border text-emerald-400">
+                            Chute +{bAttrs.shooting}
+                          </span>
+                        )}
+                        {bAttrs.positioning && (
+                          <span className="px-2 py-0.5 rounded bg-card border border-border text-emerald-400">
+                            Posicionamento +{bAttrs.positioning}
+                          </span>
+                        )}
+                      </>
+                    );
+                  })()}
                 </div>
               </div>
 
-              {/* Catálogo de Chuteiras Estilo New Star Soccer */}
+              {/* Catálogo Oficial com as 9 Chuteiras */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                {BOOTS_CATALOG.map((boot) => {
-                  const isEquipped = playerProfile.activeBoot?.id === boot.id;
-                  const canAfford = playerProfile.bankBalance >= boot.price;
+                {OFFICIAL_BOOTS_CATALOG.map((boot) => {
+                  const isEquipped = equippedBootId === boot.id;
+                  const isOwned = ownedBootIds.includes(boot.id);
+                  const canAfford = (playerProfile.bankBalance ?? playerProfile.money ?? 0) >= boot.price;
 
                   return (
                     <div
@@ -186,55 +259,235 @@ export function NSSPlayerShopModal({ isOpen, onClose }: NSSPlayerShopModalProps)
                       }`}
                     >
                       <div>
-                        <div className="flex items-center justify-between mb-2.5">
+                        <div className="flex items-center justify-between mb-2">
                           <div className="flex items-center gap-2">
                             <span className="text-2xl">{boot.icon}</span>
                             <span 
                               className="w-3.5 h-3.5 rounded-full border border-white/30 shadow-inner" 
-                              style={{ backgroundColor: boot.color || '#18181b' }}
+                              style={{ backgroundColor: boot.color }}
                               title={`Cor: ${boot.name}`}
                             />
                           </div>
-                          <span className="text-[11px] font-bold text-muted-foreground bg-card/80 px-2 py-0.5 rounded-md border border-border">
-                            {boot.durabilityMatches} partidas
+                          <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border ${
+                            boot.rarity === 'Lendária'
+                              ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                              : boot.rarity === 'Elite'
+                              ? 'bg-purple-500/20 text-purple-300 border-purple-500/40'
+                              : boot.rarity === 'Pro'
+                              ? 'bg-blue-500/20 text-blue-300 border-blue-500/40'
+                              : 'bg-zinc-800 text-zinc-300 border-zinc-700'
+                          }`}>
+                            {boot.rarity}
                           </span>
                         </div>
 
-                        <h5 className="font-display text-sm font-black text-foreground mb-2">
+                        <h5 className="font-display text-sm font-black text-foreground mb-1">
                           {boot.name}
                         </h5>
+                        <p className="text-[11px] text-muted-foreground mb-2.5">
+                          {boot.description}
+                        </p>
 
-                        {/* Barras de Atributos do NSS (Pace, Power, Technique) */}
-                        <div className="space-y-1.5 mb-3 bg-card/60 p-2.5 rounded-xl border border-border/80">
-                          <div className="flex items-center justify-between text-[10px] font-bold">
-                            <span className="text-muted-foreground">⚡ Ritmo (Pace):</span>
-                            <span className="text-emerald-400 font-mono">+{boot.bonus.pace || 0}</span>
-                          </div>
-                          <div className="flex items-center justify-between text-[10px] font-bold">
-                            <span className="text-muted-foreground">💥 Força/Chute (Power):</span>
-                            <span className="text-emerald-400 font-mono">+{boot.bonus.shooting || boot.bonus.power || 0}</span>
-                          </div>
-                          <div className="flex items-center justify-between text-[10px] font-bold">
-                            <span className="text-muted-foreground">🎯 Técnica/Passe (Technique):</span>
-                            <span className="text-emerald-400 font-mono">+{boot.bonus.passing || boot.bonus.technique || 0}</span>
-                          </div>
+                        {/* Bônus Reais Aplicados */}
+                        <div className="flex flex-wrap gap-1.5 mb-3">
+                          {boot.bonusAttributes && Object.entries(boot.bonusAttributes).map(([attr, val]) => (
+                            <span key={attr} className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-card/80 border border-border text-emerald-400">
+                              +{val} {attr === 'pace' ? 'Ritmo' : attr === 'finishing' ? 'Finalização' : attr === 'passing' ? 'Passe' : attr === 'dribbling' ? 'Drible' : attr === 'defending' ? 'Defesa' : attr === 'physical' ? 'Físico' : attr === 'shooting' ? 'Chute' : attr === 'vision' ? 'Visão' : attr === 'composure' ? 'Compostura' : attr === 'positioning' ? 'Posicionamento' : attr}
+                            </span>
+                          ))}
                         </div>
                       </div>
 
                       <div className="pt-2 border-t border-border flex items-center justify-between">
                         <span className="font-mono text-xs font-black text-foreground">
-                          {formatCurrency(boot.price)}
+                          {boot.price === 0 ? 'Grátis / Inicial' : formatCurrency(boot.price)}
                         </span>
+
                         {isEquipped ? (
                           <span className="text-xs font-black text-emerald-500 flex items-center gap-1 bg-emerald-500/15 px-2.5 py-1 rounded-lg border border-emerald-500/30">
                             <CheckCircle2 className="w-3.5 h-3.5" /> Equipada
                           </span>
+                        ) : isOwned ? (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              equipBoot(boot.id);
+                              showFeedbackMessage(`Chuteira "${boot.name}" equipada!`);
+                            }}
+                            className="py-1.5 px-3 rounded-xl text-xs font-black bg-emerald-600 hover:bg-emerald-500 text-zinc-950 transition shadow-sm cursor-pointer"
+                          >
+                            Equipar
+                          </button>
                         ) : (
                           <button
                             type="button"
                             disabled={!canAfford}
                             onClick={() => {
-                              const res = buyAndEquipBoot(boot);
+                              const res = buyBoot(boot.id);
+                              showFeedbackMessage(res.message);
+                            }}
+                            className={`py-1.5 px-3 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                              canAfford
+                                ? 'bg-emerald-500 hover:bg-emerald-400 text-zinc-950 shadow-sm active:scale-95'
+                                : 'bg-secondary text-muted-foreground opacity-50 cursor-not-allowed'
+                            }`}
+                          >
+                            {canAfford ? 'Comprar' : 'Sem Saldo'}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* ======================================================== */}
+          {/* ABA 2: BOLAS OFICIAIS COM FÍSICA E EFEITOS NO CANVAS     */}
+          {/* ======================================================== */}
+          {activeTab === 'balls' && (
+            <div className="space-y-4">
+              {/* Bola Atual em Uso */}
+              <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <span className="text-3xl">{activeBall.icon}</span>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-black uppercase text-emerald-500 tracking-wider">
+                        Bola Oficial da Partida
+                      </span>
+                      <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300">
+                        {activeBall.rarity}
+                      </span>
+                    </div>
+                    <h4 className="font-display text-base font-black text-foreground">
+                      {activeBall.name}
+                    </h4>
+                    <p className="text-xs text-muted-foreground">
+                      {activeBall.subtitle}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center justify-end gap-1.5 text-xs font-bold max-w-xs">
+                  <span className="px-2 py-0.5 rounded bg-card border border-border text-emerald-400">
+                    Curva {(activeBall.physics.curveMultiplier * 100).toFixed(0)}%
+                  </span>
+                  <span className="px-2 py-0.5 rounded bg-card border border-border text-emerald-400">
+                    Velocidade {(activeBall.physics.speedMultiplier * 100).toFixed(0)}%
+                  </span>
+                  <span className="px-2 py-0.5 rounded bg-card border border-border text-emerald-400">
+                    Rastro: {activeBall.physics.trailType}
+                  </span>
+                </div>
+              </div>
+
+              {/* Catálogo Oficial com as 8 Bolas */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                {OFFICIAL_BALLS_CATALOG.map((ball) => {
+                  const isEquipped = equippedBallId === ball.id;
+                  const isOwned = ownedBallIds.includes(ball.id);
+                  const canAfford = (playerProfile.bankBalance ?? playerProfile.money ?? 0) >= ball.price;
+
+                  return (
+                    <div
+                      key={ball.id}
+                      className={`p-4 rounded-2xl border transition-all flex flex-col justify-between ${
+                        isEquipped
+                          ? 'border-emerald-500 bg-emerald-500/10 shadow-lg shadow-emerald-500/10'
+                          : 'border-border bg-secondary/50 hover:border-emerald-500/40'
+                      }`}
+                    >
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <span className="text-2xl">{ball.icon}</span>
+                            <span 
+                              className="w-3.5 h-3.5 rounded-full border border-white/30 shadow-inner" 
+                              style={{ backgroundColor: ball.secondaryColor }}
+                              title={`Cor: ${ball.name}`}
+                            />
+                          </div>
+                          <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border ${
+                            ball.rarity === 'Lendária'
+                              ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                              : ball.rarity === 'Especial'
+                              ? 'bg-purple-500/20 text-purple-300 border-purple-500/40'
+                              : ball.rarity === 'Rara'
+                              ? 'bg-blue-500/20 text-blue-300 border-blue-500/40'
+                              : 'bg-zinc-800 text-zinc-300 border-zinc-700'
+                          }`}>
+                            {ball.rarity}
+                          </span>
+                        </div>
+
+                        <h5 className="font-display text-sm font-black text-foreground mb-0.5">
+                          {ball.name}
+                        </h5>
+                        <span className="text-[10px] font-semibold text-emerald-400 block mb-1.5">
+                          {ball.subtitle}
+                        </span>
+                        <p className="text-[11px] text-muted-foreground mb-2.5">
+                          {ball.description}
+                        </p>
+
+                        {/* Modificadores de Física Real */}
+                        <div className="flex flex-wrap gap-1 mb-3">
+                          {ball.physics.curveMultiplier !== 1.0 && (
+                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-card/80 border border-border text-cyan-400">
+                              Curva {ball.physics.curveMultiplier > 1.0 ? `+${((ball.physics.curveMultiplier - 1) * 100).toFixed(0)}%` : `${((ball.physics.curveMultiplier - 1) * 100).toFixed(0)}%`}
+                            </span>
+                          )}
+                          {ball.physics.speedMultiplier !== 1.0 && (
+                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-card/80 border border-border text-yellow-400">
+                              Velocidade {ball.physics.speedMultiplier > 1.0 ? `+${((ball.physics.speedMultiplier - 1) * 100).toFixed(0)}%` : `${((ball.physics.speedMultiplier - 1) * 100).toFixed(0)}%`}
+                            </span>
+                          )}
+                          {ball.physics.frictionMultiplier !== 1.0 && (
+                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-card/80 border border-border text-amber-400">
+                              Atrito {ball.physics.frictionMultiplier > 1.0 ? `+${((ball.physics.frictionMultiplier - 1) * 100).toFixed(0)}%` : `${((ball.physics.frictionMultiplier - 1) * 100).toFixed(0)}%`}
+                            </span>
+                          )}
+                          {ball.physics.precisionBonus > 0 && (
+                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-card/80 border border-border text-emerald-400">
+                              Precisão +{(ball.physics.precisionBonus * 100).toFixed(0)}%
+                            </span>
+                          )}
+                          {ball.physics.dribbleBonus > 0 && (
+                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-card/80 border border-border text-purple-400">
+                              Controle +{(ball.physics.dribbleBonus * 100).toFixed(0)}%
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="pt-2 border-t border-border flex items-center justify-between">
+                        <span className="font-mono text-xs font-black text-foreground">
+                          {ball.price === 0 ? 'Grátis / Inicial' : formatCurrency(ball.price)}
+                        </span>
+
+                        {isEquipped ? (
+                          <span className="text-xs font-black text-emerald-500 flex items-center gap-1 bg-emerald-500/15 px-2.5 py-1 rounded-lg border border-emerald-500/30">
+                            <CheckCircle2 className="w-3.5 h-3.5" /> Bola da Partida
+                          </span>
+                        ) : isOwned ? (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              equipBall(ball.id);
+                              showFeedbackMessage(`Bola "${ball.name}" definida como bola oficial de partida!`);
+                            }}
+                            className="py-1.5 px-3 rounded-xl text-xs font-black bg-emerald-600 hover:bg-emerald-500 text-zinc-950 transition shadow-sm cursor-pointer"
+                          >
+                            Usar na Partida
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            disabled={!canAfford}
+                            onClick={() => {
+                              const res = buyBall(ball.id);
                               showFeedbackMessage(res.message);
                             }}
                             className={`py-1.5 px-3 rounded-xl text-xs font-black transition-all cursor-pointer ${
