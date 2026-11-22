@@ -214,11 +214,11 @@ export default function DashboardPage() {
     setTimeout(() => setRoleToast(null), 3500);
   };
 
-  const handleFinishLiveMatch = () => {
+  const handleFinishLiveMatch = (matchResult?: any) => {
     setIsLiveMatchOpen(false);
     playWhistle();
-    advanceWeek();
-    setIsControversyModalOpen(true);
+    advanceWeek(matchResult);
+    setRoundResultModalOpen(true);
     confetti({
       particleCount: 50,
       spread: 70,
@@ -504,6 +504,23 @@ export default function DashboardPage() {
                             : `${managerProfile?.age} anos • Formação ${managerProfile?.formation}`}
                         </span>
                       </p>
+
+                      {mode === 'player' && playerProfile && (
+                        <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                          <span className="px-2 py-0.5 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/25 text-[11px] font-extrabold flex items-center gap-1">
+                            🏟️ {playerProfile.stats?.matchesPlayed || 0} jogos
+                          </span>
+                          <span className="px-2 py-0.5 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/25 text-[11px] font-extrabold flex items-center gap-1">
+                            ⚽ {playerProfile.stats?.goals || 0} gols
+                          </span>
+                          <span className="px-2 py-0.5 rounded-lg bg-blue-500/15 text-blue-400 border border-blue-500/30 text-[11px] font-extrabold flex items-center gap-1">
+                            👟 {playerProfile.stats?.assists || 0} assists
+                          </span>
+                          <span className="px-2 py-0.5 rounded-lg bg-amber-500/15 text-amber-400 border border-amber-500/30 text-[11px] font-extrabold flex items-center gap-1">
+                            ⭐ {(playerProfile.stats?.averageRating || 6.0).toFixed(1)}
+                          </span>
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -2567,7 +2584,7 @@ export default function DashboardPage() {
             ) : (
               <NSSPassMinigame
                 mode="training"
-                onCompletePass={() => applyMinigameResult({ goalsScored: 0, ratingBonus: 0.2, trainingSkill: 'passing' })}
+                onCompletePass={() => applyMinigameResult({ goalsScored: 0, assistsProvided: 1, ratingBonus: 0.2, trainingSkill: 'passing' })}
                 onClose={() => setIsTrainingModalOpen(false)}
               />
             )}

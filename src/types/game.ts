@@ -962,4 +962,20 @@ export interface CommunityPackItem {
   data: Record<string, Partial<Club>>;
   created_at: string;
   is_official?: boolean;
+  isOfficial?: boolean;
 }
+
+export interface CustomUserMatchResult {
+  homeScore: number;
+  awayScore: number;
+  scorers: {
+    playerId: string;
+    minute: number;
+    assistPlayerId?: string;
+    playerName?: string;
+    assistPlayerName?: string;
+  }[];
+  ratings?: Record<string, number>;
+  mvpPlayerId?: string;
+}
+

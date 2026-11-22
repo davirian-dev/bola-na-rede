@@ -5,6 +5,7 @@
 import { 
   Club, 
   Player, 
+  PlayerCareerProfile,
   Fixture, 
   GoalEvent, 
   CardEvent,
@@ -13,7 +14,8 @@ import {
   LeagueStanding, 
   TopScorer, 
   CompetitionType,
-  Division 
+  Division,
+  CustomUserMatchResult
 } from '@/types/game';
 
 interface MatchSimResult {
@@ -38,14 +40,58 @@ export function simulateMatch(
     playerSpecialties?: string[];
     managerClubId?: string;
     managerArchetype?: string;
+    playerProfile?: PlayerCareerProfile;
   }
 ): MatchSimResult {
   const homeRoster = isYouth ? homeClub.youthRoster : homeClub.roster;
   const awayRoster = isYouth ? awayClub.youthRoster : awayClub.roster;
 
   // Seleciona os 11 titulares (ordenados por Overall)
-  const homeLineup = [...homeRoster].sort((a, b) => b.overall - a.overall).slice(0, 11);
-  const awayLineup = [...awayRoster].sort((a, b) => b.overall - a.overall).slice(0, 11);
+  let homeLineup = [...homeRoster].sort((a, b) => b.overall - a.overall).slice(0, 11);
+  let awayLineup = [...awayRoster].sort((a, b) => b.overall - a.overall).slice(0, 11);
+
+  // Garante que o atleta do usuário esteja no time titular do seu clube se for sua partida
+  const userProfile = userState?.playerProfile;
+  if (userPlayerId && userProfile && (userProfile.clubId === homeClub.id || userProfile.clubId === awayClub.id)) {
+    const isUserHome = userProfile.clubId === homeClub.id;
+    const targetLineup = isUserHome ? homeLineup : awayLineup;
+
+    if (!targetLineup.some((p) => p.id === userPlayerId)) {
+      const userPlayer: Player = {
+        id: userProfile.id,
+        name: userProfile.name,
+        nickname: userProfile.nickname,
+        age: userProfile.age,
+        position: userProfile.position,
+        attributes: userProfile.attributes,
+        overall: userProfile.overall,
+        potential: userProfile.potential,
+        energy: userProfile.energy,
+        morale: userProfile.morale,
+        marketValue: 1500000,
+        wage: userProfile.weeklyWage,
+        contractWeeks: 52,
+        isYouth: userProfile.isYouthTeam,
+        jerseyNumber: userProfile.jerseyNumber,
+        stats: {
+          goals: userProfile.stats?.goals || 0,
+          assists: userProfile.stats?.assists || 0,
+          matches: userProfile.stats?.matchesPlayed || 0,
+          averageRating: userProfile.stats?.averageRating || 6.0,
+        },
+      };
+
+      const replaceIdx = userPlayer.position === 'GOL'
+        ? targetLineup.findIndex((p) => p.position === 'GOL')
+        : targetLineup.findIndex((p) => p.position !== 'GOL');
+
+      if (replaceIdx >= 0) {
+        targetLineup[replaceIdx] = userPlayer;
+      } else {
+        targetLineup.push(userPlayer);
+      }
+    }
+  }
 
   // Calcula força média dos elencos
   let homeAvg = homeLineup.reduce((acc, p) => acc + p.overall, 0) / (homeLineup.length || 1);
@@ -109,10 +155,11 @@ export function simulateMatch(
       let scorer: Player;
       const userInTeam = teamLineup.find((p) => p.id === userPlayerId);
       const userHasFinishing = userState?.playerSpecialties?.some((s) => ['finishing', 'attacking', 'heading'].includes(s));
+      const userIsAttacker = userInTeam && ['ATA', 'CA', 'PD', 'PE', 'MEI'].includes(userInTeam.position);
 
-      if (userInTeam && userHasFinishing && Math.random() < 0.45) {
-        scorer = userInTeam;
-      } else if (userInTeam && Math.random() < 0.28) {
+      const scorerChance = (userInTeam && userHasFinishing) ? 0.45 : (userInTeam && userIsAttacker) ? 0.35 : (userInTeam && userInTeam.position !== 'GOL') ? 0.22 : 0;
+
+      if (userInTeam && Math.random() < scorerChance) {
         scorer = userInTeam;
       } else {
         scorer = pool[Math.floor(Math.random() * pool.length)];
@@ -120,18 +167,24 @@ export function simulateMatch(
 
       const minute = Math.floor(Math.random() * 90) + 1;
 
-      // Assistente em potencial (diferente do autor)
+      // Assistente em potencial (diferente do autor do gol)
       const assistCandidates = teamLineup.filter((p) => p.id !== scorer.id);
       let assist: Player | undefined;
 
-      if (Math.random() > 0.35 && assistCandidates.length > 0) {
+      // Cerca de 70% dos gols possuem assistência oficial registrada
+      if (Math.random() < 0.70 && assistCandidates.length > 0) {
         const userAsAssistant = assistCandidates.find((p) => p.id === userPlayerId);
         const userHasPassing = userState?.playerSpecialties?.some((s) => ['passing', 'playmaker', 'crossing'].includes(s));
+        const userIsPlaymaker = userAsAssistant && ['MEI', 'MC', 'PE', 'PD', 'LE', 'LD'].includes(userAsAssistant.position);
 
-        if (userAsAssistant && userHasPassing && Math.random() < 0.4) {
+        const assistChance = (userAsAssistant && userHasPassing) ? 0.50 : (userAsAssistant && userIsPlaymaker) ? 0.38 : (userAsAssistant && userAsAssistant.position !== 'GOL') ? 0.25 : 0;
+
+        if (userAsAssistant && Math.random() < assistChance) {
           assist = userAsAssistant;
         } else {
-          assist = assistCandidates[Math.floor(Math.random() * assistCandidates.length)];
+          const creativePool = assistCandidates.filter((p) => ['MEI', 'MC', 'PE', 'PD', 'LE', 'LD', 'ATA'].includes(p.position));
+          const finalAssistPool = creativePool.length > 0 ? creativePool : assistCandidates;
+          assist = finalAssistPool[Math.floor(Math.random() * finalAssistPool.length)];
         }
       }
 
@@ -277,7 +330,10 @@ export function simulateMatch(
 /**
  * Simula todas as partidas agendadas da semana e atualiza as tabelas de classificação
  */
-export function simulateWeekMatches(state: GameState): {
+export function simulateWeekMatches(
+  state: GameState,
+  customUserMatchResult?: CustomUserMatchResult
+): {
   updatedFixtures: Fixture[];
   updatedLeagues: typeof state.leagues;
   updatedSub20: typeof state.sub20Tournament;
@@ -362,17 +418,62 @@ export function simulateWeekMatches(state: GameState): {
     const awayClub = state.clubs[fixture.awayClubId];
     if (!homeClub || !awayClub) return;
 
-    const result = simulateMatch(
-      homeClub,
-      awayClub,
-      fixture.isYouth || fixture.competition === 'sub_20',
-      state.playerProfile?.id,
-      {
-        playerSpecialties: state.playerProfile?.specialties,
-        managerClubId: state.managerProfile?.clubId,
-        managerArchetype: state.managerProfile?.archetype,
-      }
+    const userClubId = state.playerProfile?.clubId || state.managerProfile?.clubId;
+    const isUserMatch = !!userClubId && (
+      (fixture.homeClubId === userClubId || fixture.awayClubId === userClubId) &&
+      (state.playerProfile ? (state.playerProfile.isYouthTeam ? (fixture.isYouth || fixture.competition === 'sub_20') : !fixture.isYouth) : true)
     );
+
+    let result: MatchSimResult;
+
+    if (isUserMatch && customUserMatchResult) {
+      const isHome = fixture.homeClubId === userClubId;
+      const myClub = isHome ? homeClub : awayClub;
+      const oppClub = isHome ? awayClub : homeClub;
+
+      const formattedScorers: GoalEvent[] = (customUserMatchResult.scorers || []).map((s) => {
+        const isUserScorer = s.playerId === state.playerProfile?.id;
+        const isTeammateScorer = s.playerId === 'teammate-scorer';
+        const scorerClubId = (isUserScorer || isTeammateScorer) ? myClub.id : (s.playerId === oppClub.id ? oppClub.id : myClub.id);
+        const scorerName: string = s.playerName || (isUserScorer ? (state.playerProfile?.nickname || state.playerProfile?.name || 'Craque') : 'Atacante');
+        const isUserAssist = s.assistPlayerId === state.playerProfile?.id;
+        const assistName: string | undefined = isUserAssist 
+          ? (state.playerProfile?.nickname || state.playerProfile?.name) 
+          : s.assistPlayerName;
+
+        return {
+          playerId: s.playerId,
+          playerName: scorerName,
+          clubId: scorerClubId,
+          minute: s.minute,
+          assistPlayerId: s.assistPlayerId,
+          assistPlayerName: assistName,
+        };
+      });
+
+      result = {
+        homeGoals: customUserMatchResult.homeScore,
+        awayGoals: customUserMatchResult.awayScore,
+        scorers: formattedScorers,
+        cards: [],
+        offsides: [],
+        mvpPlayerId: customUserMatchResult.mvpPlayerId || (state.playerProfile?.id || 'mvp'),
+        playerRatings: customUserMatchResult.ratings || {},
+      };
+    } else {
+      result = simulateMatch(
+        homeClub,
+        awayClub,
+        fixture.isYouth || fixture.competition === 'sub_20',
+        state.playerProfile?.id,
+        {
+          playerSpecialties: state.playerProfile?.specialties,
+          managerClubId: state.managerProfile?.clubId,
+          managerArchetype: state.managerProfile?.archetype,
+          playerProfile: state.playerProfile,
+        }
+      );
+    }
 
     // Marca como jogado e guarda estatísticas
     updatedFixtures[index] = {

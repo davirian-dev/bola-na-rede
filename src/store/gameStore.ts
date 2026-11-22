@@ -39,7 +39,8 @@ import {
   OnlineStats,
   OnlineLeaderboardEntry,
   CommunityPackItem,
-  TopScorer
+  TopScorer,
+  CustomUserMatchResult
 } from '@/types/game';
 import { generateBrazilDatabase } from '@/data/brazilSeed';
 import { generateEuropeanClubs } from '@/data/europeanLeaguesSeed';
@@ -124,7 +125,7 @@ interface GameStoreActions {
   hireStaffMember: (member: StaffMember) => { success: boolean; message: string };
   fireStaffMember: (role: 'agent' | 'physio' | 'press') => { success: boolean; message: string };
   signSponsorContract: (contract: SponsorContract) => { success: boolean; message: string };
-  applyMinigameResult: (params: { goalsScored: number; ratingBonus: number; isMatchClutch?: boolean; trainingSkill?: string }) => void;
+  applyMinigameResult: (params: { goalsScored: number; assistsProvided?: number; ratingBonus: number; isMatchClutch?: boolean; trainingSkill?: string }) => void;
 
   // Polêmicas e Coletivas de Imprensa
   answerControversy: (optionId: string) => void;
@@ -143,7 +144,7 @@ interface GameStoreActions {
   exportCommunityPack: (title: string, author: string, description: string) => CommunityPack;
 
   // Progressão
-  advanceWeek: () => void;
+  advanceWeek: (customUserMatchResult?: CustomUserMatchResult) => void;
   setRoundResultModalOpen: (open: boolean) => void;
   syncOfficialClubNames: () => void;
 
@@ -677,18 +678,26 @@ export const useGameStore = create<GameStore>()(
         return { success: true, message: `Contrato assinado com ${contract.brandName}! R$ ${contract.weeklyPay}/sem + R$ ${contract.goalBonus}/gol.` };
       },
 
-      applyMinigameResult: ({ goalsScored, ratingBonus, isMatchClutch, trainingSkill }) => {
+      applyMinigameResult: ({ goalsScored, assistsProvided, ratingBonus, isMatchClutch, trainingSkill }) => {
         const state = get();
         const player = state.playerProfile;
         if (!player) return;
 
         let updatedStats = { ...player.stats };
-        let updatedMorale = Math.min(100, player.morale + (goalsScored > 0 ? 8 : 2));
-        let updatedRep = Math.min(100, player.reputation + (goalsScored > 0 ? 4 : 1));
+        const hasImpact = (goalsScored > 0) || ((assistsProvided || 0) > 0);
+        let updatedMorale = Math.min(100, player.morale + (hasImpact ? 8 : 2));
+        let updatedRep = Math.min(100, player.reputation + (hasImpact ? 4 : 1));
         let updatedAttrs = { ...player.attributes };
 
-        if (isMatchClutch && goalsScored > 0) {
-          updatedStats.goals += goalsScored;
+        if (assistsProvided && assistsProvided > 0) {
+          updatedStats.assists = (updatedStats.assists || 0) + assistsProvided;
+        }
+
+        if (goalsScored > 0) {
+          updatedStats.goals = (updatedStats.goals || 0) + goalsScored;
+        }
+
+        if (isMatchClutch && hasImpact) {
           updatedStats.averageRating = Math.min(10.0, Number((updatedStats.averageRating + ratingBonus).toFixed(1)));
         }
 
@@ -1258,13 +1267,48 @@ export const useGameStore = create<GameStore>()(
           clubId: club.id,
         };
 
+        // Insere o jogador no elenco oficial do clube
+        const userAsPlayer: Player = {
+          id: playerProfile.id,
+          name: playerProfile.name,
+          nickname: playerProfile.nickname,
+          age: playerProfile.age,
+          position: playerProfile.position,
+          attributes: playerProfile.attributes,
+          overall: playerProfile.overall,
+          potential: playerProfile.potential,
+          energy: playerProfile.energy,
+          morale: playerProfile.morale,
+          marketValue: 1500000,
+          wage: playerProfile.weeklyWage,
+          contractWeeks: 52,
+          isYouth: playerProfile.isYouthTeam,
+          jerseyNumber: playerProfile.jerseyNumber,
+          stats: {
+            goals: 0,
+            assists: 0,
+            matches: 0,
+            averageRating: 6.0,
+          },
+        };
+
+        const updatedClubs = {
+          ...availableClubs,
+          [club.id]: {
+            ...club,
+            roster: playerProfile.isYouthTeam ? (club.roster || []) : [userAsPlayer, ...(club.roster || []).filter(p => p.id !== userAsPlayer.id)],
+            youthRoster: playerProfile.isYouthTeam ? [userAsPlayer, ...(club.youthRoster || []).filter(p => p.id !== userAsPlayer.id)] : (club.youthRoster || []),
+          },
+        };
+
         // Gera calendário se ainda não existir
         const cal = (state.allFixtures && state.allFixtures.length > 0)
           ? { leagues: state.leagues, copaDoBrasil: state.copaDoBrasil, sub20Tournament: state.sub20Tournament, allFixtures: state.allFixtures }
-          : generateAnnualCalendar(availableClubs, 2026);
+          : generateAnnualCalendar(updatedClubs, 2026);
 
         set({
           mode: 'player',
+          clubs: updatedClubs,
           playerProfile,
           managerProfile: undefined,
           currentWeek: 1,
@@ -1832,7 +1876,7 @@ export const useGameStore = create<GameStore>()(
         };
       },
 
-      advanceWeek: () => {
+      advanceWeek: (customUserMatchResult?: CustomUserMatchResult) => {
         const state = get();
 
         // 1. CHECAGEM DE VIRADA DE TEMPORADA (Após a semana 48)
@@ -1845,6 +1889,47 @@ export const useGameStore = create<GameStore>()(
           return;
         }
 
+        // Auto-heal: Garante que o atleta do usuário esteja no elenco do clube
+        let healedClubs = state.clubs;
+        if (state.playerProfile && state.clubs?.[state.playerProfile.clubId]) {
+          const club = state.clubs[state.playerProfile.clubId];
+          const hasUser = (club.roster || []).some((p) => p.id === state.playerProfile!.id) ||
+                          (club.youthRoster || []).some((p) => p.id === state.playerProfile!.id);
+          if (!hasUser) {
+            const userAsPlayer: Player = {
+              id: state.playerProfile.id,
+              name: state.playerProfile.name,
+              nickname: state.playerProfile.nickname,
+              age: state.playerProfile.age,
+              position: state.playerProfile.position,
+              attributes: state.playerProfile.attributes,
+              overall: state.playerProfile.overall,
+              potential: state.playerProfile.potential,
+              energy: state.playerProfile.energy,
+              morale: state.playerProfile.morale,
+              marketValue: 1500000,
+              wage: state.playerProfile.weeklyWage,
+              contractWeeks: 52,
+              isYouth: state.playerProfile.isYouthTeam,
+              jerseyNumber: state.playerProfile.jerseyNumber,
+              stats: {
+                goals: state.playerProfile.stats?.goals || 0,
+                assists: state.playerProfile.stats?.assists || 0,
+                matches: state.playerProfile.stats?.matchesPlayed || 0,
+                averageRating: state.playerProfile.stats?.averageRating || 6.0,
+              },
+            };
+            healedClubs = {
+              ...state.clubs,
+              [club.id]: {
+                ...club,
+                roster: state.playerProfile.isYouthTeam ? (club.roster || []) : [userAsPlayer, ...(club.roster || [])],
+                youthRoster: state.playerProfile.isYouthTeam ? [userAsPlayer, ...(club.youthRoster || [])] : (club.youthRoster || []),
+              },
+            };
+          }
+        }
+
         // 2. SIMULAÇÃO MATEMÁTICA DAS PARTIDAS DA SEMANA ATUAL
         const {
           updatedFixtures,
@@ -1852,7 +1937,7 @@ export const useGameStore = create<GameStore>()(
           updatedSub20,
           updatedCopa,
           updatedTopScorers,
-        } = simulateWeekMatches(state);
+        } = simulateWeekMatches({ ...state, clubs: healedClubs }, customUserMatchResult);
 
         const thisWeekFixtures = updatedFixtures.filter((f) => f.week === state.currentWeek);
 
@@ -2054,6 +2139,7 @@ export const useGameStore = create<GameStore>()(
 
         set({
           currentWeek: nextWeek,
+          clubs: healedClubs,
           allFixtures: updatedFixtures,
           leagues: updatedLeagues,
           sub20Tournament: updatedSub20,

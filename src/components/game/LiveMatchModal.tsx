@@ -37,7 +37,7 @@ interface LiveMatchModalProps {
   onFinishMatch: (result: {
     homeScore: number;
     awayScore: number;
-    scorers: { playerId: string; minute: number; assistPlayerId?: string }[];
+    scorers: { playerId: string; minute: number; assistPlayerId?: string; playerName?: string; assistPlayerName?: string }[];
     ratings: Record<string, number>;
     mvpPlayerId: string;
   }) => void;
@@ -68,7 +68,7 @@ export function LiveMatchModal({
   const [simSpeed, setSimSpeed] = useState<number>(350); // ms por minuto
   const [homeScore, setHomeScore] = useState(0);
   const [awayScore, setAwayScore] = useState(0);
-  const [scorers, setScorers] = useState<{ playerId: string; name: string; minute: number; assistPlayerId?: string }[]>([]);
+  const [scorers, setScorers] = useState<{ playerId: string; name: string; minute: number; assistPlayerId?: string; assistPlayerName?: string }[]>([]);
   const [comments, setComments] = useState<MatchComment[]>([
     { minute: 0, text: 'Bola rolando! Início de partida com grande público no estádio!', type: 'normal' }
   ]);
@@ -301,6 +301,7 @@ export function LiveMatchModal({
       const isGoal = Math.random() < 0.40;
       if (isGoal) {
         const currentStarters = isHomeAttacking ? homeLineup : awayLineup;
+        const isUserTeamAttacking = isHomeAttacking ? isUserHome : isUserAway;
         const scorer = currentStarters[Math.floor(Math.random() * currentStarters.length)] || { id: 'p-rand', name: 'Atacante' };
 
         if (isHomeAttacking) {
@@ -309,10 +310,37 @@ export function LiveMatchModal({
           setAwayScore((s) => s + 1);
         }
 
-        setScorers((prev) => [...prev, { playerId: scorer.id, name: scorer.name, minute: currentMin }]);
+        let assistPlayerId: string | undefined = undefined;
+        let assistPlayerName: string | undefined = undefined;
+
+        if (mode === 'player' && playerProfile && isUserTeamAttacking && scorer.id !== playerProfile.id) {
+          const isPlaymaker = ['MEI', 'MC', 'PE', 'PD', 'LE', 'LD'].includes(playerProfile.position);
+          const hasPassingSpec = playerProfile.specialties?.some((s) => ['passing', 'playmaker', 'crossing'].includes(s));
+          const assistChance = hasPassingSpec ? 0.45 : isPlaymaker ? 0.35 : 0.20;
+
+          if (Math.random() < assistChance) {
+            assistPlayerId = playerProfile.id;
+            assistPlayerName = playerProfile.nickname || playerProfile.name;
+          }
+        }
+
+        setScorers((prev) => [
+          ...prev, 
+          { 
+            playerId: scorer.id, 
+            name: scorer.name, 
+            minute: currentMin,
+            assistPlayerId,
+            assistPlayerName,
+          }
+        ]);
+
+        const assistComment = assistPlayerName 
+          ? ` com passe magistral de ${assistPlayerName}` 
+          : '';
 
         setComments((c) => [
-          { minute: currentMin, text: `⚽ GOOOOOOL DO ${attackingClub.name.toUpperCase()}! ${scorer.name} finaliza no cantinho e corre para o abraço!`, type: 'goal' },
+          { minute: currentMin, text: `⚽ GOOOOOOL DO ${attackingClub.name.toUpperCase()}! ${scorer.name} finaliza no cantinho${assistComment} e corre para o abraço!`, type: 'goal' },
           ...c
         ]);
       } else {
@@ -678,12 +706,27 @@ export function LiveMatchModal({
       setAwayScore((s) => s + 1);
     }
 
-    const playerId = 'teammate-scorer';
+    const myClubRoster = isUserHome ? homeLineup : awayLineup;
+    const forwardTeammate = myClubRoster.find(
+      (p) => p.id !== playerProfile?.id && ['ATA', 'CA', 'PD', 'PE', 'MEI'].includes(p.position)
+    ) || myClubRoster.find((p) => p.id !== playerProfile?.id) || { id: 'teammate-scorer', name: 'Companheiro de Ataque' };
+
     const myId = playerProfile?.id || 'player-user';
-    setScorers((prev) => [...prev, { playerId, name: 'Companheiro de Ataque', minute, assistPlayerId: myId }]);
+    const myName = playerProfile?.nickname || playerProfile?.name || 'Craque';
+
+    setScorers((prev) => [
+      ...prev, 
+      { 
+        playerId: forwardTeammate.id, 
+        name: forwardTeammate.name, 
+        minute, 
+        assistPlayerId: myId,
+        assistPlayerName: myName,
+      }
+    ]);
 
     setComments((c) => [
-      { minute, text: `⚽ GOL DEPOIS DE ASSISTÊNCIA GENIAL! ${userActorName} descolou um passe espetacular!`, type: 'goal' },
+      { minute, text: `⚽ GOL DEPOIS DE ASSISTÊNCIA GENIAL! ${userActorName} descolou um passe espetacular para ${forwardTeammate.name} guardar no fundo da rede!`, type: 'goal' },
       ...c
     ]);
   };
@@ -760,7 +803,13 @@ export function LiveMatchModal({
     onFinishMatch({
       homeScore,
       awayScore,
-      scorers: scorers.map((s) => ({ playerId: s.playerId, minute: s.minute, assistPlayerId: s.assistPlayerId })),
+      scorers: scorers.map((s) => ({ 
+        playerId: s.playerId, 
+        minute: s.minute, 
+        assistPlayerId: s.assistPlayerId,
+        playerName: s.name,
+        assistPlayerName: s.assistPlayerName,
+      })),
       ratings,
       mvpPlayerId: mvpScorer,
     });
