@@ -422,7 +422,17 @@ export function NSSPlayerShopModal({ isOpen, onClose }: NSSPlayerShopModalProps)
                       <div>
                         <div className="flex items-center justify-between mb-2">
                           <div className="flex items-center gap-2">
-                            <span className="text-2xl">{ball.icon}</span>
+                            {ball.image ? (
+                              <img
+                                src={ball.image}
+                                alt={ball.name}
+                                loading="lazy"
+                                decoding="async"
+                                className="w-10 h-10 object-contain drop-shadow-md shrink-0"
+                              />
+                            ) : (
+                              <span className="text-2xl">{ball.icon}</span>
+                            )}
                             <span 
                               className="w-3.5 h-3.5 rounded-full border border-white/30 shadow-inner" 
                               style={{ backgroundColor: ball.secondaryColor }}
@@ -728,7 +738,19 @@ export function NSSPlayerShopModal({ isOpen, onClose }: NSSPlayerShopModalProps)
                     className="p-4 rounded-2xl border border-border bg-secondary/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
                   >
                     <div className="flex items-center gap-3">
-                      <span className="text-3xl">{spon.logo}</span>
+                      {spon.image ? (
+                        <div className="w-12 h-12 rounded-xl bg-secondary/80 border border-border p-1.5 flex items-center justify-center shrink-0 shadow-sm">
+                          <img
+                            src={spon.image}
+                            alt={spon.brandName}
+                            loading="lazy"
+                            decoding="async"
+                            className="w-full h-full object-contain"
+                          />
+                        </div>
+                      ) : (
+                        <span className="text-3xl">{spon.logo}</span>
+                      )}
                       <div>
                         <h5 className="font-display text-base font-black text-foreground">{spon.brandName}</h5>
                         <p className="text-xs text-muted-foreground">

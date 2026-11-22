@@ -456,10 +456,14 @@ export default function DashboardPage() {
                                 <button
                                   type="button"
                                   onClick={() => setIsShopModalOpen(true)}
-                                  className="px-2 py-0.5 rounded-md bg-secondary border border-border text-foreground hover:border-emerald-500/40 text-[10px] font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                                  className="px-2 py-0.5 rounded-md bg-secondary border border-border text-foreground hover:border-emerald-500/40 text-[10px] font-bold flex items-center gap-1.5 cursor-pointer transition-colors"
                                   title="Clique para gerenciar chuteiras na Loja"
                                 >
-                                  <span>{b.icon}</span>
+                                  {b.image ? (
+                                    <img src={b.image} alt={b.name} loading="lazy" decoding="async" className="w-4 h-3 object-contain shrink-0" />
+                                  ) : (
+                                    <span>{b.icon}</span>
+                                  )}
                                   <span>{b.name}</span>
                                 </button>
                               ) : null;
@@ -773,7 +777,11 @@ export default function DashboardPage() {
                             onClick={() => setIsShopModalOpen(true)}
                             className="py-1 px-2.5 rounded-lg bg-zinc-900 border border-zinc-700 hover:border-emerald-500/50 text-xs font-bold text-white flex items-center gap-1.5 cursor-pointer transition-colors"
                           >
-                            <span>{ball?.icon || '⚽'}</span>
+                            {ball?.image ? (
+                              <img src={ball.image} alt={ball.name} loading="lazy" decoding="async" className="w-4 h-4 object-contain shrink-0" />
+                            ) : (
+                              <span>{ball?.icon || '⚽'}</span>
+                            )}
                             <span>{ball?.name || 'Capotão'}</span>
                             <span className="text-[10px] text-emerald-400">({ball?.rarity || 'Comum'})</span>
                           </button>

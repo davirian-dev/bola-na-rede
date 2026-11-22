@@ -91,10 +91,10 @@ export function ProModal({ isOpen, onClose }: ProModalProps) {
   };
 
   return createPortal(
-    <div className="fixed inset-0 z-[999999] flex items-center justify-center p-4 bg-black/90 backdrop-blur-lg animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-[999999] flex items-center justify-center p-4 bg-black/95 backdrop-blur-xl animate-in fade-in duration-200 overflow-y-auto">
       <div 
         style={{ backgroundColor: '#09090b', opacity: 1 }}
-        className="bg-[#09090b] text-white border-2 border-amber-500/50 rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-[0_0_50px_rgba(0,0,0,0.9)] relative overflow-hidden flex flex-col max-h-[92vh] z-10"
+        className="bg-[#09090b] text-white border-2 border-amber-500/60 rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-[0_0_80px_rgba(0,0,0,0.98)] relative overflow-hidden flex flex-col max-h-[92vh] z-10 my-auto"
       >
         {/* Glow decorativo de fundo */}
         <div className="absolute -top-24 -right-24 w-60 h-60 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />

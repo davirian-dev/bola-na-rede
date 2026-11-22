@@ -12,6 +12,10 @@ interface AvatarDisplayProps {
   className?: string;
 }
 
+/**
+ * AvatarDisplay Oficial - Boneco Esportivo Estilo Cartoon / AAA
+ * Geometria calibrada com traços anatômicos vivos e cabelos modernos.
+ */
 export function AvatarDisplay({
   avatar,
   age = 22,
@@ -57,9 +61,10 @@ export function AvatarDisplay({
     hairColor = rawHairColor === '#ffffff' ? '#ffffff' : '#71717a'; // Meio grisalho elegante
   }
 
-  // Garante contraste das sobrancelhas caso o cabelo seja platinado/branco
+  // Garante contraste das sobrancelhas e mechas caso o cabelo seja platinado/branco
   const isLightHair = hairColor === '#ffffff' || hairColor === '#f4f4f5' || hairColor === '#f5f5f5' || hairColor === '#e4e4e7';
-  const eyebrowColor = isLightHair ? '#52525b' : hairColor;
+  const eyebrowColor = isLightHair ? '#3f3f46' : hairColor;
+  const hairBorderColor = isLightHair ? '#a1a1aa' : 'rgba(0,0,0,0.25)';
 
   return (
     <div className={`relative rounded-2xl overflow-hidden shrink-0 shadow-inner bg-gradient-to-b from-stone-900 to-zinc-950 flex items-center justify-center border border-border/50 ${sizeMap[size]} ${className}`}>
@@ -68,72 +73,79 @@ export function AvatarDisplay({
         className="w-full h-full object-cover"
         xmlns="http://www.w3.org/2000/svg"
       >
-        {/* Fundo sutil esportivo */}
+        <defs>
+          {/* Sombreamento sutil para pele */}
+          <linearGradient id={`skinGrad_${skinTone.replace('#','')}`} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={skinTone} />
+            <stop offset="100%" stopColor={skinTone} stopOpacity="0.88" />
+          </linearGradient>
+        </defs>
+
+        {/* Fundo circular sutil esportivo */}
         <circle cx="50" cy="50" r="48" fill="#121214" />
-        <circle cx="50" cy="50" r="46" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="1" />
+        <circle cx="50" cy="50" r="47" fill="none" stroke="rgba(16, 185, 129, 0.35)" strokeWidth="1" />
 
         {/* ============================================================ */}
-        {/* CAMADA 1: CABELO TRASEIRO (Back Hair) - Volume atrás da cabeça */}
+        {/* CAMADA 1: CABELO TRASEIRO (Back Hair / Volume atrás da cabeça) */}
         {/* ============================================================ */}
         {hairStyle === 'afro' && (
-          <g fill={hairColor} stroke={isLightHair ? 'rgba(0,0,0,0.2)' : 'none'} strokeWidth={isLightHair ? '0.7' : '0'}>
-            <circle cx="50" cy="40" r="23" />
-            <circle cx="34" cy="41" r="13" />
-            <circle cx="66" cy="41" r="13" />
-            <circle cx="50" cy="24" r="13" />
-            {/* Textura sutil do afro */}
-            <circle cx="38" cy="28" r="6" opacity="0.3" fill="#ffffff" />
-            <circle cx="60" cy="29" r="5" opacity="0.2" fill="#ffffff" />
+          <g fill={hairColor} stroke={hairBorderColor} strokeWidth="0.8">
+            <circle cx="50" cy="32" r="19" />
+            <circle cx="36" cy="35" r="11" />
+            <circle cx="64" cy="35" r="11" />
+            {/* Cachos estilizados */}
+            <circle cx="38" cy="25" r="5" fill="#ffffff" opacity="0.15" stroke="none" />
+            <circle cx="60" cy="26" r="4" fill="#ffffff" opacity="0.15" stroke="none" />
           </g>
         )}
 
         {hairStyle === 'dreads' && (
-          <g fill={hairColor} stroke={isLightHair ? 'rgba(0,0,0,0.2)' : 'none'} strokeWidth={isLightHair ? '0.7' : '0'}>
-            <circle cx="50" cy="38" r="21" />
+          <g fill={hairColor} stroke={hairBorderColor} strokeWidth="0.8">
+            <circle cx="50" cy="32" r="18" />
             {/* Tranças caindo atrás dos ombros */}
-            <rect x="25" y="38" width="6" height="28" rx="3" />
-            <rect x="32" y="34" width="6" height="34" rx="3" />
-            <rect x="62" y="34" width="6" height="34" rx="3" />
-            <rect x="69" y="38" width="6" height="28" rx="3" />
-            {/* Anéis decorativos dourados nas tranças */}
-            <rect x="25" y="49" width="6" height="2" rx="0.5" fill="#f59e0b" stroke="none" />
-            <rect x="69" y="49" width="6" height="2" rx="0.5" fill="#f59e0b" stroke="none" />
+            <rect x="25" y="38" width="5.5" height="26" rx="2.5" />
+            <rect x="32" y="35" width="5.5" height="30" rx="2.5" />
+            <rect x="62.5" y="35" width="5.5" height="30" rx="2.5" />
+            <rect x="69.5" y="38" width="5.5" height="26" rx="2.5" />
+            {/* Anéis dourados nas pontas */}
+            <rect x="25" y="55" width="5.5" height="2.5" rx="0.5" fill="#f59e0b" stroke="none" />
+            <rect x="69.5" y="55" width="5.5" height="2.5" rx="0.5" fill="#f59e0b" stroke="none" />
           </g>
         )}
 
         {/* ============================================================ */}
-        {/* CAMADA 2: PESCOÇO E VESTIMENTA (Ombros, Camisa/Terno) */}
+        {/* CAMADA 2: PESCOÇO E VESTIMENTA (Ombros, Camisa/Terno)        */}
         {/* ============================================================ */}
-        {/* Pescoço com tom de pele */}
-        <rect x="44" y="58" width="12" height="17" fill={skinTone} rx="2" />
-        {/* Sombra suave sob o queixo */}
-        <path d="M44 60 Q50 64 56 60 L56 63 Q50 66 44 63 Z" fill="rgba(0,0,0,0.18)" />
+        {/* Pescoço atlético */}
+        <path d="M43 56 L43 73 Q50 76 57 73 L57 56 Z" fill={skinTone} />
+        {/* Sombra sob o queixo */}
+        <path d="M43 56 Q50 62 57 56 L57 60 Q50 65 43 60 Z" fill="rgba(0,0,0,0.18)" />
 
-        {/* Roupas */}
+        {/* Vestimentas Oficiais */}
         {clothingStyle === 'suit' ? (
-          // Terno de Treinador
+          // Terno Alinhado de Comandante Técnico
           <g>
-            <path d="M15 95 Q50 68 85 95 Z" fill="#27272a" />
-            <path d="M40 76 L50 95 L60 76 Z" fill="#ffffff" />
-            <path d="M47 80 L53 80 L51 95 L49 95 Z" fill="#dc2626" />
-            <path d="M25 88 L44 76 L40 95 Z" fill="#18181b" />
-            <path d="M75 88 L56 76 L60 95 Z" fill="#18181b" />
+            <path d="M16 95 Q50 67 84 95 Z" fill="#27272a" />
+            <path d="M40 73 L50 95 L60 73 Z" fill="#ffffff" />
+            <path d="M48 76 L52 76 L51 95 L49 95 Z" fill="#dc2626" />
+            <path d="M26 88 L44 75 L40 95 Z" fill="#18181b" />
+            <path d="M74 88 L56 75 L60 95 Z" fill="#18181b" />
           </g>
         ) : clothingStyle === 'tracksuit' ? (
-          // Agasalho de Treino
+          // Agasalho Esportivo de Treino
           <g>
-            <path d="M15 95 Q50 68 85 95 Z" fill="#0284c7" />
-            <path d="M48 76 L52 76 L52 95 L48 95 Z" fill="#ffffff" />
-            <circle cx="34" cy="86" r="3" fill="#ffffff" />
+            <path d="M16 95 Q50 67 84 95 Z" fill="#0284c7" />
+            <path d="M48 73 L52 73 L52 95 L48 95 Z" fill="#ffffff" />
+            <circle cx="34" cy="85" r="3" fill="#ffffff" />
           </g>
         ) : (
           // Camisa Oficial do Clube
           <g>
-            <path d="M15 95 Q50 68 85 95 Z" fill={primaryColor} />
-            <path d="M40 74 Q50 82 60 74 Z" fill={secondaryColor} />
+            <path d="M16 95 Q50 67 84 95 Z" fill={primaryColor} />
+            <path d="M39 71 Q50 80 61 71 L61 74 Q50 83 39 74 Z" fill={secondaryColor} />
             <text
               x="50"
-              y="93"
+              y="91"
               fill={secondaryColor}
               fontSize="11"
               fontWeight="900"
@@ -146,206 +158,193 @@ export function AvatarDisplay({
         )}
 
         {/* ============================================================ */}
-        {/* CAMADA 3: CABEÇA, MANDÍBULA E ORELHAS */}
+        {/* CAMADA 3: CABEÇA, MANDÍBULA E ORELHAS ANATÔMICAS             */}
         {/* ============================================================ */}
-        {/* Orelhas com detalhe anatômico e contorno nítido */}
-        <circle cx="31.5" cy="48" r="4.5" fill={skinTone} stroke="rgba(0,0,0,0.2)" strokeWidth="0.7" />
-        <path d="M31 46 Q33 48 31 50" stroke="rgba(0,0,0,0.25)" strokeWidth="1" fill="none" />
+        {/* Orelha Esquerda */}
+        <path d="M32 42 Q28 42 28 47 Q28 53 33 52" fill={skinTone} stroke="rgba(0,0,0,0.2)" strokeWidth="0.7" />
+        <path d="M30.5 45 Q31.5 47 30.5 50" stroke="rgba(0,0,0,0.2)" strokeWidth="0.7" fill="none" />
 
-        <circle cx="68.5" cy="48" r="4.5" fill={skinTone} stroke="rgba(0,0,0,0.2)" strokeWidth="0.7" />
-        <path d="M69 46 Q67 48 69 50" stroke="rgba(0,0,0,0.25)" strokeWidth="1" fill="none" />
+        {/* Orelha Direita */}
+        <path d="M68 42 Q72 42 72 47 Q72 53 67 52" fill={skinTone} stroke="rgba(0,0,0,0.2)" strokeWidth="0.7" />
+        <path d="M69.5 45 Q68.5 47 69.5 50" stroke="rgba(0,0,0,0.2)" strokeWidth="0.7" fill="none" />
 
-        {/* Formato do Rosto e Mandíbula com contorno suave para contraste permanente */}
+        {/* Cabeça e Mandíbula Atlética (formato esportivo moderno) */}
         <path
-          d="M33 46 Q33 30 50 29 Q67 30 67 46 Q67 63 50 64 Q33 63 33 46 Z"
+          d="M33 38 C33 24 67 24 67 38 C67 52 64 61 50 63 C36 61 33 52 33 38 Z"
           fill={skinTone}
-          stroke="rgba(0,0,0,0.15)"
+          stroke="rgba(0,0,0,0.18)"
           strokeWidth="0.8"
         />
 
         {/* ============================================================ */}
-        {/* CAMADA 4: CABELO FRONTAL (Front Hair / Franja / Topo) */}
-        {/* Nota: NUNCA desce abaixo de y=39 para JAMAIS cobrir olhos */}
+        {/* CAMADA 4: CABELOS MODERNOS (JAMAIS DESCEM ABAIXO DE Y=33)    */}
         {/* ============================================================ */}
         {hairStyle === 'short' && (
-          <g fill={hairColor} stroke={isLightHair ? 'rgba(0,0,0,0.18)' : 'none'} strokeWidth={isLightHair ? '0.7' : '0'}>
-            <path d="M32 44 Q31 25 50 24 Q69 25 68 44 Q60 36 50 37 Q40 36 32 44 Z" />
-            <path d="M38 31 Q50 28 62 31" stroke="rgba(255,255,255,0.2)" strokeWidth="1.5" strokeLinecap="round" fill="none" />
+          <g fill={hairColor} stroke={hairBorderColor} strokeWidth="0.7">
+            {/* Volume nas têmporas e topo com silhueta dinâmica */}
+            <path d="M31 38 C31 20 40 16 52 16 C65 16 69 22 69 38 C66 33 62 33 57 31 C52 29 45 32 40 33 C35 34 33 36 31 38 Z" />
+            {/* Mechas do topete */}
+            <path d="M43 20 Q48 14 55 17 Q50 18 48 22 Z" />
+            <path d="M52 18 Q58 13 64 18 Q58 19 55 23 Z" />
+            {/* Brilho suave */}
+            <path d="M42 22 Q50 19 58 22" stroke="rgba(255,255,255,0.25)" strokeWidth="1.2" fill="none" strokeLinecap="round" />
           </g>
         )}
 
         {hairStyle === 'undercut' && (
-          <g fill={hairColor} stroke={isLightHair ? 'rgba(0,0,0,0.18)' : 'none'} strokeWidth={isLightHair ? '0.7' : '0'}>
-            {/* Laterais disfarçadas */}
-            <path d="M33 46 Q32 38 36 36 Q50 37 64 36 Q68 38 67 46 Z" opacity="0.35" />
-            {/* Topete arrepiado moderno */}
-            <path d="M35 38 Q33 22 51 21 Q67 22 65 38 Q55 33 45 34 Z" />
-            {/* Risco na régua estiloso */}
-            <path d="M36 41 L40 37" stroke="#ffffff" strokeWidth="1" strokeLinecap="round" opacity="0.8" />
+          <g fill={hairColor} stroke={hairBorderColor} strokeWidth="0.7">
+            {/* Laterais com fade disfarçado */}
+            <path d="M33 38 C33 32 36 30 40 31 C37 34 35 37 33 38 Z" opacity="0.4" />
+            <path d="M67 38 C67 32 64 30 60 31 C63 34 65 37 67 38 Z" opacity="0.4" />
+            {/* Topete arrepiado alto */}
+            <path d="M34 32 C34 16 45 13 52 13 C61 13 66 18 66 32 C62 29 55 28 50 28 C45 28 38 29 34 32 Z" />
+            <path d="M46 17 Q52 10 58 14 Q53 16 50 19 Z" />
+            {/* Risco navalhado estiloso */}
+            <line x1="36" y1="34" x2="40" y2="30" stroke="#ffffff" strokeWidth="1" strokeLinecap="round" />
           </g>
         )}
 
         {hairStyle === 'buzz' && (
-          <path
-            d="M33 45 Q32 28 50 27 Q68 28 67 45 Q58 37 50 37 Q42 37 33 45 Z"
-            fill={hairColor}
-            stroke={isLightHair ? 'rgba(0,0,0,0.18)' : 'none'}
-            strokeWidth={isLightHair ? '0.7' : '0'}
-            opacity="0.85"
-          />
+          <g fill={hairColor} stroke={hairBorderColor} strokeWidth="0.6">
+            <path
+              d="M33 38 C33 22 40 19 50 19 C60 19 67 22 67 38 C64 34 58 33 50 33 C42 33 36 34 33 38 Z"
+              opacity="0.9"
+            />
+          </g>
         )}
 
         {hairStyle === 'afro' && (
-          <path
-            d="M32 44 Q31 24 50 23 Q69 24 68 44 Q60 36 50 36 Q40 36 32 44 Z"
-            fill={hairColor}
-            stroke={isLightHair ? 'rgba(0,0,0,0.18)' : 'none'}
-            strokeWidth={isLightHair ? '0.7' : '0'}
-          />
+          <g fill={hairColor} stroke={hairBorderColor} strokeWidth="0.7">
+            {/* Linha frontal do afro na testa */}
+            <path d="M32 37 C34 32 42 31 50 31 C58 31 66 32 68 37 C63 34 57 33 50 33 C43 33 37 34 32 37 Z" />
+          </g>
         )}
 
         {hairStyle === 'dreads' && (
-          <g fill={hairColor} stroke={isLightHair ? 'rgba(0,0,0,0.18)' : 'none'} strokeWidth={isLightHair ? '0.7' : '0'}>
-            {/* Contorno frontal no topo da testa */}
-            <path d="M32 43 Q31 25 50 24 Q69 25 68 43 Q60 37 50 37 Q40 37 32 43 Z" />
+          <g fill={hairColor} stroke={hairBorderColor} strokeWidth="0.7">
+            {/* Base no topo da testa */}
+            <path d="M32 37 C34 32 42 31 50 31 C58 31 66 32 68 37 C63 34 57 33 50 33 C43 33 37 34 32 37 Z" />
             {/* Mechas frontais estilizadas acima dos olhos */}
-            <rect x="41" y="30" width="4.5" height="9" rx="2" />
-            <rect x="47" y="29" width="4.5" height="10" rx="2" />
-            <rect x="54" y="30" width="4.5" height="9" rx="2" />
+            <rect x="42" y="27" width="4" height="6" rx="1.5" />
+            <rect x="48" y="26" width="4" height="7" rx="1.5" />
+            <rect x="54" y="27" width="4" height="6" rx="1.5" />
           </g>
         )}
 
         {hairStyle === 'bald' && (
           // Brilho no topo do crânio
-          <ellipse cx="46" cy="33" rx="4" ry="2" fill="rgba(255,255,255,0.2)" />
+          <ellipse cx="46" cy="27" rx="4" ry="2" fill="rgba(255,255,255,0.22)" />
         )}
 
         {/* ============================================================ */}
-        {/* CAMADA 5: TRAÇOS FACIAIS (Olhos, Sobrancelhas, Nariz e Boca) */}
-        {/* Sempre 100% visíveis, sem nunca serem cobertos por cabelo */}
+        {/* CAMADA 5: TRAÇOS FACIAIS (Olhos, Sobrancelhas, Nariz, Boca)   */}
+        {/* 100% Livres e Desimpedidos                                  */}
         {/* ============================================================ */}
-        {/* Olhos Vivos com Esclera Branca e Pupila Nítida */}
-        <ellipse cx="43" cy="46.5" rx="3.2" ry="2.6" fill="#ffffff" />
-        <ellipse cx="57" cy="46.5" rx="3.2" ry="2.6" fill="#ffffff" />
-        <circle cx="43.2" cy="46.5" r="1.8" fill="#18181b" />
-        <circle cx="57.2" cy="46.5" r="1.8" fill="#18181b" />
-        {/* Brilho nos olhos */}
-        <circle cx="44" cy="45.8" r="0.7" fill="#ffffff" />
-        <circle cx="58" cy="45.8" r="0.7" fill="#ffffff" />
+        {/* Sobrancelhas Marcantes */}
+        <path
+          d="M38 38.5 Q43 36 47 38"
+          stroke={eyebrowColor}
+          strokeWidth="2.2"
+          strokeLinecap="round"
+          fill="none"
+        />
+        <path
+          d="M53 38 Q57 36 62 38.5"
+          stroke={eyebrowColor}
+          strokeWidth="2.2"
+          strokeLinecap="round"
+          fill="none"
+        />
 
-        {/* Sobrancelhas expressivas com cor contrastante segura */}
-        <path
-          d="M38.5 42 Q42.5 39.5 47 41.5"
-          stroke={eyebrowColor}
-          strokeWidth="1.8"
-          strokeLinecap="round"
-          fill="none"
-        />
-        <path
-          d="M53 41.5 Q57.5 39.5 61.5 42"
-          stroke={eyebrowColor}
-          strokeWidth="1.8"
-          strokeLinecap="round"
-          fill="none"
-        />
+        {/* Olhos Vivos de Craque */}
+        {/* Olho Esquerdo */}
+        <ellipse cx="42.5" cy="44.5" rx="3.6" ry="3" fill="#ffffff" stroke="rgba(0,0,0,0.2)" strokeWidth="0.5" />
+        <circle cx="42.8" cy="44.5" r="2" fill="#1e293b" />
+        <circle cx="43" cy="44.5" r="1.1" fill="#020617" />
+        <circle cx="43.8" cy="43.6" r="0.7" fill="#ffffff" />
+
+        {/* Olho Direito */}
+        <ellipse cx="57.5" cy="44.5" rx="3.6" ry="3" fill="#ffffff" stroke="rgba(0,0,0,0.2)" strokeWidth="0.5" />
+        <circle cx="57.2" cy="44.5" r="2" fill="#1e293b" />
+        <circle cx="57" cy="44.5" r="1.1" fill="#020617" />
+        <circle cx="58" cy="43.6" r="0.7" fill="#ffffff" />
 
         {/* Nariz Atlético */}
         <path
-          d="M50 46 L48.2 52.5 Q50 54 51.8 52.5"
-          stroke="rgba(0,0,0,0.24)"
+          d="M50 43 L48.2 50.5 Q50 52 51.8 50.5"
+          stroke="rgba(0,0,0,0.28)"
           strokeWidth="1.3"
           strokeLinecap="round"
           strokeLinejoin="round"
           fill="none"
         />
 
-        {/* Boca e Sorriso de Craque */}
+        {/* Sorriso Confiante */}
         <path
-          d="M44 58 Q50 63 56 58"
+          d="M44 56.5 Q50 61.5 56 56.5"
           stroke="#991b1b"
           strokeWidth="1.8"
           strokeLinecap="round"
           fill="none"
         />
         <path
-          d="M45.5 58 Q50 61.5 54.5 58"
+          d="M45.5 56.5 Q50 59.8 54.5 56.5"
           fill="#ffffff"
-          opacity="0.9"
         />
 
         {/* ============================================================ */}
-        {/* ENVELHECIMENTO VISUAL PROGRESSIVO (Rugas, Expressão e Óculos) */}
+        {/* ENVELHECIMENTO PROGRESSIVO                                   */}
         {/* ============================================================ */}
-        {/* Fios grisalhos nas têmporas (30 a 47 anos) */}
-        {(isExperienced || isVeteran) && hairStyle !== 'bald' && (
-          <g stroke="rgba(228, 228, 231, 0.65)" strokeWidth="1" strokeLinecap="round" fill="none">
-            <path d="M33 42 Q32 38 35 36" />
-            <path d="M67 42 Q68 38 65 36" />
-          </g>
-        )}
-
-        {/* Linhas de Expressão na Testa (30+ anos) */}
+        {/* Linhas de expressão na testa para veteranos */}
         {(isExperienced || isVeteran || isLegend) && (
-          <g stroke="rgba(0,0,0,0.2)" strokeWidth="1" strokeLinecap="round" fill="none">
-            <path d="M42 35 Q50 33.5 58 35" />
-            {isLegend && <path d="M43 32 Q50 30.5 57 32" stroke="rgba(0,0,0,0.28)" />}
+          <g stroke="rgba(0,0,0,0.2)" strokeWidth="0.9" strokeLinecap="round" fill="none">
+            <path d="M43 34 Q50 32.5 57 34" />
+            {isLegend && <path d="M44 31 Q50 29.5 56 31" stroke="rgba(0,0,0,0.25)" />}
           </g>
         )}
 
-        {/* Pés de Galinha nos Olhos (30+ anos) */}
-        {(isExperienced || isVeteran || isLegend) && (
-          <g stroke="rgba(0,0,0,0.18)" strokeWidth="0.8" strokeLinecap="round" fill="none">
-            <path d="M38 46 L35 45" />
-            <path d="M38 47.5 L35 48.5" />
-            <path d="M62 46 L65 45" />
-            <path d="M62 47.5 L65 48.5" />
-          </g>
-        )}
-
-        {/* Sulco Nasolabial de Maturidade (37+ anos) */}
+        {/* Pés de galinha nos olhos */}
         {(isVeteran || isLegend) && (
-          <g stroke="rgba(0,0,0,0.16)" strokeWidth="1" strokeLinecap="round" fill="none">
-            <path d="M44 54 Q43 57 44 60" />
-            <path d="M56 54 Q57 57 56 60" />
+          <g stroke="rgba(0,0,0,0.18)" strokeWidth="0.8" strokeLinecap="round" fill="none">
+            <path d="M38 45 L35 44" />
+            <path d="M62 45 L65 44" />
           </g>
         )}
 
-        {/* Óculos Clássicos de Treinador Lendário (48+ anos) */}
+        {/* Óculos clássicos de comandante lendário (48+ anos) */}
         {isLegend && (
           <g stroke="#d4d4d8" strokeWidth="1.2" fill="none">
-            {/* Lente Esquerda */}
-            <rect x="38" y="43" width="10" height="7.5" rx="2" fill="rgba(255,255,255,0.12)" />
-            {/* Lente Direita */}
-            <rect x="52" y="43" width="10" height="7.5" rx="2" fill="rgba(255,255,255,0.12)" />
-            {/* Ponte Central */}
-            <path d="M48 45.5 Q50 44.5 52 45.5" />
-            {/* Hastes */}
-            <path d="M38 45 L32 46" />
-            <path d="M62 45 L68 46" />
+            <rect x="37" y="41" width="11" height="8" rx="2" fill="rgba(255,255,255,0.15)" />
+            <rect x="52" y="41" width="11" height="8" rx="2" fill="rgba(255,255,255,0.15)" />
+            <path d="M48 44 Q50 43 52 44" />
+            <path d="M37 43 L32 44" />
+            <path d="M63 43 L68 44" />
           </g>
         )}
 
         {/* ============================================================ */}
-        {/* CAMADA 6: BARBA E BIGODE */}
+        {/* CAMADA 6: BARBA E BIGODE COM ENCAIXE ANATÔMICO               */}
         {/* ============================================================ */}
         {facialHair === 'stubble' && (
           <path
-            d="M36 51 Q50 68 64 51 Q50 63 36 51"
-            fill="rgba(0,0,0,0.22)"
+            d="M34 49 C34 59 40 62 50 63 C60 62 66 59 66 49 C62 54 56 55 50 55 C44 55 38 54 34 49 Z"
+            fill="rgba(0,0,0,0.24)"
             opacity={isYouth ? 0.45 : 1}
           />
         )}
+
         {facialHair === 'beard' && (
-          <g fill={hairColor} opacity={isYouth ? 0.4 : 0.95}>
+          <g fill={hairColor} opacity={isYouth ? 0.45 : 0.95}>
+            {/* Barba na mandíbula */}
             <path
-              d="M34 50 Q50 71 66 50 Q50 64 34 50"
+              d="M33 47 C33 59 39 63 50 64 C61 63 67 59 67 47 C63 53 57 55 50 55 C43 55 37 53 33 47 Z"
             />
-            {/* Bigode integrado à barba */}
-            <path d="M43 55.5 Q50 53.5 57 55.5 Q50 57.5 43 55.5" />
-            {/* Mechas grisalhas na barba para veteranos */}
+            {/* Bigode integrado sem cobrir lábio */}
+            <path d="M44 53.5 Q50 51.5 56 53.5 Q50 55.5 44 53.5 Z" />
+            {/* Fios grisalhos para veteranos */}
             {(isVeteran || isLegend) && (
               <path
-                d="M46 62 Q50 66 54 62"
+                d="M46 62 Q50 65 54 62"
                 stroke="rgba(255,255,255,0.6)"
                 strokeWidth="1.2"
                 fill="none"
@@ -353,11 +352,12 @@ export function AvatarDisplay({
             )}
           </g>
         )}
+
         {facialHair === 'mustache' && (
           <path
-            d="M43 55.5 Q50 53.5 57 55.5 Q50 57.5 43 55.5"
+            d="M44 53.5 Q50 51.5 56 53.5 Q50 55.5 44 53.5 Z"
             fill={hairColor}
-            opacity={isYouth ? 0.4 : 1}
+            opacity={isYouth ? 0.45 : 1}
           />
         )}
       </svg>

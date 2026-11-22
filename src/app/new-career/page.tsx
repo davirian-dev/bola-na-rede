@@ -1184,7 +1184,7 @@ export default function NewCareerPage() {
                 </div>
 
                 {/* Coluna Direita: Preview do Atleta & Seleção de Divisão com PRO (Sticky no Desktop) */}
-                <div className="lg:col-span-5 space-y-6 lg:sticky lg:top-24 self-start">
+                <div className="lg:col-span-5 space-y-6 lg:sticky lg:top-20 self-start max-h-[calc(100vh-6rem)] lg:overflow-y-auto no-scrollbar pb-6">
                   
                   {/* Card do Atleta Estilo FUT / NSS */}
                   <div className="p-6 rounded-3xl bg-gradient-to-b from-card to-secondary border border-border shadow-xl text-center relative overflow-hidden">
@@ -1197,13 +1197,16 @@ export default function NewCareerPage() {
                       </span>
                     </div>
 
-                    {/* Avatar do Jogador com a Cor de Pele Selecionada */}
-                    <div 
-                      className="w-20 h-20 mx-auto rounded-3xl border-2 border-emerald-500/40 flex items-center justify-center text-3xl shadow-inner mb-3 relative"
-                      style={{ backgroundColor: SKIN_TONES.find((t) => t.id === skinTone)?.color }}
-                    >
-                      <span>{playerPosition === 'GOL' ? '🧤' : playerPosition === 'ATA' ? '⚽' : '👟'}</span>
-                      <span className="absolute -bottom-1 -right-1 text-sm bg-card p-0.5 rounded-full border border-border">
+                    {/* Avatar Oficial do Jogador com Envelhecimento e Personalização */}
+                    <div className="mx-auto flex justify-center mb-3 relative">
+                      <AvatarDisplay
+                        avatar={avatar}
+                        size="xl"
+                        clubPrimaryColor={selectedClub?.primaryColor}
+                        clubSecondaryColor={selectedClub?.secondaryColor}
+                        className="ring-2 ring-emerald-500/50 shadow-lg"
+                      />
+                      <span className="absolute bottom-0 right-1/2 translate-x-10 text-sm bg-card p-0.5 rounded-full border border-border shadow">
                         {COUNTRIES.find((c) => c.name === nationality)?.flag || '🇧🇷'}
                       </span>
                     </div>
@@ -1600,7 +1603,7 @@ export default function NewCareerPage() {
                 </div>
 
                 {/* Coluna Direita: Seleção de Clube do Treinador */}
-                <div className="lg:col-span-5 space-y-6">
+                <div className="lg:col-span-5 space-y-6 lg:sticky lg:top-20 self-start max-h-[calc(100vh-6rem)] lg:overflow-y-auto no-scrollbar pb-6">
                   <div className="p-6 rounded-3xl bg-card border border-border space-y-4">
                     <div className="flex items-center justify-between">
                       <div>
