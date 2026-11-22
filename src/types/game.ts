@@ -74,6 +74,7 @@ export interface Player {
   isInjured?: boolean;   // Atleta no departamento médico
   isSuspended?: boolean; // Suspenso por cartões
   suspensionMatches?: number; // Jogos restantes de suspensão
+  signatureTraits?: string[]; // Habilidades únicas de craques mundiais (Signature Traits)
   stats?: {
     goals: number;
     assists: number;
@@ -504,6 +505,48 @@ export interface PlayerCareerProfile {
   secondaryPositions?: Position[]; // Posições secundárias já dominadas (sem penalidade)
   positionAdaptability?: Partial<Record<Position, number>>; // 0 a 100% de adaptação em posições em treino
   trainingPosition?: Position;   // Posição secundária atualmente em treino semanal
+  squadStatus?: SquadRoleStatus; // Status no elenco: reserva, titular ou estrela da equipe
+  starterContention?: number;    // Expectativa do Técnico / Disputa pela vaga (0 a 100%)
+  tacticalStance?: TacticalStance; // Postura tática individual (atacar, defender, segurar o jogo)
+  legendArchetype?: LegendArchetypeId; // Arquétipo de personalidade/lenda inspirada (Messi, CR7, Neymar, Ibra, Vini Jr.)
+  signatureTraits?: string[];    // Habilidades únicas de estrelas mundiais
+}
+
+// ============================================================================
+// NOVOS TIPOS: GAMEPLAY, STATUS, POSTURA & ARQUÉTIPOS LENDÁRIOS
+// ============================================================================
+export type SquadRoleStatus = 'reserve' | 'starter' | 'key_player';
+export type TacticalStance = 'attack' | 'defend' | 'hold';
+
+export type LegendArchetypeId = 
+  | 'messi_genius'    // O Gênio Discreto (estilo Messi)
+  | 'cr7_machine'     // A Máquina de Gols (estilo CR7)
+  | 'neymar_joy'      // Ousadia & Alegria (estilo Neymar)
+  | 'ibra_lion'       // O Leão Arrogante (estilo Ibrahimović)
+  | 'vini_lightning'; // O Raio Incansável (estilo Vini Jr.)
+
+export type MatchWeatherType = 'sunny' | 'rainy' | 'snowy' | 'windy';
+export type PitchPatternType = 'striped' | 'checkered' | 'circles' | 'varzea' | 'futuristic';
+
+export type InteractivePlayType = 
+  | 'penalty'
+  | 'free_kick'
+  | 'long_shot'
+  | 'inside_box'
+  | 'header'
+  | 'pass_through'
+  | 'pass_long'
+  | 'pass_cross'
+  | 'tackle'
+  | 'interception'
+  | 'dribble';
+
+export interface SignatureTrait {
+  id: string;
+  name: string;
+  icon: string;
+  description: string;
+  effectBadge: string;
 }
 
 export type ManagerTacticsPhilosophy = 
@@ -918,6 +961,9 @@ export interface GameState {
   specialMatchEvent?: SpecialMatchEvent;
   seasonRivalry?: SeasonRivalry;
   tieredAchievements?: TieredAchievement[];
+  customPitchPattern?: PitchPatternType; // Padrão visual do gramado (VIP/Pro)
+  customWeather?: MatchWeatherType;     // Clima fixado pelo usuário (VIP/Pro)
+  currentMatchWeather?: MatchWeatherType;// Clima ativo da partida atual (Sol, Chuva, Neve, Vento)
   lastSeasonSummary?: {
     year: number;
     champions: {

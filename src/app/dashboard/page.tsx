@@ -28,6 +28,7 @@ import { AvatarDisplay } from '@/components/game/AvatarDisplay';
 import { AvatarCreatorModal } from '@/components/game/AvatarCreatorModal';
 import { DilemmaModal } from '@/components/game/DilemmaModal';
 import { TrophyRoomModal } from '@/components/game/TrophyRoomModal';
+import { VIPStadiumWeatherModal } from '@/components/game/VIPStadiumWeatherModal';
 import { TacticsBoard } from '@/components/game/TacticsBoard';
 import { ManagerRosterModal } from '@/components/manager/ManagerRosterModal';
 import { ManagerTacticsModal } from '@/components/manager/ManagerTacticsModal';
@@ -155,6 +156,7 @@ export default function DashboardPage() {
   const [isManagerCareerOpen, setIsManagerCareerOpen] = useState(false);
   const [isTacticalBoardOpen, setIsTacticalBoardOpen] = useState(false);
   const [isManagerSpeechOpen, setIsManagerSpeechOpen] = useState(false);
+  const [isStadiumModalOpen, setIsStadiumModalOpen] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -1564,6 +1566,13 @@ export default function DashboardPage() {
                       <span className="text-[11px] font-semibold text-emerald-500 block mt-1">
                         Estádio {homeClub?.stadiumName}
                       </span>
+                      <button
+                        type="button"
+                        onClick={() => setIsStadiumModalOpen(true)}
+                        className="mt-1.5 px-2.5 py-0.5 rounded-full bg-secondary hover:bg-secondary/80 border border-border text-[9px] font-black text-amber-400 hover:text-amber-300 transition inline-flex items-center gap-1 cursor-pointer shadow-sm"
+                      >
+                        <span>🏟️</span> Gramado & Clima VIP
+                      </button>
                     </div>
 
                     {/* Visitante */}
@@ -3105,6 +3114,14 @@ export default function DashboardPage() {
       <TrophyRoomModal
         isOpen={isTrophyRoomOpen}
         onClose={() => setIsTrophyRoomOpen(false)}
+      />
+
+      {/* ============================================================ */}
+      {/* MODAL 13: PERSONALIZAÇÃO DE ESTÁDIO & CLIMA VIP (PRO)        */}
+      {/* ============================================================ */}
+      <VIPStadiumWeatherModal
+        isOpen={isStadiumModalOpen}
+        onClose={() => setIsStadiumModalOpen(false)}
       />
 
       <MobileBottomNav />

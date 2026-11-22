@@ -13,6 +13,7 @@ export interface FamousStarDef {
   position: Position;
   overall: number;
   potential: number;
+  signatureTraits?: string[];
   attrs: {
     pace: number;
     dribbling: number;
@@ -44,6 +45,7 @@ export const FAMOUS_STAR_ROSTERS: Record<string, FamousStarDef[]> = {
       position: 'PD',
       overall: 88,
       potential: 88,
+      signatureTraits: ['trait_supernatural_vision'],
       attrs: { pace: 78, dribbling: 94, tackling: 35, defending: 34, attacking: 94, finishing: 91, passing: 93, positioning: 94, heading: 68, crossing: 89, shooting: 88, jumping: 67, playmaker: 96, elasticity: 45 },
     },
     {
@@ -238,6 +240,7 @@ export const FAMOUS_STAR_ROSTERS: Record<string, FamousStarDef[]> = {
       position: 'ATA',
       overall: 87,
       potential: 87,
+      signatureTraits: ['trait_relentless_finisher'],
       attrs: { pace: 80, dribbling: 81, tackling: 34, defending: 35, attacking: 94, finishing: 93, passing: 78, positioning: 94, heading: 92, crossing: 75, shooting: 93, jumping: 95, playmaker: 82, elasticity: 55 },
     },
     {
@@ -496,6 +499,7 @@ export const FAMOUS_STAR_ROSTERS: Record<string, FamousStarDef[]> = {
       position: 'ATA',
       overall: 91,
       potential: 94,
+      signatureTraits: ['trait_supersonic_speed'],
       attrs: { pace: 97, dribbling: 92, tackling: 38, defending: 36, attacking: 94, finishing: 93, passing: 82, positioning: 93, heading: 76, crossing: 80, shooting: 90, jumping: 86, playmaker: 84, elasticity: 55 },
     },
     {
@@ -505,6 +509,7 @@ export const FAMOUS_STAR_ROSTERS: Record<string, FamousStarDef[]> = {
       position: 'PE',
       overall: 90,
       potential: 94,
+      signatureTraits: ['trait_pure_explosion'],
       attrs: { pace: 95, dribbling: 93, tackling: 32, defending: 30, attacking: 92, finishing: 86, passing: 81, positioning: 90, heading: 62, crossing: 82, shooting: 84, jumping: 76, playmaker: 85, elasticity: 50 },
     },
     {
@@ -562,6 +567,7 @@ export const FAMOUS_STAR_ROSTERS: Record<string, FamousStarDef[]> = {
       position: 'ATA',
       overall: 91,
       potential: 94,
+      signatureTraits: ['trait_box_hunter'],
       attrs: { pace: 89, dribbling: 80, tackling: 44, defending: 45, attacking: 94, finishing: 96, passing: 70, positioning: 96, heading: 86, crossing: 60, shooting: 94, jumping: 88, playmaker: 75, elasticity: 48 },
     },
     {
@@ -571,6 +577,7 @@ export const FAMOUS_STAR_ROSTERS: Record<string, FamousStarDef[]> = {
       position: 'MEI',
       overall: 90,
       potential: 90,
+      signatureTraits: ['trait_absolute_maestro'],
       attrs: { pace: 72, dribbling: 86, tackling: 65, defending: 65, attacking: 88, finishing: 85, passing: 94, positioning: 88, heading: 60, crossing: 94, shooting: 88, jumping: 68, playmaker: 95, elasticity: 50 },
     },
     {
@@ -874,6 +881,7 @@ export const FAMOUS_STAR_ROSTERS: Record<string, FamousStarDef[]> = {
       position: 'MEI',
       overall: 83,
       potential: 83,
+      signatureTraits: ['trait_king_of_dribble'],
       attrs: { pace: 74, dribbling: 90, tackling: 36, defending: 36, attacking: 88, finishing: 82, passing: 88, positioning: 86, heading: 62, crossing: 85, shooting: 82, jumping: 68, playmaker: 90, elasticity: 50 },
     },
     {
@@ -1233,6 +1241,7 @@ export function injectFamousStars(clubId: string, currentRoster: Player[]): Play
         attributes: attrs,
         overall,
         potential: star.potential,
+        signatureTraits: star.signatureTraits,
         marketValue,
         wage,
         isYouth: false,

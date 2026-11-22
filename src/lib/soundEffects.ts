@@ -190,6 +190,19 @@ class SoundEngine {
       this.playCheer();
     }, 150);
   }
+
+  // Wrapper Universal para Minigames
+  public play(type: 'whistle' | 'kick' | 'goal' | 'woodwork' | 'cheer' | string) {
+    if (this.muted) return;
+    switch (type) {
+      case 'whistle': return this.playWhistle();
+      case 'kick': return this.playKick();
+      case 'goal': return this.playGoal();
+      case 'woodwork': return this.playWoodwork();
+      case 'cheer': return this.playCheer();
+      default: return this.playKick();
+    }
+  }
 }
 
 export const sound = new SoundEngine();

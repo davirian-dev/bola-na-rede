@@ -26,7 +26,7 @@ export interface RosterDeparture {
 }
 
 export const ROSTER_PATCH_2026 = {
-  version: "2026.11-official",
+  version: "2026.11-official-v2",
   updatedAt: "2026-11-22",
   description: "Patch Oficial Novembro/2026: Neymar, Gabigol e Coutinho no Santos; Paulinho no Palmeiras; Cauly no São Paulo; Cancelo no Barça; Laporte no Athletic; e Despedidas/Aposentadorias",
   
@@ -710,6 +710,23 @@ export function applyRosterPatch2026(clubs: Record<string, Club>): Record<string
     if (!club) return;
 
     let roster = [...(club.roster || [])];
+
+    const realFirstNames = ['Lucas', 'Mateo', 'Alex', 'Liam', 'Noah', 'Gabriel', 'Julian', 'Marco', 'Diego', 'Carlos', 'David', 'Felipe', 'Arthur', 'Rodrigo', 'Leo', 'Enzo', 'Thiago', 'Matheus', 'Bruno'];
+    const realLastNames = ['Silva', 'Santos', 'Johnson', 'Smith', 'Al-Dawsari', 'Gomez', 'Fernandez', 'Miller', 'Williams', 'Oliveira', 'Rodriguez', 'Brown', 'Davis', 'Martinez', 'Costa', 'Ribeiro'];
+
+    // Auto-cura de qualquer nome genérico residual do tipo "Atleta [CLUBE] [NUMERO]"
+    roster = roster.map((p, idx) => {
+      if (p.name && (p.name.startsWith('Atleta ') || /^Atleta [A-Z]{2,5} \d+$/i.test(p.name))) {
+        const fn = realFirstNames[(club.name.charCodeAt(0) + idx) % realFirstNames.length];
+        const ln = realLastNames[(club.name.charCodeAt(1) + idx * 3) % realLastNames.length];
+        return {
+          ...p,
+          name: `${fn} ${ln}`,
+          nickname: ln,
+        };
+      }
+      return p;
+    });
 
     // Garante que haja pelo menos 18 jogadores com nomes reais e posições distribuídas
     if (roster.length < 18) {

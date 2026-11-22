@@ -72,6 +72,8 @@ import { OFFICIAL_BALLS_CATALOG, getBallById } from '@/data/balls';
 import { evaluateDilemmaTrigger, applyDilemmaResolution, DilemmaEvaluationContext } from '@/engine/dilemmaEngine';
 import { DILEMMAS_DATABASE } from '@/data/dilemmas';
 import { applyRosterPatch2026, ROSTER_PATCH_2026 } from '@/data/rosterPatch2026';
+import { getLegendArchetype } from '@/data/legendArchetypesSeed';
+import { LegendArchetypeId } from '@/types/game';
 
 interface GameStoreActions {
   // Inicialização
@@ -99,6 +101,7 @@ interface GameStoreActions {
     preferredKit?: 'home' | 'away';
     avatar?: CharacterAvatar;
     goldPlayStyle?: PlayStyleGoldId;
+    legendArchetype?: LegendArchetypeId;
   }) => void;
 
   startManagerCareer: (params: {
@@ -315,7 +318,11 @@ export const useGameStore = create<GameStore>()(
 
         const needsEuropeanUpgrade = !state.clubs?.['mci'] || !state.leagues?.['PL'];
         const needsGlobalUpgrade = !state.clubs?.['mia'] || !state.clubs?.['aln'] || !state.leagues?.['MLS'];
+        const hasGenericAthletes = Object.values(state.clubs || {}).some((c) =>
+          c.roster?.some((p) => p.name && (p.name.startsWith('Atleta ') || /^Atleta [A-Z]{2,5} \d+$/i.test(p.name)))
+        );
         const needsRosterPatch = state.rosterPatchVersion !== ROSTER_PATCH_2026.version ||
+          hasGenericAthletes ||
           !state.clubs?.['san']?.roster?.some((p) => p.name.includes('Neymar')) ||
           state.clubs?.['hil']?.roster?.some((p) => p.name.includes('Neymar'));
 
@@ -1007,7 +1014,8 @@ export const useGameStore = create<GameStore>()(
         skinTone = 3,
         preferredKit = 'home',
         avatar,
-        goldPlayStyle = 'rapid_gold'
+        goldPlayStyle = 'rapid_gold',
+        legendArchetype = 'neymar_joy'
       }) => {
         const state = get();
         const availableClubs = (state.clubs && Object.keys(state.clubs).length > 0)
@@ -1015,6 +1023,7 @@ export const useGameStore = create<GameStore>()(
           : generateBrazilDatabase().clubs;
 
         const club = availableClubs[clubId] || Object.values(availableClubs)[0];
+        const archetypeDef = getLegendArchetype(legendArchetype);
 
         // 1. Calibração do Overall pela Idade Inicial (14 Atributos Oficiais)
         const ageDelta = Math.round((age - 18) * 2.8);
@@ -1039,6 +1048,16 @@ export const useGameStore = create<GameStore>()(
           vision: Math.min(84, Math.max(38, 53 + ageDelta)),
           composure: Math.min(84, Math.max(38, 52 + ageDelta)),
         };
+
+        // Bônus do Arquétipo Lendário Inspirado
+        if (archetypeDef.initialBoost) {
+          Object.entries(archetypeDef.initialBoost).forEach(([attrKey, boostVal]) => {
+            const k = attrKey as keyof PlayerAttributes;
+            if (typeof baseAttrs[k] === 'number') {
+              (baseAttrs as any)[k] = Math.min(92, ((baseAttrs[k] as number) || 50) + (boostVal || 0));
+            }
+          });
+        }
 
         // 2. Impacto da Altura e Peso na Física do Jogador
         if (height >= 188) {
@@ -1237,6 +1256,11 @@ export const useGameStore = create<GameStore>()(
           specialties,
           careerLength,
           matchSimSystem,
+          squadStatus: 'reserve',
+          starterContention: 50,
+          tacticalStance: 'attack',
+          legendArchetype: legendArchetype || 'neymar_joy',
+          signatureTraits: [archetypeDef.defaultTraitId],
           energyDrinksCount: 4,
           nrgInventory: {
             classic: 2,
@@ -2108,8 +2132,37 @@ export const useGameStore = create<GameStore>()(
 
           const netWeeklyEarnings = effectiveWeeklyWage + sponsorWeeklyIncome - staffWeeklyCost;
 
+          // Progressão da Disputa pela Vaga (Reserva -> Titular -> Estrela)
+          let currentContention = updatedPlayerProfile.starterContention ?? 50;
+          let currentSquadStatus = updatedPlayerProfile.squadStatus ?? 'reserve';
+
+          if (userRating) {
+            if (userRating >= 8.0) {
+              currentContention = Math.min(100, currentContention + 12);
+            } else if (userRating >= 7.0) {
+              currentContention = Math.min(100, currentContention + 6);
+            } else if (userRating < 6.0) {
+              currentContention = Math.max(10, currentContention - 8);
+            }
+
+            if (goals > (updatedPlayerProfile.stats.goals || 0) || assists > (updatedPlayerProfile.stats.assists || 0)) {
+              currentContention = Math.min(100, currentContention + 8);
+            }
+
+            // Promoção e Rebaixamento de Status no Clube
+            if (currentContention >= 90) {
+              currentSquadStatus = 'key_player';
+            } else if (currentContention >= 70) {
+              currentSquadStatus = 'starter';
+            } else if (currentContention < 45) {
+              currentSquadStatus = 'reserve';
+            }
+          }
+
           updatedPlayerProfile = {
             ...prog.updatedProfile,
+            squadStatus: currentSquadStatus,
+            starterContention: currentContention,
             energy: updatedEnergy,
             activeBoot: updatedBoot,
             sponsors: updatedSponsors,

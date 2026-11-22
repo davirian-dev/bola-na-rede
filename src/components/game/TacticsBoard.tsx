@@ -72,6 +72,17 @@ export function TacticsBoard({
 
   // Manipula troca de jogadores (Swap entre Titulares e Reservas)
   const handleSelectPlayer = (rosterIndex: number) => {
+    if (mode === 'player') {
+      const p = roster[rosterIndex];
+      const isMe = p.id === playerProfile?.id;
+      if (isMe) {
+        setFeedback(`⭐ Você está escalado como ${p.position} (Camisa #${playerProfile?.jerseyNumber || 10}). Seu status: ${playerProfile?.squadStatus === 'starter' ? 'Titular' : playerProfile?.squadStatus === 'key_player' ? 'Estrela da Equipe' : 'Banco de Reservas'}.`);
+      } else {
+        setFeedback(`Companheiro de Equipe: ${p.name} (${p.position} • OVR ${p.overall}). Escalação decidida pela comissão técnica.`);
+      }
+      return;
+    }
+
     if (selectedPlayerIndex === null) {
       setSelectedPlayerIndex(rosterIndex);
       const p = roster[rosterIndex];
@@ -202,7 +213,131 @@ export function TacticsBoard({
 
   return (
     <div className="space-y-5">
-      {/* 1. Barra de Formações */}
+      {/* PAINEL EXCLUSIVO DO MODO JOGADOR: DISPUTA PELA VAGA & POSTURA TÁTICA */}
+      {mode === 'player' && playerProfile && (
+        <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-950/40 via-card to-zinc-950 border border-emerald-500/40 shadow-lg space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/80 pb-3">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-black text-xl shadow-inner border border-emerald-500/30">
+                {playerProfile.squadStatus === 'key_player' ? '👑' : playerProfile.squadStatus === 'starter' ? '🟢' : '🪑'}
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="font-display text-sm font-black text-foreground">
+                    {playerProfile.squadStatus === 'key_player'
+                      ? 'Estrela & Capitão da Equipe'
+                      : playerProfile.squadStatus === 'starter'
+                      ? 'Titular Absoluto do Treinador'
+                      : 'Banco de Reservas • Disputa pela Vaga'}
+                  </h3>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full font-black uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                    Modo Atleta
+                  </span>
+                </div>
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  {playerProfile.squadStatus === 'reserve'
+                    ? 'O técnico te coloca nos 20-30 minutos finais. Jogue bem para cavar a vaga entre os 11!'
+                    : 'Você comanda as ações ofensivas do clube. Mantenha o foco e a moral alta!'}
+                </p>
+              </div>
+            </div>
+
+            {/* Barra de Expectativa do Técnico (0 a 100%) */}
+            <div className="sm:text-right min-w-[180px]">
+              <div className="flex items-center justify-between sm:justify-end gap-2 text-xs font-black mb-1">
+                <span className="text-[10px] text-muted-foreground uppercase">Confiança do Treinador:</span>
+                <span className="font-mono text-emerald-400">{playerProfile.starterContention || 65}%</span>
+              </div>
+              <div className="w-full h-2.5 rounded-full bg-zinc-800 border border-border/80 overflow-hidden">
+                <div
+                  className={`h-full transition-all duration-300 ${
+                    (playerProfile.starterContention || 65) >= 85
+                      ? 'bg-amber-400'
+                      : (playerProfile.starterContention || 65) >= 70
+                      ? 'bg-emerald-400'
+                      : 'bg-blue-400'
+                  }`}
+                  style={{ width: `${playerProfile.starterContention || 65}%` }}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Seletor de Postura Tática Individual em Campo */}
+          <div>
+            <span className="text-[10px] font-black uppercase tracking-wider text-muted-foreground block mb-2">
+              Seu Foco Individual em Campo:
+            </span>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  useGameStore.setState({
+                    playerProfile: { ...playerProfile, tacticalStance: 'attack' }
+                  });
+                  setFeedback('⚔️ Foco ofensivo ativado! Mais lances de finalização e drible durante os jogos.');
+                }}
+                className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer flex items-center gap-2.5 ${
+                  (playerProfile.tacticalStance || 'attack') === 'attack'
+                    ? 'bg-rose-500/20 border-rose-500 text-rose-300 font-black shadow-sm ring-1 ring-rose-500/50'
+                    : 'bg-secondary/40 border-border text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                <span className="text-xl">⚔️</span>
+                <div>
+                  <div className="text-xs font-black">Atacar com Tudo</div>
+                  <div className="text-[9px] opacity-75">Mais gols e chutes (+gasto energia)</div>
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  useGameStore.setState({
+                    playerProfile: { ...playerProfile, tacticalStance: 'defend' }
+                  });
+                  setFeedback('🛡️ Postura defensiva ativada! Mais desarmes, interceptações e nota defensiva.');
+                }}
+                className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer flex items-center gap-2.5 ${
+                  playerProfile.tacticalStance === 'defend'
+                    ? 'bg-blue-500/20 border-blue-500 text-blue-300 font-black shadow-sm ring-1 ring-blue-500/50'
+                    : 'bg-secondary/40 border-border text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                <span className="text-xl">🛡️</span>
+                <div>
+                  <div className="text-xs font-black">Ajudar na Marcação</div>
+                  <div className="text-[9px] opacity-75">Desarmes limpos e proteção</div>
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  useGameStore.setState({
+                    playerProfile: { ...playerProfile, tacticalStance: 'hold' }
+                  });
+                  setFeedback('⚖️ Segurar o jogo ativado! Passes curtos de posse e controle de relógio.');
+                }}
+                className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer flex items-center gap-2.5 ${
+                  playerProfile.tacticalStance === 'hold'
+                    ? 'bg-amber-500/20 border-amber-500 text-amber-300 font-black shadow-sm ring-1 ring-amber-500/50'
+                    : 'bg-secondary/40 border-border text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                <span className="text-xl">⚖️</span>
+                <div>
+                  <div className="text-xs font-black">Segurar a Posse</div>
+                  <div className="text-[9px] opacity-75">Cadência segura e controle</div>
+                </div>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 1. Barra de Formações (Apenas no Modo Treinador ou Informativa) */}
+      {mode === 'manager' && (
       <div className="p-4 rounded-2xl bg-card border border-border shadow-sm space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -312,6 +447,7 @@ export function TacticsBoard({
           </div>
         </div>
       </div>
+      )}
 
       {/* Feedback de Ação */}
       {feedback && (
@@ -369,13 +505,15 @@ export function TacticsBoard({
                 player.id === playerProfile?.id ? playerProfile?.positionAdaptability : undefined
               );
 
+              const isMe = player.id === playerProfile?.id;
+
               return (
                 <button
                   key={player.id}
                   type="button"
                   onClick={() => handleSelectPlayer(idx)}
                   className={`absolute -translate-x-1/2 -translate-y-1/2 flex flex-col items-center group cursor-pointer transition-transform hover:scale-110 active:scale-95 ${
-                    isSelected ? 'scale-125 z-20' : 'z-10'
+                    isSelected ? 'scale-125 z-20' : isMe ? 'scale-110 z-20' : 'z-10'
                   }`}
                   style={{ left: `${pos.x}%`, top: `${pos.y}%` }}
                 >
@@ -384,13 +522,21 @@ export function TacticsBoard({
                       className={`w-8 h-8 rounded-full border-2 flex items-center justify-center text-[10px] font-black shadow-md ${
                         isSelected
                           ? 'bg-amber-400 text-zinc-950 border-white ring-4 ring-amber-400/50 animate-pulse'
+                          : isMe
+                          ? 'bg-gradient-to-tr from-amber-400 to-yellow-300 text-zinc-950 border-white ring-4 ring-amber-400/80 shadow-lg'
                           : posEval.penalty > 0
-                            ? 'bg-amber-500 text-zinc-950 border-amber-200'
-                            : 'bg-emerald-500 text-zinc-950 border-white'
+                          ? 'bg-amber-500 text-zinc-950 border-amber-200'
+                          : 'bg-emerald-500 text-zinc-950 border-white'
                       }`}
                     >
-                      #{idx + 1}
+                      {isMe ? '⭐' : `#${idx + 1}`}
                     </div>
+
+                    {isMe && (
+                      <span className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-1.5 py-0.2 rounded bg-amber-500 text-zinc-950 text-[8px] font-black uppercase whitespace-nowrap shadow border border-white/50">
+                        VOCÊ
+                      </span>
+                    )}
 
                     {/* Badges de Liderança e Bolas Paradas */}
                     <div className="absolute -top-2 -right-2 flex items-center gap-0.5">

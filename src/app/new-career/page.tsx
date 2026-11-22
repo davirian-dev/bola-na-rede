@@ -23,9 +23,10 @@ import { ProModal } from '@/components/game/ProModal';
 import { AvatarDisplay } from '@/components/game/AvatarDisplay';
 import { AvatarCreatorModal } from '@/components/game/AvatarCreatorModal';
 import { formatCurrency } from '@/lib/calculations';
-import { CharacterAvatar, PlayStyleGoldId, ManagerPlayStyleGoldId } from '@/types/game';
+import { CharacterAvatar, PlayStyleGoldId, ManagerPlayStyleGoldId, LegendArchetypeId } from '@/types/game';
 import { PLAYSTYLES_GOLD } from '@/data/playStylesSeed';
 import { MANAGER_PLAYSTYLES_GOLD, getManagerPlayStyleGoldById } from '@/data/managerPlayStylesSeed';
+import { LEGEND_ARCHETYPES, getLegendArchetype } from '@/data/legendArchetypesSeed';
 import { 
   User, 
   Briefcase, 
@@ -122,6 +123,7 @@ export default function NewCareerPage() {
     'dribbling'
   ]);
   const [selectedGoldPlayStyle, setSelectedGoldPlayStyle] = useState<PlayStyleGoldId>('rapid_gold');
+  const [selectedLegendArchetype, setSelectedLegendArchetype] = useState<LegendArchetypeId>('neymar_joy');
   const [careerLength, setCareerLength] = useState<CareerLength>(12);
   const [matchSimSystem, setMatchSimSystem] = useState<MatchSimSystem>('instant');
 
@@ -500,6 +502,7 @@ export default function NewCareerPage() {
         preferredKit,
         avatar,
         goldPlayStyle: selectedGoldPlayStyle,
+        legendArchetype: selectedLegendArchetype,
       });
     } else {
       startManagerCareer({
@@ -1374,6 +1377,68 @@ export default function NewCareerPage() {
                         );
                       })}
                     </div>
+
+                    {/* SELEÇÃO DO ARQUÉTIPO LENDÁRIO (MESSI, CR7, NEYMAR, IBRA, VINI JR) */}
+                    <div className="mt-6 pt-5 border-t border-border/80">
+                      <div className="flex items-center gap-2.5 mb-3">
+                        <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-amber-500 to-yellow-400 text-zinc-950 flex items-center justify-center font-black shadow-md">
+                          ⭐
+                        </div>
+                        <div>
+                          <h3 className="font-display text-base font-black text-foreground">
+                            Personalidade de Craque Lendário
+                          </h3>
+                          <p className="text-xs text-muted-foreground">
+                            Defina o temperamento do seu atleta, inspirado nos maiores craques mundiais.
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 gap-2.5">
+                        {LEGEND_ARCHETYPES.map((arch) => {
+                          const isSelected = selectedLegendArchetype === arch.id;
+                          return (
+                            <button
+                              key={arch.id}
+                              type="button"
+                              onClick={() => setSelectedLegendArchetype(arch.id)}
+                              className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex items-start gap-3 ${
+                                isSelected
+                                  ? 'bg-amber-500/15 border-amber-500 ring-1 ring-amber-500/50 shadow-md'
+                                  : 'bg-secondary/40 border-border hover:bg-secondary'
+                              }`}
+                            >
+                              <span className="text-2xl p-1.5 rounded-xl bg-card border border-border shrink-0">
+                                {arch.icon}
+                              </span>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center justify-between gap-2">
+                                  <div className="flex items-center gap-1.5 flex-wrap">
+                                    <h4 className="text-xs sm:text-sm font-black text-foreground">
+                                      {arch.name}
+                                    </h4>
+                                    <span className="text-[10px] text-amber-400 font-extrabold">
+                                      • {arch.inspiration}
+                                    </span>
+                                  </div>
+                                  {isSelected && (
+                                    <span className="text-[9px] font-black uppercase tracking-wider bg-amber-500 text-zinc-950 px-1.5 py-0.2 rounded-full">
+                                      Selecionado
+                                    </span>
+                                  )}
+                                </div>
+                                <p className="text-[11px] text-muted-foreground mt-1 line-clamp-2 leading-relaxed">
+                                  {arch.description}
+                                </p>
+                                <span className="text-[10px] italic text-zinc-400 mt-1 block">
+                                  {arch.quote}
+                                </span>
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
                   </div>
                 </div>
 
@@ -1791,6 +1856,68 @@ export default function NewCareerPage() {
                           </div>
                         );
                       })}
+                    </div>
+
+                    {/* SELEÇÃO DO ARQUÉTIPO LENDÁRIO (MESSI, CR7, NEYMAR, IBRA, VINI JR) */}
+                    <div className="mt-6 pt-5 border-t border-border/80">
+                      <div className="flex items-center gap-2.5 mb-3">
+                        <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-amber-500 to-yellow-400 text-zinc-950 flex items-center justify-center font-black shadow-md">
+                          ⭐
+                        </div>
+                        <div>
+                          <h3 className="font-display text-base font-black text-foreground">
+                            Personalidade de Craque Lendário
+                          </h3>
+                          <p className="text-xs text-muted-foreground">
+                            Defina o temperamento do seu atleta, inspirado nos maiores craques mundiais.
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 gap-2.5">
+                        {LEGEND_ARCHETYPES.map((arch) => {
+                          const isSelected = selectedLegendArchetype === arch.id;
+                          return (
+                            <button
+                              key={arch.id}
+                              type="button"
+                              onClick={() => setSelectedLegendArchetype(arch.id)}
+                              className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex items-start gap-3 ${
+                                isSelected
+                                  ? 'bg-amber-500/15 border-amber-500 ring-1 ring-amber-500/50 shadow-md'
+                                  : 'bg-secondary/40 border-border hover:bg-secondary'
+                              }`}
+                            >
+                              <span className="text-2xl p-1.5 rounded-xl bg-card border border-border shrink-0">
+                                {arch.icon}
+                              </span>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center justify-between gap-2">
+                                  <div className="flex items-center gap-1.5 flex-wrap">
+                                    <h4 className="text-xs sm:text-sm font-black text-foreground">
+                                      {arch.name}
+                                    </h4>
+                                    <span className="text-[10px] text-amber-400 font-extrabold">
+                                      • {arch.inspiration}
+                                    </span>
+                                  </div>
+                                  {isSelected && (
+                                    <span className="text-[9px] font-black uppercase tracking-wider bg-amber-500 text-zinc-950 px-1.5 py-0.2 rounded-full">
+                                      Selecionado
+                                    </span>
+                                  )}
+                                </div>
+                                <p className="text-[11px] text-muted-foreground mt-1 line-clamp-2 leading-relaxed">
+                                  {arch.description}
+                                </p>
+                                <span className="text-[10px] italic text-zinc-400 mt-1 block">
+                                  {arch.quote}
+                                </span>
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
                   </div>
                 </div>
