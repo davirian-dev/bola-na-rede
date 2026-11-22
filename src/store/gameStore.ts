@@ -157,6 +157,10 @@ interface GameStoreActions {
   autoSelectReserves: (clubId: string) => void;
   clearReservesSelection: (clubId: string) => void;
   toggleReservePlayer: (clubId: string, playerId: string) => void;
+  promoteYouthPlayer: (clubId: string, playerId: string) => { success: boolean; message: string };
+  demoteToYouthRoster: (clubId: string, playerId: string) => { success: boolean; message: string };
+  scoutNewYouthTalent: (clubId: string) => { success: boolean; message: string };
+  setStadiumTicketPrice: (clubId: string, price: number) => void;
   setPlayerIndividualTrainingFocus: (playerId: string, skill: string) => void;
   upgradeClubFacility: (facility: 'comfort' | 'vip' | 'marketing' | 'ct' | 'medical') => { success: boolean; message: string };
 
@@ -2456,6 +2460,195 @@ export const useGameStore = create<GameStore>()(
           managerProfile: {
             ...state.managerProfile,
             selectedReservesIds: updated,
+          },
+        });
+      },
+
+      promoteYouthPlayer: (clubId: string, playerId: string) => {
+        const state = get();
+        const club = state.clubs[clubId];
+        if (!club) return { success: false, message: 'Clube não encontrado.' };
+
+        const youthRoster = club.youthRoster || [];
+        const playerToPromote = youthRoster.find(p => p.id === playerId);
+        if (!playerToPromote) return { success: false, message: 'Atleta não encontrado na base.' };
+
+        // Promove: adiciona ao elenco profissional com contrato profissional
+        const promotedPlayer: Player = {
+          ...playerToPromote,
+          isYouth: false,
+          contractWeeks: 48 * 3, // 3 anos de contrato
+          wage: Math.max(3000, Math.round(playerToPromote.overall * 80)),
+        };
+
+        const updatedYouth = youthRoster.filter(p => p.id !== playerId);
+        const updatedRoster = [...(club.roster || []), promotedPlayer];
+
+        set(prev => ({
+          clubs: {
+            ...prev.clubs,
+            [clubId]: {
+              ...club,
+              roster: updatedRoster,
+              youthRoster: updatedYouth,
+            },
+          },
+          newsFeed: [
+            {
+              id: `news_promoted_${Date.now()}`,
+              week: prev.currentWeek,
+              seasonYear: prev.seasonYear,
+              headline: 'PROMESSA DA BASE! Joia sobe ao profissional',
+              body: `O jovem ${promotedPlayer.name} (${promotedPlayer.position}, ${promotedPlayer.age} anos, OVR ${promotedPlayer.overall}) assinou contrato profissional de 3 anos com o ${club.name}!`,
+              category: 'club',
+            },
+            ...(prev.newsFeed || []),
+          ],
+        }));
+
+        return { success: true, message: `${promotedPlayer.name} promovido com sucesso ao elenco profissional!` };
+      },
+
+      demoteToYouthRoster: (clubId: string, playerId: string) => {
+        const state = get();
+        const club = state.clubs[clubId];
+        if (!club) return { success: false, message: 'Clube não encontrado.' };
+
+        const playerToDemote = (club.roster || []).find(p => p.id === playerId);
+        if (!playerToDemote) return { success: false, message: 'Atleta não encontrado no elenco.' };
+        if (playerToDemote.age > 20) {
+          return { success: false, message: 'Apenas atletas de até 20 anos podem jogar na categoria de base Sub-20.' };
+        }
+
+        const demotedPlayer: Player = {
+          ...playerToDemote,
+          isYouth: true,
+          wage: 1500,
+        };
+
+        const updatedRoster = (club.roster || []).filter(p => p.id !== playerId);
+        const updatedLineup = (club.lineup || []).filter(id => id !== playerId);
+        const updatedReserves = (state.managerProfile?.selectedReservesIds || []).filter(id => id !== playerId);
+        const updatedYouth = [...(club.youthRoster || []), demotedPlayer];
+
+        set(prev => ({
+          clubs: {
+            ...prev.clubs,
+            [clubId]: {
+              ...club,
+              roster: updatedRoster,
+              lineup: updatedLineup,
+              youthRoster: updatedYouth,
+            },
+          },
+          managerProfile: prev.managerProfile ? {
+            ...prev.managerProfile,
+            selectedReservesIds: updatedReserves,
+          } : undefined,
+        }));
+
+        return { success: true, message: `${demotedPlayer.name} foi realocado na categoria de base Sub-20 para rodagem.` };
+      },
+
+      scoutNewYouthTalent: (clubId: string) => {
+        const state = get();
+        const club = state.clubs[clubId];
+        if (!club) return { success: false, message: 'Clube não encontrado.' };
+
+        const currentBudget = club.transferBudget ?? club.budget;
+        const cost = 100000;
+        if (currentBudget < cost) {
+          return { success: false, message: `Orçamento insuficiente. É necessário R$ 100 mil para a missão de olheiros da base.` };
+        }
+
+        const positions: Position[] = ['GOL', 'ZAG', 'LE', 'LD', 'VOL', 'MEI', 'PE', 'PD', 'ATA'];
+        const chosenPos = positions[Math.floor(Math.random() * positions.length)];
+        const firstNames = ['Cauã', 'Matheuzinho', 'Enzo', 'Pedrinho', 'Kauê', 'Rodriguinho', 'Luanzinho', 'Vitor Hugo', 'Gabrielzinho', 'Bernardo'];
+        const lastNames = ['Ferreira', 'Nascimento', 'Santana', 'Teixeira', 'Albuquerque', 'Moraes', 'Duarte', 'Magalhães', 'Barreto'];
+        
+        const randomFirst = firstNames[Math.floor(Math.random() * firstNames.length)];
+        const randomLast = lastNames[Math.floor(Math.random() * lastNames.length)];
+        const age = Math.random() > 0.5 ? 16 : 17;
+        const potential = Math.floor(Math.random() * 11) + 84; // 84 a 94
+        const overall = Math.floor(Math.random() * 8) + 58;    // 58 a 65
+
+        const newTalent: Player = {
+          id: `youth_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+          name: `${randomFirst} ${randomLast}`,
+          age,
+          position: chosenPos,
+          overall,
+          potential,
+          energy: 100,
+          morale: 85,
+          contractWeeks: 48 * 2,
+          wage: 1500,
+          marketValue: 800000,
+          isYouth: true,
+          attributes: {
+            pace: overall + 2,
+            shooting: overall,
+            passing: overall + 1,
+            dribbling: overall + 3,
+            defending: chosenPos === 'ZAG' || chosenPos === 'VOL' ? overall + 5 : overall - 10,
+            physical: overall,
+            heading: 65,
+            positioning: 66,
+            tackling: 64,
+            crossing: 65,
+            elasticity: 70,
+            playmaker: 65,
+            finishing: overall,
+            attacking: overall + 2,
+            jumping: 68,
+          },
+        };
+
+        const updatedYouth = [...(club.youthRoster || []), newTalent];
+
+        set(prev => ({
+          clubs: {
+            ...prev.clubs,
+            [clubId]: {
+              ...club,
+              budget: club.budget - cost,
+              transferBudget: (club.transferBudget ?? club.budget) - cost,
+              youthRoster: updatedYouth,
+            },
+          },
+          newsFeed: [
+            {
+              id: `news_scout_${Date.now()}`,
+              week: prev.currentWeek,
+              seasonYear: prev.seasonYear,
+              headline: 'NOVA JOIA DESCOBERTA! Olheiros encontram promessa para a base',
+              body: `O departamento de captação do ${club.name} integrou ${newTalent.name} (${newTalent.position}, ${newTalent.age} anos) com potencial estimado de ${newTalent.potential} ⭐!`,
+              category: 'club',
+            },
+            ...(prev.newsFeed || []),
+          ],
+        }));
+
+        return { success: true, message: `Nova promessa captada: ${newTalent.name} (${newTalent.position}, Potencial ${newTalent.potential} ⭐)!` };
+      },
+
+      setStadiumTicketPrice: (clubId: string, price: number) => {
+        const state = get();
+        if (!state.managerProfile) return;
+        const currentStadium = state.managerProfile.stadiumUpgrades || {
+          comfortLevel: 1,
+          vipLevel: 1,
+          marketingLevel: 1,
+          ticketPrice: 50,
+        };
+
+        set({
+          managerProfile: {
+            ...state.managerProfile,
+            stadiumUpgrades: {
+              ...currentStadium,
+              ticketPrice: price,
+            },
           },
         });
       },

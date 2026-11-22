@@ -76,7 +76,7 @@ export function AvatarDisplay({
         {/* CAMADA 1: CABELO TRASEIRO (Back Hair) - Volume atrás da cabeça */}
         {/* ============================================================ */}
         {hairStyle === 'afro' && (
-          <g fill={hairColor}>
+          <g fill={hairColor} stroke={isLightHair ? 'rgba(0,0,0,0.2)' : 'none'} strokeWidth={isLightHair ? '0.7' : '0'}>
             <circle cx="50" cy="40" r="23" />
             <circle cx="34" cy="41" r="13" />
             <circle cx="66" cy="41" r="13" />
@@ -88,7 +88,7 @@ export function AvatarDisplay({
         )}
 
         {hairStyle === 'dreads' && (
-          <g fill={hairColor}>
+          <g fill={hairColor} stroke={isLightHair ? 'rgba(0,0,0,0.2)' : 'none'} strokeWidth={isLightHair ? '0.7' : '0'}>
             <circle cx="50" cy="38" r="21" />
             {/* Tranças caindo atrás dos ombros */}
             <rect x="25" y="38" width="6" height="28" rx="3" />
@@ -96,8 +96,8 @@ export function AvatarDisplay({
             <rect x="62" y="34" width="6" height="34" rx="3" />
             <rect x="69" y="38" width="6" height="28" rx="3" />
             {/* Anéis decorativos dourados nas tranças */}
-            <rect x="25" y="49" width="6" height="2" rx="0.5" fill="#f59e0b" />
-            <rect x="69" y="49" width="6" height="2" rx="0.5" fill="#f59e0b" />
+            <rect x="25" y="49" width="6" height="2" rx="0.5" fill="#f59e0b" stroke="none" />
+            <rect x="69" y="49" width="6" height="2" rx="0.5" fill="#f59e0b" stroke="none" />
           </g>
         )}
 
@@ -148,17 +148,19 @@ export function AvatarDisplay({
         {/* ============================================================ */}
         {/* CAMADA 3: CABEÇA, MANDÍBULA E ORELHAS */}
         {/* ============================================================ */}
-        {/* Orelhas com detalhe anatômico */}
-        <circle cx="31.5" cy="48" r="4.5" fill={skinTone} />
-        <path d="M31 46 Q33 48 31 50" stroke="rgba(0,0,0,0.18)" strokeWidth="1" fill="none" />
+        {/* Orelhas com detalhe anatômico e contorno nítido */}
+        <circle cx="31.5" cy="48" r="4.5" fill={skinTone} stroke="rgba(0,0,0,0.2)" strokeWidth="0.7" />
+        <path d="M31 46 Q33 48 31 50" stroke="rgba(0,0,0,0.25)" strokeWidth="1" fill="none" />
 
-        <circle cx="68.5" cy="48" r="4.5" fill={skinTone} />
-        <path d="M69 46 Q67 48 69 50" stroke="rgba(0,0,0,0.18)" strokeWidth="1" fill="none" />
+        <circle cx="68.5" cy="48" r="4.5" fill={skinTone} stroke="rgba(0,0,0,0.2)" strokeWidth="0.7" />
+        <path d="M69 46 Q67 48 69 50" stroke="rgba(0,0,0,0.25)" strokeWidth="1" fill="none" />
 
-        {/* Formato do Rosto e Mandíbula */}
+        {/* Formato do Rosto e Mandíbula com contorno suave para contraste permanente */}
         <path
           d="M33 46 Q33 30 50 29 Q67 30 67 46 Q67 63 50 64 Q33 63 33 46 Z"
           fill={skinTone}
+          stroke="rgba(0,0,0,0.15)"
+          strokeWidth="0.8"
         />
 
         {/* ============================================================ */}
@@ -166,14 +168,14 @@ export function AvatarDisplay({
         {/* Nota: NUNCA desce abaixo de y=39 para JAMAIS cobrir olhos */}
         {/* ============================================================ */}
         {hairStyle === 'short' && (
-          <g fill={hairColor}>
+          <g fill={hairColor} stroke={isLightHair ? 'rgba(0,0,0,0.18)' : 'none'} strokeWidth={isLightHair ? '0.7' : '0'}>
             <path d="M32 44 Q31 25 50 24 Q69 25 68 44 Q60 36 50 37 Q40 36 32 44 Z" />
             <path d="M38 31 Q50 28 62 31" stroke="rgba(255,255,255,0.2)" strokeWidth="1.5" strokeLinecap="round" fill="none" />
           </g>
         )}
 
         {hairStyle === 'undercut' && (
-          <g fill={hairColor}>
+          <g fill={hairColor} stroke={isLightHair ? 'rgba(0,0,0,0.18)' : 'none'} strokeWidth={isLightHair ? '0.7' : '0'}>
             {/* Laterais disfarçadas */}
             <path d="M33 46 Q32 38 36 36 Q50 37 64 36 Q68 38 67 46 Z" opacity="0.35" />
             {/* Topete arrepiado moderno */}
@@ -187,6 +189,8 @@ export function AvatarDisplay({
           <path
             d="M33 45 Q32 28 50 27 Q68 28 67 45 Q58 37 50 37 Q42 37 33 45 Z"
             fill={hairColor}
+            stroke={isLightHair ? 'rgba(0,0,0,0.18)' : 'none'}
+            strokeWidth={isLightHair ? '0.7' : '0'}
             opacity="0.85"
           />
         )}
@@ -195,11 +199,13 @@ export function AvatarDisplay({
           <path
             d="M32 44 Q31 24 50 23 Q69 24 68 44 Q60 36 50 36 Q40 36 32 44 Z"
             fill={hairColor}
+            stroke={isLightHair ? 'rgba(0,0,0,0.18)' : 'none'}
+            strokeWidth={isLightHair ? '0.7' : '0'}
           />
         )}
 
         {hairStyle === 'dreads' && (
-          <g fill={hairColor}>
+          <g fill={hairColor} stroke={isLightHair ? 'rgba(0,0,0,0.18)' : 'none'} strokeWidth={isLightHair ? '0.7' : '0'}>
             {/* Contorno frontal no topo da testa */}
             <path d="M32 43 Q31 25 50 24 Q69 25 68 43 Q60 37 50 37 Q40 37 32 43 Z" />
             {/* Mechas frontais estilizadas acima dos olhos */}

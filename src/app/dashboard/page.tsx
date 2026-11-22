@@ -27,6 +27,7 @@ import { NationalTeamModal } from '@/components/game/NationalTeamModal';
 import { AvatarDisplay } from '@/components/game/AvatarDisplay';
 import { AvatarCreatorModal } from '@/components/game/AvatarCreatorModal';
 import { DilemmaModal } from '@/components/game/DilemmaModal';
+import { TrophyRoomModal } from '@/components/game/TrophyRoomModal';
 import { TacticsBoard } from '@/components/game/TacticsBoard';
 import { ManagerRosterModal } from '@/components/manager/ManagerRosterModal';
 import { ManagerTacticsModal } from '@/components/manager/ManagerTacticsModal';
@@ -132,6 +133,7 @@ export default function DashboardPage() {
   const [isAchievementsOpen, setIsAchievementsOpen] = useState(false);
   const [isNationalTeamOpen, setIsNationalTeamOpen] = useState(false);
   const [isAvatarCreatorOpen, setIsAvatarCreatorOpen] = useState(false);
+  const [isTrophyRoomOpen, setIsTrophyRoomOpen] = useState(false);
 
   // Modais de Gestão do Modo Treinador (6 Telas Completas)
   const [isManagerRosterOpen, setIsManagerRosterOpen] = useState(false);
@@ -2135,13 +2137,24 @@ export default function DashboardPage() {
                     </p>
                   </div>
 
-                  <Link
-                    href="/pontuacao"
-                    className="mt-4 py-2.5 px-4 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 font-black text-xs flex items-center justify-center gap-2 transition-transform active:scale-95 cursor-pointer shadow-md shadow-amber-500/20"
-                  >
-                    <BarChart3 className="w-4 h-4" />
-                    Ver Tabela Completa de Pontuação
-                  </Link>
+                    <div className="flex flex-col sm:flex-row gap-2 mt-4">
+                      <button
+                        type="button"
+                        onClick={() => setIsTrophyRoomOpen(true)}
+                        className="flex-1 py-2.5 px-4 rounded-xl bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-300 hover:to-amber-500 text-zinc-950 font-black text-xs flex items-center justify-center gap-2 transition-transform active:scale-95 cursor-pointer shadow-md shadow-amber-500/20"
+                      >
+                        <Trophy className="w-4 h-4" />
+                        🏛️ Sala de Troféus Oficial
+                      </button>
+
+                      <Link
+                        href="/pontuacao"
+                        className="py-2.5 px-4 rounded-xl bg-secondary hover:bg-secondary/80 text-foreground font-bold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer border border-border"
+                      >
+                        <BarChart3 className="w-4 h-4" />
+                        Tabela de Pontos
+                      </Link>
+                    </div>
                 </div>
               </div>
 
@@ -2596,6 +2609,14 @@ export default function DashboardPage() {
         isOpen={!!pendingDilemma}
         dilemma={pendingDilemma}
         onClose={dismissDilemma}
+      />
+
+      {/* ============================================================ */}
+      {/* MODAL 12: SALA DE TROFÉUS & RANKING HISTÓRICO DE CAMPEÕES */}
+      {/* ============================================================ */}
+      <TrophyRoomModal
+        isOpen={isTrophyRoomOpen}
+        onClose={() => setIsTrophyRoomOpen(false)}
       />
 
       <MobileBottomNav />

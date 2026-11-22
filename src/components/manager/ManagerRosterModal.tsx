@@ -18,13 +18,24 @@ export const ManagerRosterModal: React.FC<ManagerRosterModalProps> = ({ isOpen, 
     autoSelectReserves,
     clearReservesSelection,
     toggleReservePlayer,
+    promoteYouthPlayer,
+    demoteToYouthRoster,
+    scoutNewYouthTalent,
   } = useGameStore();
 
+  const [activeTab, setActiveTab] = useState<'pro' | 'youth'>('pro');
   const [filterPos, setFilterPos] = useState<string>('ALL');
+  const [toastMsg, setToastMsg] = useState<{ text: string; success: boolean } | null>(null);
+
+  const showToast = (text: string, success: boolean = true) => {
+    setToastMsg({ text, success });
+    setTimeout(() => setToastMsg(null), 3500);
+  };
 
   const club = managerProfile ? clubs[managerProfile.clubId] : undefined;
 
   const roster = useMemo(() => club?.roster || [], [club?.roster]);
+  const youthRoster = useMemo(() => club?.youthRoster || [], [club?.youthRoster]);
   const titularIds = useMemo(() => new Set(club?.lineup || []), [club?.lineup]);
   const reserveIds = useMemo(() => new Set(managerProfile?.selectedReservesIds || []), [managerProfile?.selectedReservesIds]);
 
@@ -188,8 +199,66 @@ export const ManagerRosterModal: React.FC<ManagerRosterModalProps> = ({ isOpen, 
         {/* Content Body */}
         <div className="p-4 sm:p-6 overflow-y-auto space-y-4">
 
-          {/* Painel de Ações Rápidas de Escalação (Conforme Imagem 1) */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 bg-zinc-900/70 border border-zinc-800 rounded-xl p-4">
+          {/* Toast / Alerta de Notificação */}
+          {toastMsg && (
+            <div className={`p-3 rounded-xl text-xs font-bold border flex items-center justify-between animate-in fade-in ${
+              toastMsg.success
+                ? 'bg-emerald-950/70 border-emerald-500/50 text-emerald-300'
+                : 'bg-red-950/70 border-red-500/50 text-red-300'
+            }`}>
+              <span>{toastMsg.text}</span>
+              <button onClick={() => setToastMsg(null)} className="text-zinc-400 hover:text-white">
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
+
+          {/* Abas Superiores: Elenco Profissional vs Categoria de Base */}
+          <div className="flex items-center justify-between border-b border-zinc-800 pb-3 flex-wrap gap-2">
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setActiveTab('pro')}
+                className={`py-2 px-4 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer ${
+                  activeTab === 'pro'
+                    ? 'bg-emerald-500 text-zinc-950 font-black shadow-sm'
+                    : 'bg-zinc-900 text-zinc-400 hover:text-white border border-zinc-800'
+                }`}
+              >
+                <Users className="w-4 h-4" />
+                <span>⭐ Elenco Profissional ({roster.length})</span>
+              </button>
+
+              <button
+                onClick={() => setActiveTab('youth')}
+                className={`py-2 px-4 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer ${
+                  activeTab === 'youth'
+                    ? 'bg-emerald-500 text-zinc-950 font-black shadow-sm'
+                    : 'bg-zinc-900 text-zinc-400 hover:text-white border border-zinc-800'
+                }`}
+              >
+                <Sparkles className="w-4 h-4 text-amber-400" />
+                <span>🌱 Categoria de Base Sub-20 ({youthRoster.length})</span>
+              </button>
+            </div>
+
+            {activeTab === 'youth' && (
+              <button
+                onClick={() => {
+                  const res = scoutNewYouthTalent(club.id);
+                  showToast(res.message, res.success);
+                }}
+                className="py-2 px-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 font-black text-xs transition flex items-center gap-1.5 shadow-sm cursor-pointer"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>🔍 Olheiro: Nova Promessa (R$ 100k)</span>
+              </button>
+            )}
+          </div>
+
+          {activeTab === 'pro' ? (
+            <>
+              {/* Painel de Ações Rápidas de Escalação (Conforme Imagem 1) */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 bg-zinc-900/70 border border-zinc-800 rounded-xl p-4">
             
             {/* Lado Titulares */}
             <div className="flex flex-col gap-2">
@@ -441,6 +510,22 @@ export const ManagerRosterModal: React.FC<ManagerRosterModalProps> = ({ isOpen, 
                         <td className="py-2 px-3 text-center text-zinc-400 font-mono text-[11px]">
                           {player.stats?.matches || 0}/{player.stats?.goals || 0}/{player.stats?.assists || 0}
                         </td>
+
+                        {/* Ações / Transição de Base */}
+                        <td className="py-2 px-2 text-right">
+                          {player.age <= 20 && !isTitular && (
+                            <button
+                              onClick={() => {
+                                const res = demoteToYouthRoster(club.id, player.id);
+                                showToast(res.message, res.success);
+                              }}
+                              className="py-1 px-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-amber-300 font-bold text-[10px] transition border border-zinc-700 whitespace-nowrap cursor-pointer"
+                              title="Enviar promessa para a base Sub-20 para rodagem"
+                            >
+                              ⬇️ Base
+                            </button>
+                          )}
+                        </td>
                       </tr>
                     );
                   })}
@@ -448,6 +533,98 @@ export const ManagerRosterModal: React.FC<ManagerRosterModalProps> = ({ isOpen, 
               </table>
             </div>
           </div>
+            </>
+          ) : (
+            /* TAB: CATEGORIA DE BASE SUB-20 */
+            <div className="space-y-4">
+              <div className="p-3.5 bg-emerald-950/30 border border-emerald-500/30 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+                <div>
+                  <h4 className="font-black text-emerald-400 flex items-center gap-1.5">
+                    <Sparkles className="w-4 h-4" />
+                    Celeiro de Craques Sub-20 ({youthRoster.length} atletas)
+                  </h4>
+                  <p className="text-zinc-400 text-[11px] mt-0.5">
+                    Atletas da base evoluem rápido e não contam no teto salarial do profissional até serem promovidos.
+                  </p>
+                </div>
+                <div className="text-[11px] text-zinc-400">
+                  Idade máx: <strong className="text-zinc-200">20 anos</strong> · Custo de captação: <strong className="text-zinc-200">R$ 100k</strong>
+                </div>
+              </div>
+
+              {/* Tabela de Atletas da Base */}
+              <div className="border border-zinc-800 rounded-xl overflow-hidden bg-zinc-900/30">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs text-zinc-300">
+                    <thead className="bg-zinc-900 text-zinc-400 text-[10px] uppercase font-bold tracking-wider border-b border-zinc-800">
+                      <tr>
+                        <th className="py-2.5 px-3">Pos</th>
+                        <th className="py-2.5 px-3">Nome</th>
+                        <th className="py-2.5 px-2 text-center">Idade</th>
+                        <th className="py-2.5 px-2 text-center">OVR</th>
+                        <th className="py-2.5 px-2 text-center">Potencial</th>
+                        <th className="py-2.5 px-3 text-center">4 Habilidades da Posição</th>
+                        <th className="py-2.5 px-2 text-center">Energia</th>
+                        <th className="py-2.5 px-3 text-right">Ação</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-zinc-800/60">
+                      {youthRoster.map((player) => {
+                        const skills = getFourSkills(player);
+                        return (
+                          <tr key={player.id} className="hover:bg-zinc-800/40 transition">
+                            <td className="py-2 px-3">
+                              <span className="px-2 py-1 rounded text-[11px] font-black bg-zinc-800 text-zinc-200">
+                                {player.position}
+                              </span>
+                            </td>
+                            <td className="py-2 px-3 font-semibold text-white whitespace-nowrap">
+                              {player.name}
+                            </td>
+                            <td className="py-2 px-2 text-center text-zinc-400">
+                              {player.age} anos
+                            </td>
+                            <td className="py-2 px-2 text-center">
+                              <span className="px-1.5 py-0.5 rounded font-black text-[11px] bg-zinc-800 text-zinc-300">
+                                {player.overall}
+                              </span>
+                            </td>
+                            <td className="py-2 px-2 text-center font-bold text-amber-400">
+                              {player.potential} ⭐
+                            </td>
+                            <td className="py-2 px-3">
+                              <div className="flex items-center justify-center gap-2">
+                                {skills.map((s, idx) => (
+                                  <div key={idx} className="flex items-center gap-0.5 text-[11px]">
+                                    <span className="text-zinc-500 font-medium">{s.label}</span>
+                                    <span className="text-zinc-200 font-bold">{s.val}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </td>
+                            <td className="py-2 px-2 text-center text-emerald-400 font-semibold">
+                              {player.energy}%
+                            </td>
+                            <td className="py-2 px-3 text-right">
+                              <button
+                                onClick={() => {
+                                  const res = promoteYouthPlayer(club.id, player.id);
+                                  showToast(res.message, res.success);
+                                }}
+                                className="py-1.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-zinc-950 font-black text-xs transition shadow-sm flex items-center gap-1 ml-auto cursor-pointer"
+                              >
+                                <span>⬆️ Promover</span>
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
 
         </div>
 

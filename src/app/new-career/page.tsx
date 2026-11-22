@@ -1100,75 +1100,78 @@ export default function NewCareerPage() {
                       </div>
                     </div>
 
-                    <div className="space-y-3">
-                      {PLAYSTYLES_GOLD.map((style) => {
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {PLAYSTYLES_GOLD.map((style, idx) => {
                         const isSelected = selectedGoldPlayStyle === style.id;
+                        const isLast = idx === PLAYSTYLES_GOLD.length - 1 && PLAYSTYLES_GOLD.length % 2 !== 0;
                         return (
                           <button
                             key={style.id}
                             type="button"
                             onClick={() => setSelectedGoldPlayStyle(style.id)}
-                            className={`w-full p-4 sm:p-5 rounded-2xl border text-left transition-all cursor-pointer flex flex-col gap-3 ${
+                            className={`p-3.5 sm:p-4 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between gap-2.5 ${
+                              isLast ? 'sm:col-span-2' : ''
+                            } ${
                               isSelected
                                 ? 'border-amber-500 bg-amber-500/15 shadow-md shadow-amber-500/10'
                                 : 'border-border bg-secondary/40 hover:bg-secondary'
                             }`}
                           >
-                            {/* Topo do Card: Ícone, Título, Tagline e Valor Financeiro */}
-                            <div className="flex items-start justify-between gap-3 w-full">
-                              <div className="flex items-center gap-3 min-w-0">
-                                <span className="text-2xl p-2 sm:p-2.5 rounded-xl bg-card border border-border shrink-0 shadow-sm">
+                            {/* Topo do Card: Ícone, Título, Tagline e Valor */}
+                            <div className="flex items-start justify-between gap-2 w-full">
+                              <div className="flex items-center gap-2.5 min-w-0">
+                                <span className="text-xl p-2 rounded-xl bg-card border border-border shrink-0 shadow-sm">
                                   {style.icon}
                                 </span>
                                 <div className="min-w-0">
-                                  <div className="flex items-center gap-2 flex-wrap">
-                                    <h4 className="font-display text-sm sm:text-base font-black text-foreground">
+                                  <div className="flex items-center gap-1.5 flex-wrap">
+                                    <h4 className="font-display text-xs sm:text-sm font-black text-foreground truncate">
                                       {style.name}
                                     </h4>
                                     {isSelected && (
-                                      <span className="text-[10px] font-black uppercase tracking-wider bg-amber-500 text-zinc-950 px-2 py-0.5 rounded-full">
-                                        Selecionado
+                                      <span className="text-[9px] font-black uppercase tracking-wider bg-amber-500 text-zinc-950 px-1.5 py-0.2 rounded-full">
+                                        Ativo
                                       </span>
                                     )}
                                   </div>
-                                  <span className="text-xs font-semibold text-amber-400/90 block mt-0.5">
+                                  <span className="text-[11px] font-semibold text-amber-400/90 block mt-0.5 truncate">
                                     {style.tagline}
                                   </span>
                                 </div>
                               </div>
-                              <span className="text-[11px] font-mono font-black text-amber-400 bg-amber-500/20 px-2.5 py-1 rounded-full border border-amber-500/30 shrink-0">
-                                Valor: {formatCurrency(style.value)}
+                              <span className="text-[10px] font-mono font-black text-amber-400 bg-amber-500/20 px-2 py-0.5 rounded-full border border-amber-500/30 shrink-0">
+                                {formatCurrency(style.value)}
                               </span>
                             </div>
 
-                            {/* Meio: Descrição Detalhada */}
-                            <p className="text-xs text-muted-foreground leading-relaxed">
+                            {/* Meio: Descrição */}
+                            <p className="text-[11px] text-muted-foreground line-clamp-2">
                               {style.description}
                             </p>
 
-                            {/* Rodapé Fluido: Badges dos Atributos Aumentados (Zero quebra / Zero overflow) */}
-                            <div className="pt-2.5 border-t border-border/60 flex flex-wrap items-center gap-2 w-full">
-                              <span className="text-[10px] font-black uppercase tracking-wider text-emerald-400 bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 rounded shrink-0">
-                                ⚡ Inicia Aumentado:
+                            {/* Rodapé Fluido: Badges dos Atributos Aumentados */}
+                            <div className="pt-2 border-t border-border/60 flex flex-wrap items-center gap-1.5 w-full">
+                              <span className="text-[9px] font-black uppercase tracking-wider text-emerald-400 bg-emerald-500/15 border border-emerald-500/30 px-1.5 py-0.5 rounded shrink-0">
+                                ⚡ Inicia:
                               </span>
-                              <div className="flex items-center gap-1.5 flex-wrap min-w-0">
+                              <div className="flex items-center gap-1 flex-wrap min-w-0">
                                 {Object.entries(style.initialBoost).map(([k, val]) => (
                                   <span
                                     key={k}
-                                    className="text-[10px] sm:text-[11px] font-mono font-black bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded shadow-sm"
+                                    className="text-[10px] font-mono font-black bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-1.5 py-0.2 rounded shadow-sm"
                                   >
-                                    +{val} {k === 'pace' ? 'Velocidade' :
-                                           k === 'dribbling' ? 'Drible' :
-                                           k === 'finishing' ? 'Finalização' :
-                                           k === 'shooting' ? 'Chute' :
-                                           k === 'passing' ? 'Passe' :
-                                           k === 'playmaker' ? 'Armador' :
-                                           k === 'tackling' ? 'Desarme' :
-                                           k === 'defending' ? 'Defesa' :
-                                           k === 'crossing' ? 'Cruzamento' :
-                                           k === 'heading' ? 'Cabeceio' :
-                                           k === 'jumping' ? 'Salto' :
-                                           k === 'elasticity' ? 'Elasticidade' : k}
+                                    +{val} {k === 'pace' ? 'Vel' :
+                                           k === 'dribbling' ? 'Dri' :
+                                           k === 'finishing' ? 'Fin' :
+                                           k === 'shooting' ? 'Chu' :
+                                           k === 'passing' ? 'Pas' :
+                                           k === 'playmaker' ? 'Arm' :
+                                           k === 'tackling' ? 'Des' :
+                                           k === 'defending' ? 'Def' :
+                                           k === 'crossing' ? 'Cru' :
+                                           k === 'heading' ? 'Cab' :
+                                           k === 'jumping' ? 'Sal' :
+                                           k === 'elasticity' ? 'Ela' : k}
                                   </span>
                                 ))}
                               </div>
@@ -1480,21 +1483,31 @@ export default function NewCareerPage() {
                         </div>
                       </div>
                       <div>
-                        <label className="block text-xs font-bold text-muted-foreground mb-1 uppercase">
-                          Formação Inicial
+                        <label className="block text-xs font-bold text-muted-foreground mb-1.5 uppercase">
+                          Formação Tática Inicial
                         </label>
-                        <select
-                          value={managerFormation}
-                          onChange={(e) => setManagerFormation(e.target.value as TacticalFormation)}
-                          style={{ colorScheme: 'dark' }}
-                          className="w-full px-3.5 py-3 rounded-xl border border-border bg-zinc-900 text-white text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500 [&>option]:bg-zinc-900 [&>option]:text-white cursor-pointer shadow-sm"
-                        >
-                          <option value="4-3-3" className="bg-zinc-900 text-white py-2">4-3-3 Clássico</option>
-                          <option value="4-4-2" className="bg-zinc-900 text-white py-2">4-4-2 Tradicional</option>
-                          <option value="3-5-2" className="bg-zinc-900 text-white py-2">3-5-2 Ofensivo</option>
-                          <option value="4-2-3-1" className="bg-zinc-900 text-white py-2">4-2-3-1 Europeu</option>
-                          <option value="5-3-2" className="bg-zinc-900 text-white py-2">5-3-2 Retranca</option>
-                        </select>
+                        <div className="grid grid-cols-2 gap-1.5">
+                          {[
+                            { id: '4-3-3', label: '4-3-3 Clássico' },
+                            { id: '4-4-2', label: '4-4-2 Tradicional' },
+                            { id: '4-2-3-1', label: '4-2-3-1 Europeu' },
+                            { id: '3-5-2', label: '3-5-2 Ofensivo' },
+                            { id: '5-3-2', label: '5-3-2 Retranca' },
+                          ].map((f) => (
+                            <button
+                              key={f.id}
+                              type="button"
+                              onClick={() => setManagerFormation(f.id as TacticalFormation)}
+                              className={`py-2 px-2 rounded-xl text-xs font-bold border transition-all cursor-pointer text-center truncate ${
+                                managerFormation === f.id
+                                  ? 'border-emerald-500 bg-emerald-500/15 text-emerald-400 font-black shadow-sm'
+                                  : 'border-border bg-secondary/60 hover:bg-secondary text-zinc-300'
+                              }`}
+                            >
+                              {f.label}
+                            </button>
+                          ))}
+                        </div>
                       </div>
                     </div>
 

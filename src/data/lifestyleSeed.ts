@@ -6,18 +6,49 @@
 export interface LifestyleItem {
   id: string;
   name: string;
-  category: 'vehicle' | 'real_estate' | 'luxury' | 'family';
+  category: 'vehicle' | 'real_estate' | 'luxury' | 'family' | 'staff' | 'investment';
   price: number;
   hallOfFamePoints: number;
   moraleBonus: number;
   fameBonus: number;
   familyBonus?: number;
+  energyRecoveryBonus?: number;       // +% recuperação passiva de energia semanal
+  injuryReductionPercent?: number;    // -% chance de sofrer lesão muscular
+  xpBonusPercent?: number;            // +% de XP ganho em treinos individuais
+  passiveWeeklyIncome?: number;       // Renda semanal passiva gerada (aluguéis/dividendos)
+  unlocksBorrowCarDilemma?: boolean;  // Se desbloqueia dilema de emprestar carro
   icon: string;
   headline: string;
   desc: string;
 }
 
 export const LIFESTYLE_CATALOG: LifestyleItem[] = [
+  {
+    id: 'fisioterapeuta_particular',
+    name: 'Fisioterapeuta Particular de Elite',
+    category: 'staff',
+    price: 60000,
+    hallOfFamePoints: 3,
+    moraleBonus: 10,
+    fameBonus: 5,
+    injuryReductionPercent: 40,
+    icon: '🩺',
+    headline: 'Profissionalismo: Craque contrata fisioterapeuta particular e blinda o corpo contra lesões!',
+    desc: 'Tratamentos preventivos pós-jogo, massagem miofascial e botas de compressão. Reduz a chance de lesão muscular em 40%.',
+  },
+  {
+    id: 'personal_trainer',
+    name: 'Personal Trainer & Nutricionista',
+    category: 'staff',
+    price: 45000,
+    hallOfFamePoints: 2,
+    moraleBonus: 8,
+    fameBonus: 5,
+    xpBonusPercent: 25,
+    icon: '🏋️',
+    headline: 'Foco total: Atleta faz treinos complementares em casa e melhora a evolução física!',
+    desc: 'Dieta personalizada e treinos funcionais de potência. Aumenta o ganho de XP nos treinos em +25%.',
+  },
   {
     id: 'relogio_marca',
     name: 'Relógio de Marca Suíço',
@@ -38,9 +69,36 @@ export const LIFESTYLE_CATALOG: LifestyleItem[] = [
     hallOfFamePoints: 2,
     moraleBonus: 12,
     fameBonus: 10,
+    unlocksBorrowCarDilemma: true,
     icon: '🚗',
     headline: 'Novo possante: Atleta chega ao estádio pilotando SUV esportiva zero km!',
     desc: 'Chega de carona ou ônibus! Veículo veloz, confortável e com presença no estacionamento do CT.',
+  },
+  {
+    id: 'superesportivo_importado',
+    name: 'Superesportivo Importado (V8 Biturbo)',
+    category: 'vehicle',
+    price: 950000,
+    hallOfFamePoints: 5,
+    moraleBonus: 30,
+    fameBonus: 35,
+    unlocksBorrowCarDilemma: true,
+    icon: '🏎️',
+    headline: 'MÁQUINA! Craque adquire superesportivo importado e atrai olhares no clube!',
+    desc: 'Acelera de 0 a 100 em 3 segundos. Desperta a cobiça de colegas que pedem para dar uma voltinha.',
+  },
+  {
+    id: 'fundos_imobiliarios',
+    name: 'Galpões & Imóveis de Renda de Aluguel',
+    category: 'investment',
+    price: 800000,
+    hallOfFamePoints: 4,
+    moraleBonus: 15,
+    fameBonus: 10,
+    passiveWeeklyIncome: 12000,
+    icon: '📈',
+    headline: 'Visão de futuro: Craque investe em patrimônio imobiliário e garante renda passiva!',
+    desc: 'Imóveis comerciais alugados que depositam automaticamente R$ 12.000 por semana no saldo do jogador.',
   },
   {
     id: 'casa_mae',
@@ -54,6 +112,19 @@ export const LIFESTYLE_CATALOG: LifestyleItem[] = [
     icon: '🏡',
     headline: 'EMOCIONANTE! Craque compra mansão para a mãe e cumpre promessa de infância!',
     desc: 'O maior sonho de todo boleiro brasileiro: tirar a família do sufoco e dar uma casa própria com piscina para a dona Maria.',
+  },
+  {
+    id: 'mansao_spa',
+    name: 'Mansão com SPA & Crioterapia',
+    category: 'real_estate',
+    price: 2500000,
+    hallOfFamePoints: 9,
+    moraleBonus: 35,
+    fameBonus: 30,
+    energyRecoveryBonus: 20,
+    icon: '🏰',
+    headline: 'Palácio do boleiro: Craque inaugura mansão com centro de recuperação próprio!',
+    desc: 'Banheira de hidromassagem, câmara fria e sauna. Recupera +20% de energia passiva toda semana.',
   },
   {
     id: 'lancha',

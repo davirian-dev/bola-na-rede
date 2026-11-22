@@ -14,6 +14,7 @@ export const ManagerFinancesModal: React.FC<ManagerFinancesModalProps> = ({ isOp
     clubs,
     managerProfile,
     upgradeClubFacility,
+    setStadiumTicketPrice,
   } = useGameStore();
 
   const [activeTab, setActiveTab] = useState<'overview' | 'stadium' | 'facility' | 'board'>('overview');
@@ -298,6 +299,55 @@ export const ManagerFinancesModal: React.FC<ManagerFinancesModalProps> = ({ isOp
                     R$ {stadium.ticketPrice || 50}
                   </div>
                   <span className="text-[10px] text-zinc-400">Preço médio configurado</span>
+                </div>
+              </div>
+
+              {/* Controle de Preço do Ingresso & Bilheteria */}
+              <div className="p-4 rounded-xl bg-zinc-900/60 border border-zinc-800 space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div>
+                    <h4 className="text-xs font-black text-white flex items-center gap-2">
+                      🎟️ Política de Preço do Ingresso
+                      <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-bold">
+                        R$ {stadium.ticketPrice || 50} por entrada
+                      </span>
+                    </h4>
+                    <p className="text-[11px] text-zinc-400 mt-0.5">
+                      Ingressos mais baratos atraem povão e lotam o caldeirão; ingressos caros rendem mais por jogo, mas exigem boa fase.
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-1.5">
+                    {[
+                      { label: 'Popular', price: 25, desc: 'Lotação 95%' },
+                      { label: 'Padrão', price: 50, desc: 'Lotação 80%' },
+                      { label: 'VIP / Clássico', price: 90, desc: 'Lotação 60%' },
+                    ].map((pol) => {
+                      const isSelected = (stadium.ticketPrice || 50) === pol.price;
+                      return (
+                        <button
+                          key={pol.price}
+                          type="button"
+                          onClick={() => setStadiumTicketPrice(club.id, pol.price)}
+                          className={`py-1.5 px-3 rounded-lg text-xs font-bold border transition cursor-pointer ${
+                            isSelected
+                              ? 'bg-emerald-500 text-zinc-950 border-emerald-500 font-black shadow-sm'
+                              : 'bg-zinc-950 text-zinc-400 border-zinc-800 hover:text-white'
+                          }`}
+                        >
+                          <span>{pol.label} (R$ {pol.price})</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Projeção de Renda */}
+                <div className="pt-2 border-t border-zinc-800/60 flex items-center justify-between text-xs text-zinc-400">
+                  <span>Projeção de Renda por Partida em Casa:</span>
+                  <span className="font-mono font-black text-emerald-400">
+                    ~R$ {(((club.stadiumCapacity || 50000) * ((stadium.ticketPrice || 50) === 25 ? 0.95 : (stadium.ticketPrice || 50) === 50 ? 0.80 : 0.60) * (stadium.ticketPrice || 50)) / 1000).toFixed(0)} mil / jogo
+                  </span>
                 </div>
               </div>
 

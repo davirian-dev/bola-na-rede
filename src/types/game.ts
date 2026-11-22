@@ -101,6 +101,7 @@ export interface Club {
   division: Division;
   reputation: number;     // 1 a 100
   budget: number;         // Orçamento disponível em R$
+  transferBudget?: number;// Verba de transferências do clube
   wageBudget: number;     // Teto semanal para salários
   stadiumName: string;
   stadiumCapacity: number;
@@ -403,6 +404,9 @@ export interface PlayerCareerProfile {
   nationalTeam?: NationalTeamData;// Convocação e histórico na Seleção Brasileira
   youthTournamentFinished?: boolean;
   avatar?: CharacterAvatar;
+  isInjured?: boolean;           // Se está lesionado no departamento médico
+  injuryWeeks?: number;          // Semanas restantes de recuperação
+  titles?: Record<string, number>; // Contagem de títulos conquistados por ID de troféu
 }
 
 export type ManagerTacticsPhilosophy = 
@@ -467,6 +471,7 @@ export interface ManagerCareerProfile {
     playerFocus: Record<string, string>; // playerId -> 'finishing' | 'passing' | etc.
   };
   selectedReservesIds?: string[]; // IDs dos 7 reservas escalados para o banco
+  titles?: Record<string, number>; // Títulos oficiais conquistados na carreira de treinador
 }
 
 export interface LeagueStanding {

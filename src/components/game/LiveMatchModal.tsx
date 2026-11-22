@@ -97,6 +97,26 @@ export function LiveMatchModal({
   const [awayOffsides, setAwayOffsides] = useState(0);
   const [varReviewBanner, setVarReviewBanner] = useState<string | null>(null);
 
+  // Nível de Esforço do Atleta (1: Cadenciado, 2: Equilibrado, 3: Sangue no Olho)
+  const [effortLevel, setEffortLevel] = useState<1 | 2 | 3>(2);
+  const [userInjuredInMatch, setUserInjuredInMatch] = useState(false);
+  const [uniformKit, setUniformKit] = useState<'home' | 'away'>('home');
+
+  // Estatísticas Globais da Partida para o Pós-Jogo
+  const [matchStats] = useState({
+    possessionHome: Math.floor(Math.random() * 12) + 48,
+    shotsHome: Math.floor(Math.random() * 8) + 9,
+    shotsAway: Math.floor(Math.random() * 7) + 6,
+    shotsOnTargetHome: Math.floor(Math.random() * 4) + 4,
+    shotsOnTargetAway: Math.floor(Math.random() * 3) + 3,
+    passesAccHome: Math.floor(Math.random() * 8) + 81,
+    passesAccAway: Math.floor(Math.random() * 8) + 76,
+    foulsHome: Math.floor(Math.random() * 6) + 8,
+    foulsAway: Math.floor(Math.random() * 6) + 9,
+    cornersHome: Math.floor(Math.random() * 5) + 3,
+    cornersAway: Math.floor(Math.random() * 4) + 2,
+  });
+
   const isUserHome = mode === 'player' 
     ? playerProfile?.clubId === homeClub.id 
     : managerProfile?.clubId === homeClub.id;
@@ -183,33 +203,40 @@ export function LiveMatchModal({
       setMinute((prev) => {
         const nextMin = prev + 1;
 
-        // Disparo do Momento Decisivo no Modo Jogador (por volta dos 34' ou 75')
-        if (mode === 'player' && !momentResolved && (nextMin === 35 || nextMin === 74)) {
-          setIsPlaying(false);
-          let chosenMoment: 'penalty_minigame' | 'pass_minigame' | 'dribble_minigame';
-          let narrative = '';
+        // Disparo do Momento Decisivo no Modo Jogador baseado no Nível de Esforço
+        const triggerMinutes = effortLevel === 1 
+          ? [62] 
+          : effortLevel === 2 
+          ? [35, 74] 
+          : [20, 38, 64, 82];
 
-          if (playerProfile?.isPenaltyTaker && Math.random() < 0.65) {
-            chosenMoment = 'penalty_minigame';
-            narrative = `🎯 PÊNALTI PARA A EQUIPE! O árbitro aponta para a marca da cal! O cobrador oficial ${userActorName} assume a bola para a cobrança decisiva!`;
-          } else if (playerProfile?.isFreeKickTaker && Math.random() < 0.65) {
-            chosenMoment = 'penalty_minigame';
-            narrative = `☄️ FALTA PERIGOSA NA ENTRADA DA ÁREA! O especialista ${userActorName} ajeita a bola com carinho e se prepara para o chute com veneno!`;
-          } else {
-            const clutchTypes: ('penalty_minigame' | 'pass_minigame' | 'dribble_minigame')[] = [
-              'dribble_minigame',
-              'penalty_minigame',
-              'pass_minigame',
-            ];
-            chosenMoment = clutchTypes[Math.floor(Math.random() * clutchTypes.length)];
-            narrative = chosenMoment === 'dribble_minigame'
-              ? `⚡ LANCE DECISIVO! ${userActorName} parte para cima no 1 contra 1! O zagueiro adversário vem dar o bote!`
-              : `🚨 MOMENTO DECISIVO! ${userActorName} recebe livre na grande área! O destino da partida está em seus pés!`;
+        if (mode === 'player' && !userInjuredInMatch && triggerMinutes.includes(nextMin)) {
+          setIsPlaying(false);
+
+          // Risco de Lesão Muscular no Esforço 3 (Intensidade Máxima)
+          if (effortLevel === 3 && Math.random() < 0.12) {
+            setUserInjuredInMatch(true);
+            setComments((c) => [
+              { minute: nextMin, text: `🏥 LESÃO MUSCULAR! A intensidade extrema causou uma fisgada forte na coxa de ${userActorName}! O atleta sai de maca!`, type: 'card' },
+              ...c,
+            ]);
+            if (playerProfile) {
+              useGameStore.setState({
+                playerProfile: {
+                  ...playerProfile,
+                  energy: Math.max(10, playerProfile.energy - 40),
+                  isInjured: true,
+                  injuryWeeks: Math.floor(Math.random() * 3) + 2,
+                },
+              });
+            }
+            return nextMin;
           }
 
-          setActiveMoment(chosenMoment);
+          // Abre a Decisão Tática do Craque (RPG Choice)
+          setActiveMoment('rpg_decision');
           setComments((c) => [
-            { minute: nextMin, text: narrative, type: 'chance' },
+            { minute: nextMin, text: `🚨 OPORTUNIDADE DECISIVA! A bola chega limpa para ${userActorName}! Qual será a sua decisão?`, type: 'chance' },
             ...c,
           ]);
           return nextMin;
@@ -773,7 +800,7 @@ export function LiveMatchModal({
         )}
 
         {/* 2. Placar Grande com Escudos e Cronômetro */}
-        <div className="p-4 sm:p-6 rounded-2xl bg-secondary/40 border border-border flex items-center justify-between mb-4">
+        <div className="p-4 sm:p-6 rounded-2xl bg-secondary/40 border border-border flex items-center justify-between mb-3">
           {/* Clube Mandante */}
           <div className="flex items-center gap-3 sm:gap-4 flex-1">
             <ClubBadge
@@ -818,6 +845,85 @@ export function LiveMatchModal({
           </div>
         </div>
 
+        {/* Faixa de Configurações da Partida: Esforço & Uniforme */}
+        <div className="mb-3 px-3 py-2 rounded-xl bg-zinc-900/60 border border-zinc-800 flex flex-wrap items-center justify-between gap-2 text-xs">
+          {/* Seletor de Esforço do Atleta */}
+          {mode === 'player' ? (
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="text-zinc-400 font-bold text-[11px]">Nível de Esforço:</span>
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => setEffortLevel(1)}
+                  className={`px-2.5 py-1 rounded-lg font-bold text-[10px] uppercase transition cursor-pointer ${
+                    effortLevel === 1
+                      ? 'bg-blue-600 text-white font-black shadow-sm'
+                      : 'bg-zinc-800 text-zinc-400 hover:text-white'
+                  }`}
+                  title="Cadenciado: Cansa menos (-12%), poucas chances clutch, zero lesão"
+                >
+                  🍃 1: Cadenciado
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEffortLevel(2)}
+                  className={`px-2.5 py-1 rounded-lg font-bold text-[10px] uppercase transition cursor-pointer ${
+                    effortLevel === 2
+                      ? 'bg-emerald-500 text-zinc-950 font-black shadow-sm'
+                      : 'bg-zinc-800 text-zinc-400 hover:text-white'
+                  }`}
+                  title="Normal: Cansaço equilibrado (-25%), 2 a 3 chances clutch"
+                >
+                  ⚽ 2: Normal
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEffortLevel(3)}
+                  className={`px-2.5 py-1 rounded-lg font-bold text-[10px] uppercase transition cursor-pointer ${
+                    effortLevel === 3
+                      ? 'bg-rose-600 text-white font-black shadow-sm'
+                      : 'bg-zinc-800 text-zinc-400 hover:text-white'
+                  }`}
+                  title="Sangue no Olho: Cansa muito (-45%), 4 a 5 chances clutch, alto risco de lesão muscular!"
+                >
+                  🔥 3: Sangue no Olho
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="text-zinc-400 text-[11px] font-bold">
+              Comando da Prancheta: Substituições e posturas táticas ativas
+            </div>
+          )}
+
+          {/* Seletor de Uniforme */}
+          <div className="flex items-center gap-1.5 ml-auto">
+            <span className="text-zinc-400 font-bold text-[11px]">Uniforme:</span>
+            <button
+              type="button"
+              onClick={() => setUniformKit('home')}
+              className={`px-2 py-0.5 rounded text-[10px] font-bold transition cursor-pointer ${
+                uniformKit === 'home'
+                  ? 'bg-emerald-500 text-zinc-950 font-black'
+                  : 'bg-zinc-800 text-zinc-400 hover:text-white'
+              }`}
+            >
+              👕 Titular
+            </button>
+            <button
+              type="button"
+              onClick={() => setUniformKit('away')}
+              className={`px-2 py-0.5 rounded text-[10px] font-bold transition cursor-pointer ${
+                uniformKit === 'away'
+                  ? 'bg-emerald-500 text-zinc-950 font-black'
+                  : 'bg-zinc-800 text-zinc-400 hover:text-white'
+              }`}
+            >
+              🎽 Reserva
+            </button>
+          </div>
+        </div>
+
         {/* Banner de Revisão do VAR (Impedimento) */}
         {varReviewBanner && (
           <div className="mb-3 p-2.5 rounded-xl bg-amber-500/20 border-2 border-amber-500/50 text-amber-300 text-xs font-black flex items-center justify-center gap-2 animate-pulse shadow-lg">
@@ -830,8 +936,72 @@ export function LiveMatchModal({
           
           {/* Coluna da Esquerda: Mini-Campo 2D & Controles de Treinador */}
           <div className="md:col-span-2 flex flex-col gap-3">
-            {/* Se estiver no Momento Decisivo: Abre o Minigame correspondente */}
-            {activeMoment === 'penalty_minigame' ? (
+            {/* Se estiver no Momento Decisivo: Abre a Decisão Tática ou o Minigame correspondente */}
+            {activeMoment === 'rpg_decision' ? (
+              <div className="flex-1 flex flex-col justify-center items-center p-6 bg-gradient-to-b from-zinc-950 via-zinc-900 to-zinc-950 rounded-2xl border-2 border-amber-500/50 shadow-2xl space-y-5 animate-in zoom-in-95 duration-200">
+                <div className="text-center space-y-1">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-amber-400 bg-amber-500/15 border border-amber-500/30 px-3 py-1 rounded-full">
+                    ⚡ Decisão do Craque ({minute}')
+                  </span>
+                  <h3 className="font-display text-xl sm:text-2xl font-black text-white mt-1">
+                    A bola é sua, {userActorName}!
+                  </h3>
+                  <p className="text-xs text-zinc-300 max-w-md">
+                    Você domina na intermediária de ataque com a zaga adversária se recompondo. Qual jogada você escolhe executar?
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full max-w-lg">
+                  {/* Opção 1: Chute direto */}
+                  <button
+                    type="button"
+                    onClick={() => setActiveMoment('penalty_minigame')}
+                    className="p-4 rounded-xl bg-gradient-to-br from-rose-950/80 to-zinc-900 border-2 border-rose-500/40 hover:border-rose-400 hover:scale-[1.02] transition flex flex-col items-center text-center gap-2 cursor-pointer shadow-lg group"
+                  >
+                    <span className="text-3xl p-2 rounded-xl bg-rose-500/20 group-hover:scale-110 transition">🚀</span>
+                    <div>
+                      <h4 className="text-sm font-black text-white">Chutar no Gol</h4>
+                      <p className="text-[11px] text-zinc-400 mt-0.5">Bomba ou colocada no ângulo</p>
+                    </div>
+                    <span className="text-[10px] font-black uppercase text-rose-400 bg-rose-500/20 px-2 py-0.5 rounded-full mt-auto">
+                      Finalização
+                    </span>
+                  </button>
+
+                  {/* Opção 2: Passe enfiado */}
+                  <button
+                    type="button"
+                    onClick={() => setActiveMoment('pass_minigame')}
+                    className="p-4 rounded-xl bg-gradient-to-br from-emerald-950/80 to-zinc-900 border-2 border-emerald-500/40 hover:border-emerald-400 hover:scale-[1.02] transition flex flex-col items-center text-center gap-2 cursor-pointer shadow-lg group"
+                  >
+                    <span className="text-3xl p-2 rounded-xl bg-emerald-500/20 group-hover:scale-110 transition">👟</span>
+                    <div>
+                      <h4 className="text-sm font-black text-white">Passe Enfiado</h4>
+                      <p className="text-[11px] text-zinc-400 mt-0.5">Achar companheiro livre</p>
+                    </div>
+                    <span className="text-[10px] font-black uppercase text-emerald-400 bg-emerald-500/20 px-2 py-0.5 rounded-full mt-auto">
+                      Assistência
+                    </span>
+                  </button>
+
+                  {/* Opção 3: Drible no 1x1 */}
+                  <button
+                    type="button"
+                    onClick={() => setActiveMoment('dribble_minigame')}
+                    className="p-4 rounded-xl bg-gradient-to-br from-blue-950/80 to-zinc-900 border-2 border-blue-500/40 hover:border-blue-400 hover:scale-[1.02] transition flex flex-col items-center text-center gap-2 cursor-pointer shadow-lg group"
+                  >
+                    <span className="text-3xl p-2 rounded-xl bg-blue-500/20 group-hover:scale-110 transition">⚡</span>
+                    <div>
+                      <h4 className="text-sm font-black text-white">Driblar no 1x1</h4>
+                      <p className="text-[11px] text-zinc-400 mt-0.5">Finta, caneta ou elástico</p>
+                    </div>
+                    <span className="text-[10px] font-black uppercase text-blue-400 bg-blue-500/20 px-2 py-0.5 rounded-full mt-auto">
+                      Habilidade
+                    </span>
+                  </button>
+                </div>
+              </div>
+            ) : activeMoment === 'penalty_minigame' ? (
               <div className="flex-1 flex flex-col justify-center">
                 <NSSPenaltyMinigame
                   mode="match_clutch"
@@ -1115,9 +1285,62 @@ export function LiveMatchModal({
               ))}
             </div>
 
-            {/* Ações de Fim de Jogo */}
+            {/* Ações de Fim de Jogo & Estatísticas Detalhadas */}
             {isFinished ? (
-              <div className="pt-3 border-t border-border mt-2">
+              <div className="pt-3 border-t border-border mt-2 space-y-2.5">
+                {/* Painel de Estatísticas Finais da Partida */}
+                <div className="p-3 rounded-xl bg-zinc-950/90 border border-zinc-800 space-y-2 text-xs">
+                  <div className="flex items-center justify-between border-b border-zinc-800 pb-1.5">
+                    <span className="font-bold text-white uppercase text-[10px] tracking-wider">
+                      📊 Estatísticas do Jogo
+                    </span>
+                    <span className="text-[10px] text-emerald-400 font-bold">
+                      Craque da Partida: {scorers[0]?.name || userActorName} ⭐
+                    </span>
+                  </div>
+
+                  {/* Posse de bola */}
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-[11px] text-zinc-300 font-semibold">
+                      <span>{homeClub.shortName} {matchStats.possessionHome}%</span>
+                      <span className="text-zinc-500">Posse de Bola</span>
+                      <span>{100 - matchStats.possessionHome}% {awayClub.shortName}</span>
+                    </div>
+                    <div className="h-1.5 w-full bg-zinc-800 rounded-full overflow-hidden flex">
+                      <div className="h-full bg-emerald-500" style={{ width: `${matchStats.possessionHome}%` }} />
+                      <div className="h-full bg-blue-500" style={{ width: `${100 - matchStats.possessionHome}%` }} />
+                    </div>
+                  </div>
+
+                  {/* Chutes totais e no gol */}
+                  <div className="grid grid-cols-3 text-center text-[11px] pt-1 border-t border-zinc-800/60">
+                    <span className="font-bold text-zinc-200">{matchStats.shotsHome} ({matchStats.shotsOnTargetHome})</span>
+                    <span className="text-zinc-500">Finalizações</span>
+                    <span className="font-bold text-zinc-200">{matchStats.shotsAway} ({matchStats.shotsOnTargetAway})</span>
+                  </div>
+
+                  {/* Passes certos */}
+                  <div className="grid grid-cols-3 text-center text-[11px]">
+                    <span className="font-bold text-zinc-200">{matchStats.passesAccHome}%</span>
+                    <span className="text-zinc-500">Passes Certos</span>
+                    <span className="font-bold text-zinc-200">{matchStats.passesAccAway}%</span>
+                  </div>
+
+                  {/* Faltas */}
+                  <div className="grid grid-cols-3 text-center text-[11px]">
+                    <span className="font-bold text-zinc-200">{matchStats.foulsHome}</span>
+                    <span className="text-zinc-500">Faltas</span>
+                    <span className="font-bold text-zinc-200">{matchStats.foulsAway}</span>
+                  </div>
+
+                  {/* Escanteios e Impedimentos */}
+                  <div className="grid grid-cols-3 text-center text-[11px]">
+                    <span className="font-bold text-zinc-200">{matchStats.cornersHome} / {homeOffsides}</span>
+                    <span className="text-zinc-500">Escanteios / Imp.</span>
+                    <span className="font-bold text-zinc-200">{matchStats.cornersAway} / {awayOffsides}</span>
+                  </div>
+                </div>
+
                 <button
                   type="button"
                   onClick={handleFinishMatchClick}
