@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
 import { ThemeProvider } from '@/components/layout/ThemeProvider';
+import { PWARegistration } from '@/components/layout/PWARegistration';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -59,6 +60,12 @@ export default function RootLayout({
       <head>
         <meta name="color-scheme" content="dark" />
         <meta name="darkreader-lock" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-title" content="Bola na Rede" />
+        <meta name="application-name" content="Bola na Rede: Carreira" />
+        <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <script
           type="application/ld+json"
@@ -91,6 +98,7 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
+          <PWARegistration />
           {children}
         </ThemeProvider>
       </body>

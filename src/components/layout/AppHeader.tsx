@@ -7,6 +7,7 @@ import { useGameStore } from '@/store/gameStore';
 import { ThemeToggle } from './ThemeToggle';
 import { ClubBadge } from '@/components/game/ClubBadge';
 import { ProModal } from '@/components/game/ProModal';
+import { InstallAppModal } from './InstallAppModal';
 import { formatCurrency } from '@/lib/calculations';
 import { 
   Trophy, 
@@ -18,12 +19,14 @@ import {
   Briefcase,
   Crown,
   Volume2,
-  VolumeX
+  VolumeX,
+  Smartphone
 } from 'lucide-react';
 import { sound } from '@/lib/soundEffects';
 
 export function AppHeader() {
   const [isProModalOpen, setIsProModalOpen] = useState(false);
+  const [isInstallModalOpen, setIsInstallModalOpen] = useState(false);
   const [isMuted, setIsMuted] = useState(sound.isMuted());
 
   const handleToggleSound = () => {
@@ -133,6 +136,18 @@ export function AppHeader() {
           )}
         </Link>
 
+        {/* Botão Baixar para Celular / PC */}
+        <button
+          type="button"
+          onClick={() => setIsInstallModalOpen(true)}
+          className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/25 text-xs font-black transition-all cursor-pointer shadow-sm active:scale-95"
+          title="Baixar aplicativo para Celular (Android/iOS) ou PC"
+        >
+          <Smartphone className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
+          <span className="hidden xs:inline sm:inline">Baixar App</span>
+          <span className="xs:hidden sm:hidden">App</span>
+        </button>
+
         {/* Badge Free/Pro Clicável */}
         <button
           onClick={() => setIsProModalOpen(true)}
@@ -172,6 +187,9 @@ export function AppHeader() {
 
       {/* Modal VIP / PRO */}
       <ProModal isOpen={isProModalOpen} onClose={() => setIsProModalOpen(false)} />
+
+      {/* Modal Baixar App PWA */}
+      <InstallAppModal isOpen={isInstallModalOpen} onClose={() => setIsInstallModalOpen(false)} />
     </header>
   );
 }

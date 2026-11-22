@@ -7,6 +7,7 @@ import Image from 'next/image';
 import { useGameStore } from '@/store/gameStore';
 import { isSupabaseConfigured, getSupabase } from '@/lib/supabase/client';
 import { ThemeToggle } from '@/components/layout/ThemeToggle';
+import { InstallAppModal } from '@/components/layout/InstallAppModal';
 import { 
   Play, 
   LogIn, 
@@ -18,7 +19,9 @@ import {
   Users, 
   Zap,
   ArrowRight,
-  Flame
+  Flame,
+  Smartphone,
+  Download
 } from 'lucide-react';
 
 export default function LandingAuthPage() {
@@ -31,6 +34,7 @@ export default function LandingAuthPage() {
   const [hasExistingSave, setHasExistingSave] = useState(false);
   const [activeTab, setActiveTab] = useState<'login' | 'signup' | 'guest'>('guest');
   const [isConfigured, setIsConfigured] = useState(true);
+  const [isInstallModalOpen, setIsInstallModalOpen] = useState(false);
 
   // Form states
   const [email, setEmail] = useState('');
@@ -198,6 +202,16 @@ export default function LandingAuthPage() {
         </div>
 
         <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => setIsInstallModalOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/25 text-xs font-black transition-all cursor-pointer shadow-sm active:scale-95"
+            title="Baixar aplicativo oficial no Celular ou PC"
+          >
+            <Smartphone className="w-4 h-4 text-emerald-400 animate-pulse" />
+            <span className="hidden sm:inline">Baixar App Celular</span>
+            <span className="sm:hidden">Baixar App</span>
+          </button>
           <ThemeToggle />
         </div>
       </header>
@@ -602,6 +616,9 @@ export default function LandingAuthPage() {
           Bola na Rede: Carreira © 2026 • Inspirado no clássico futebol brasileiro (Brasfoot, Elifoot & New Star Soccer).
         </p>
       </footer>
+
+      {/* Modal de Instalação PWA (Celular & PC) */}
+      <InstallAppModal isOpen={isInstallModalOpen} onClose={() => setIsInstallModalOpen(false)} />
     </div>
   );
 }

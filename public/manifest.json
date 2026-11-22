@@ -1,24 +1,64 @@
 {
+  "id": "/?source=pwa",
   "name": "Bola na Rede: Carreira",
   "short_name": "Bola na Rede",
-  "description": "Simulador de carreira de futebol: Modo Jogador (Sub-20 ao estrelato) e Modo Treinador com base brasileira.",
-  "start_url": "/",
+  "description": "Simulador de carreira de futebol: Modo Jogador (Sub-20 ao estrelato) e Modo Treinador com base brasileira e europeia.",
+  "start_url": "/dashboard?source=pwa",
+  "scope": "/",
   "display": "standalone",
-  "background_color": "#0c1510",
+  "background_color": "#09130d",
   "theme_color": "#10b981",
-  "orientation": "portrait-primary",
+  "orientation": "any",
+  "lang": "pt-BR",
+  "dir": "ltr",
+  "categories": ["sports", "games", "entertainment"],
   "icons": [
     {
       "src": "/icons/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
     },
     {
       "src": "/icons/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Continuar Carreira",
+      "short_name": "Carreira",
+      "description": "Acesse seu painel principal",
+      "url": "/dashboard",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Nova Carreira",
+      "short_name": "Novo Jogo",
+      "description": "Crie um novo jogador ou treinador",
+      "url": "/new-career",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Kit Hub Uniformes",
+      "short_name": "Uniformes",
+      "description": "Crie e edite uniformes do time",
+      "url": "/editor",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
     }
   ]
 }
