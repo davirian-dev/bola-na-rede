@@ -130,7 +130,14 @@ export function generateWeeklyNews(
     const away = state.clubs[copaFixture.awayClubId];
 
     if (home && away) {
-      const divRank: Record<Division, number> = { A: 4, B: 3, C: 2, D: 1, EUROPA: 5 };
+      const divRank: Record<Division, number> = {
+        A: 4, B: 3, C: 2, D: 1, EUROPA: 5,
+        PL: 5, CHAMPIONSHIP: 4,
+        LALIGA: 5, SEGUNDA_ESP: 4,
+        SERIE_A_ITA: 5, SERIE_B_ITA: 4,
+        BUNDESLIGA: 5, BUNDESLIGA_2: 4,
+        LIGUE_1: 5, LIGUE_2: 4,
+      };
       const homeRank = divRank[home.division] || 1;
       const awayRank = divRank[away.division] || 1;
 

@@ -95,6 +95,18 @@ export function AvatarCreatorModal({
     setMounted(true);
   }, []);
 
+  // Trava scroll da página ao abrir modal
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isOpen]);
+
   // Sincroniza quando initialAvatar ou isOpen mudar
   useEffect(() => {
     if (initialAvatar) {

@@ -94,11 +94,37 @@ export function generateAnnualCalendar(
   sub20Tournament: Sub20Tournament;
   allFixtures: Fixture[];
 } {
-  const divisions: Division[] = ['A', 'B', 'C', 'D', 'EUROPA'];
+  const divisions: Division[] = [
+    'A', 'B', 'C', 'D', 'EUROPA',
+    'PL', 'CHAMPIONSHIP',
+    'LALIGA', 'SEGUNDA_ESP',
+    'SERIE_A_ITA', 'SERIE_B_ITA',
+    'BUNDESLIGA', 'BUNDESLIGA_2',
+    'LIGUE_1', 'LIGUE_2'
+  ];
+
+  const LEAGUE_METADATA: Record<Division, { name: string; comp: CompetitionType; isPro: boolean; id: string }> = {
+    A: { name: 'Brasileirão Série A', comp: 'serie_a', isPro: true, id: 'brasileirao-serie-a' },
+    B: { name: 'Brasileirão Série B', comp: 'serie_b', isPro: true, id: 'brasileirao-serie-b' },
+    C: { name: 'Brasileirão Série C', comp: 'serie_c', isPro: true, id: 'brasileirao-serie-c' },
+    D: { name: 'Brasileirão Série D', comp: 'serie_d', isPro: false, id: 'brasileirao-serie-d' },
+    EUROPA: { name: 'UEFA Champions League', comp: 'champions_league', isPro: true, id: 'uefa-champions-league' },
+    PL: { name: 'Premier League (Inglaterra)', comp: 'premier_league', isPro: true, id: 'premier-league' },
+    CHAMPIONSHIP: { name: 'EFL Championship (Inglaterra B)', comp: 'championship', isPro: true, id: 'efl-championship' },
+    LALIGA: { name: 'La Liga EA Sports (Espanha)', comp: 'la_liga', isPro: true, id: 'la-liga' },
+    SEGUNDA_ESP: { name: 'La Liga Hypermotion (Espanha B)', comp: 'segunda_division', isPro: true, id: 'la-liga-2' },
+    SERIE_A_ITA: { name: 'Serie A Enilive (Itália)', comp: 'serie_a_ita', isPro: true, id: 'serie-a-ita' },
+    SERIE_B_ITA: { name: 'Serie BKT (Itália B)', comp: 'serie_b_ita', isPro: true, id: 'serie-b-ita' },
+    BUNDESLIGA: { name: 'Bundesliga (Alemanha)', comp: 'bundesliga', isPro: true, id: 'bundesliga' },
+    BUNDESLIGA_2: { name: '2. Bundesliga (Alemanha B)', comp: 'bundesliga_2', isPro: true, id: '2-bundesliga' },
+    LIGUE_1: { name: 'Ligue 1 McDonald\'s (França)', comp: 'ligue_1', isPro: true, id: 'ligue-1' },
+    LIGUE_2: { name: 'Ligue 2 BKT (França B)', comp: 'ligue_2', isPro: true, id: 'ligue-2' },
+  };
+
   const leagues = {} as Record<Division, League>;
   const allFixtures: Fixture[] = [];
 
-  // 1. GERAR BRASILEIRÃO (SÉRIES A, B, C e D) E CHAMPIONS LEAGUE / EUROPA
+  // 1. GERAR TODAS AS LIGAS (BRASIL SÉRIES A, B, C, D + LIGAS EUROPEIAS A e B)
   divisions.forEach((div) => {
     const divClubs = Object.values(clubs).filter((c) => c.division === div);
     const divTeamIds = divClubs.map((c) => c.id);
@@ -118,15 +144,20 @@ export function generateAnnualCalendar(
       points: 0,
     }));
 
-    const isEuropa = div === 'EUROPA';
-    const compType = (isEuropa ? 'champions_league' : `serie_${div.toLowerCase()}`) as CompetitionType;
-    const fixtures = generateRoundRobinFixtures(divTeamIds, compType, div, 1, 1);
+    const meta = LEAGUE_METADATA[div] || {
+      name: `Liga ${div}`,
+      comp: `serie_${div.toLowerCase()}` as CompetitionType,
+      isPro: true,
+      id: `liga-${div.toLowerCase()}`
+    };
+
+    const fixtures = generateRoundRobinFixtures(divTeamIds, meta.comp, div, 1, 1);
 
     leagues[div] = {
-      id: isEuropa ? 'champions-league-europa' : `brasileirao-serie-${div.toLowerCase()}`,
-      name: isEuropa ? 'Champions League • Europa' : `Brasileirão Série ${div}`,
+      id: meta.id,
+      name: meta.name,
       division: div,
-      isProOnly: isEuropa,
+      isProOnly: meta.isPro,
       standings,
       fixtures,
     };

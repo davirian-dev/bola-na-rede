@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useId } from 'react';
 import { CharacterAvatar } from '@/types/game';
 
 interface AvatarDisplayProps {
@@ -43,6 +43,7 @@ export function AvatarDisplay({
   const facialHair = avatar?.facialHair || 'none';
   const clothingStyle = avatar?.clothingStyle || 'jersey';
   const number = Math.max(1, Math.min(99, Math.round(Number(avatar?.jerseyNumber) || 10)));
+  const uniqueId = useId().replace(/:/g, '_');
   const primaryColor = safeColor(clubPrimaryColor, '#10b981');
   const secondaryColor = safeColor(clubSecondaryColor, '#ffffff');
 
@@ -56,15 +57,17 @@ export function AvatarDisplay({
   // Cor do cabelo adaptada aos fios grisalhos com a maturidade
   let hairColor = rawHairColor;
   if (isLegend) {
-    hairColor = rawHairColor === '#ffffff' ? '#ffffff' : '#e4e4e7'; // Majoritariamente prateado/branco
+    hairColor = '#e4e4e7'; // Majoritariamente prateado/branco
   } else if (isVeteran) {
-    hairColor = rawHairColor === '#ffffff' ? '#ffffff' : '#71717a'; // Meio grisalho elegante
+    hairColor = (rawHairColor === '#ffffff' || rawHairColor === '#f4f4f5') ? '#e4e4e7' : '#71717a'; // Meio grisalho elegante
   }
 
   // Garante contraste das sobrancelhas e mechas caso o cabelo seja platinado/branco
   const isLightHair = hairColor === '#ffffff' || hairColor === '#f4f4f5' || hairColor === '#f5f5f5' || hairColor === '#e4e4e7';
-  const eyebrowColor = isLightHair ? '#3f3f46' : hairColor;
-  const hairBorderColor = isLightHair ? '#a1a1aa' : 'rgba(0,0,0,0.25)';
+  const eyebrowColor = isLightHair ? '#27272a' : hairColor;
+  const hairBorderColor = isLightHair ? '#71717a' : 'rgba(0,0,0,0.35)';
+  const beardColor = isLightHair ? '#e4e4e7' : hairColor;
+  const beardBorderColor = isLightHair ? '#a1a1aa' : 'rgba(0,0,0,0.25)';
 
   return (
     <div className={`relative rounded-2xl overflow-hidden shrink-0 shadow-inner bg-gradient-to-b from-stone-900 to-zinc-950 flex items-center justify-center border border-border/50 ${sizeMap[size]} ${className}`}>
@@ -75,7 +78,7 @@ export function AvatarDisplay({
       >
         <defs>
           {/* Sombreamento sutil para pele */}
-          <linearGradient id={`skinGrad_${skinTone.replace('#','')}`} x1="0" y1="0" x2="0" y2="1">
+          <linearGradient id={`skinGrad_${uniqueId}`} x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor={skinTone} />
             <stop offset="100%" stopColor={skinTone} stopOpacity="0.88" />
           </linearGradient>
@@ -93,9 +96,10 @@ export function AvatarDisplay({
             <circle cx="50" cy="32" r="19" />
             <circle cx="36" cy="35" r="11" />
             <circle cx="64" cy="35" r="11" />
-            {/* Cachos estilizados */}
-            <circle cx="38" cy="25" r="5" fill="#ffffff" opacity="0.15" stroke="none" />
-            <circle cx="60" cy="26" r="4" fill="#ffffff" opacity="0.15" stroke="none" />
+            {/* Cachos estilizados com textura */}
+            <circle cx="38" cy="25" r="5" fill={isLightHair ? '#a1a1aa' : '#ffffff'} opacity={isLightHair ? 0.35 : 0.15} stroke="none" />
+            <circle cx="60" cy="26" r="4" fill={isLightHair ? '#a1a1aa' : '#ffffff'} opacity={isLightHair ? 0.35 : 0.15} stroke="none" />
+            <circle cx="50" cy="21" r="4.5" fill={isLightHair ? '#71717a' : '#000000'} opacity={0.12} stroke="none" />
           </g>
         )}
 
@@ -256,18 +260,20 @@ export function AvatarDisplay({
           fill="none"
         />
 
-        {/* Olhos Vivos de Craque */}
+        {/* Olhos Vivos de Craque com Contorno e Brilho */}
         {/* Olho Esquerdo */}
-        <ellipse cx="42.5" cy="44.5" rx="3.6" ry="3" fill="#ffffff" stroke="rgba(0,0,0,0.2)" strokeWidth="0.5" />
-        <circle cx="42.8" cy="44.5" r="2" fill="#1e293b" />
-        <circle cx="43" cy="44.5" r="1.1" fill="#020617" />
-        <circle cx="43.8" cy="43.6" r="0.7" fill="#ffffff" />
+        <ellipse cx="42.5" cy="44.5" rx="4.2" ry="3.4" fill="#ffffff" stroke="rgba(0,0,0,0.4)" strokeWidth="0.8" />
+        <circle cx="42.8" cy="44.5" r="2.2" fill="#1e293b" />
+        <circle cx="43" cy="44.5" r="1.3" fill="#09090b" />
+        <circle cx="44" cy="43.5" r="0.9" fill="#ffffff" />
+        <path d="M38 42.5 Q42.5 40.5 47 42.5" stroke="#09090b" strokeWidth="1" strokeLinecap="round" fill="none" />
 
         {/* Olho Direito */}
-        <ellipse cx="57.5" cy="44.5" rx="3.6" ry="3" fill="#ffffff" stroke="rgba(0,0,0,0.2)" strokeWidth="0.5" />
-        <circle cx="57.2" cy="44.5" r="2" fill="#1e293b" />
-        <circle cx="57" cy="44.5" r="1.1" fill="#020617" />
-        <circle cx="58" cy="43.6" r="0.7" fill="#ffffff" />
+        <ellipse cx="57.5" cy="44.5" rx="4.2" ry="3.4" fill="#ffffff" stroke="rgba(0,0,0,0.4)" strokeWidth="0.8" />
+        <circle cx="57.2" cy="44.5" r="2.2" fill="#1e293b" />
+        <circle cx="57" cy="44.5" r="1.3" fill="#09090b" />
+        <circle cx="58" cy="43.5" r="0.9" fill="#ffffff" />
+        <path d="M53 42.5 Q57.5 40.5 62 42.5" stroke="#09090b" strokeWidth="1" strokeLinecap="round" fill="none" />
 
         {/* Nariz Atlético */}
         <path
@@ -327,25 +333,32 @@ export function AvatarDisplay({
         {/* ============================================================ */}
         {facialHair === 'stubble' && (
           <path
-            d="M34 49 C34 59 40 62 50 63 C60 62 66 59 66 49 C62 54 56 55 50 55 C44 55 38 54 34 49 Z"
-            fill="rgba(0,0,0,0.24)"
+            d="M34 50 C34 59 40 62.5 50 63.5 C60 62.5 66 59 66 50 C62 53.5 56 55 50 55 C44 55 38 53.5 34 50 Z"
+            fill="rgba(0,0,0,0.28)"
             opacity={isYouth ? 0.45 : 1}
           />
         )}
 
         {facialHair === 'beard' && (
-          <g fill={hairColor} opacity={isYouth ? 0.45 : 0.95}>
-            {/* Barba na mandíbula */}
+          <g fill={beardColor} stroke={beardBorderColor} strokeWidth={isLightHair ? "0.8" : "0.5"} opacity={isYouth ? 0.45 : 0.95}>
+            {/* Barba na mandíbula bem abaixo dos olhos */}
             <path
-              d="M33 47 C33 59 39 63 50 64 C61 63 67 59 67 47 C63 53 57 55 50 55 C43 55 37 53 33 47 Z"
+              d="M34 51 C34 60 40 63.5 50 64 C60 63.5 66 60 66 51 C62 54 56 55.5 50 55.5 C44 55.5 38 54 34 51 Z"
             />
+            {/* Linhas de textura para barba clara não virar bloco sólido */}
+            {isLightHair && (
+              <g stroke="#a1a1aa" strokeWidth="0.7" fill="none">
+                <path d="M40 57 Q50 62 60 57" />
+                <path d="M43 60 Q50 63 57 60" />
+              </g>
+            )}
             {/* Bigode integrado sem cobrir lábio */}
             <path d="M44 53.5 Q50 51.5 56 53.5 Q50 55.5 44 53.5 Z" />
             {/* Fios grisalhos para veteranos */}
             {(isVeteran || isLegend) && (
               <path
                 d="M46 62 Q50 65 54 62"
-                stroke="rgba(255,255,255,0.6)"
+                stroke="rgba(255,255,255,0.7)"
                 strokeWidth="1.2"
                 fill="none"
               />
@@ -356,7 +369,9 @@ export function AvatarDisplay({
         {facialHair === 'mustache' && (
           <path
             d="M44 53.5 Q50 51.5 56 53.5 Q50 55.5 44 53.5 Z"
-            fill={hairColor}
+            fill={beardColor}
+            stroke={beardBorderColor}
+            strokeWidth={isLightHair ? "0.6" : "0"}
             opacity={isYouth ? 0.45 : 1}
           />
         )}

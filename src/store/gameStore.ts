@@ -41,6 +41,7 @@ import {
   TopScorer
 } from '@/types/game';
 import { generateBrazilDatabase } from '@/data/brazilSeed';
+import { generateEuropeanClubs } from '@/data/europeanLeaguesSeed';
 import { HISTORICAL_CONTROVERSIES } from '@/data/controversiesSeed';
 import { LIFESTYLE_CATALOG } from '@/data/lifestyleSeed';
 import { getPlayStyleGoldById } from '@/data/playStylesSeed';
@@ -190,7 +191,9 @@ interface GameStoreActions {
 export type GameStore = GameState & GameStoreActions;
 
 const initialDb = generateBrazilDatabase();
-const initialCalendar = generateAnnualCalendar(initialDb.clubs, 2026);
+const initialEuropeanDb = generateEuropeanClubs();
+const initialCombinedClubs = { ...initialDb.clubs, ...initialEuropeanDb };
+const initialCalendar = generateAnnualCalendar(initialCombinedClubs, 2026);
 
 const defaultTopScorers: Record<CompetitionType, TopScorer[]> = {
   serie_a: [],
@@ -200,6 +203,16 @@ const defaultTopScorers: Record<CompetitionType, TopScorer[]> = {
   sub_20: [],
   copa_brasil: [],
   champions_league: [],
+  premier_league: [],
+  championship: [],
+  la_liga: [],
+  segunda_division: [],
+  serie_a_ita: [],
+  serie_b_ita: [],
+  bundesliga: [],
+  bundesliga_2: [],
+  ligue_1: [],
+  ligue_2: [],
 };
 
 export const useGameStore = create<GameStore>()(
@@ -211,7 +224,7 @@ export const useGameStore = create<GameStore>()(
       currentWeek: 1,
       planTier: 'free',
       isGuest: true,
-      clubs: initialDb.clubs,
+      clubs: initialCombinedClubs,
       leagues: initialCalendar.leagues,
       copaDoBrasil: initialCalendar.copaDoBrasil,
       sub20Tournament: initialCalendar.sub20Tournament,
@@ -259,14 +272,18 @@ export const useGameStore = create<GameStore>()(
           c.id === 'xav'
         );
 
-        if (!state.clubs || Object.keys(state.clubs).length === 0 || !state.allFixtures || state.allFixtures.length === 0 || hasLegacyClubs) {
+        const needsEuropeanUpgrade = !state.clubs?.['mci'] || !state.leagues?.['PL'];
+
+        if (!state.clubs || Object.keys(state.clubs).length === 0 || !state.allFixtures || state.allFixtures.length === 0 || hasLegacyClubs || needsEuropeanUpgrade) {
           const freshDb = generateBrazilDatabase();
-          const freshCal = generateAnnualCalendar(freshDb.clubs, state.seasonYear || 2026);
+          const freshEuropean = generateEuropeanClubs();
+          const combinedClubs = { ...freshDb.clubs, ...freshEuropean };
+          const freshCal = generateAnnualCalendar(combinedClubs, state.seasonYear || 2026);
           
           let updatedPlayerProfile = state.playerProfile;
           if (updatedPlayerProfile) {
             let newClubId = updatedPlayerProfile.clubId;
-            if (newClubId === 'xav' || !freshDb.clubs[newClubId]) {
+            if (newClubId === 'xav' || !combinedClubs[newClubId]) {
               newClubId = 'brasil_pel';
             }
             updatedPlayerProfile = {
@@ -278,7 +295,7 @@ export const useGameStore = create<GameStore>()(
           let updatedManagerProfile = state.managerProfile;
           if (updatedManagerProfile) {
             let newClubId = updatedManagerProfile.clubId;
-            if (newClubId === 'xav' || !freshDb.clubs[newClubId]) {
+            if (newClubId === 'xav' || !combinedClubs[newClubId]) {
               newClubId = 'brasil_pel';
             }
             updatedManagerProfile = {
@@ -288,7 +305,7 @@ export const useGameStore = create<GameStore>()(
           }
 
           set({
-            clubs: freshDb.clubs,
+            clubs: combinedClubs,
             leagues: freshCal.leagues,
             copaDoBrasil: freshCal.copaDoBrasil,
             sub20Tournament: freshCal.sub20Tournament,
@@ -302,7 +319,8 @@ export const useGameStore = create<GameStore>()(
 
       syncOfficialClubNames: () => {
         const freshDb = generateBrazilDatabase();
-        set({ clubs: freshDb.clubs });
+        const freshEuropean = generateEuropeanClubs();
+        set({ clubs: { ...freshDb.clubs, ...freshEuropean } });
       },
 
       setRoundResultModalOpen: (open: boolean) => {
@@ -311,7 +329,9 @@ export const useGameStore = create<GameStore>()(
 
       resetGame: () => {
         const freshDb = generateBrazilDatabase();
-        const freshCal = generateAnnualCalendar(freshDb.clubs, 2026);
+        const freshEuropean = generateEuropeanClubs();
+        const combinedClubs = { ...freshDb.clubs, ...freshEuropean };
+        const freshCal = generateAnnualCalendar(combinedClubs, 2026);
         set({
           mode: 'player',
           generation: 1,
@@ -320,7 +340,7 @@ export const useGameStore = create<GameStore>()(
           planTier: 'free',
           playerProfile: undefined,
           managerProfile: undefined,
-          clubs: freshDb.clubs,
+          clubs: combinedClubs,
           leagues: freshCal.leagues,
           copaDoBrasil: freshCal.copaDoBrasil,
           sub20Tournament: freshCal.sub20Tournament,
@@ -828,7 +848,14 @@ export const useGameStore = create<GameStore>()(
         const candidateClubs = Object.values(state.clubs).filter((c) => {
           if (c.id === currentClubId) return false;
           if (!currentClub) return true;
-          const rank: Record<Division, number> = { A: 4, B: 3, C: 2, D: 1, EUROPA: 5 };
+          const rank: Record<Division, number> = {
+            A: 4, B: 3, C: 2, D: 1, EUROPA: 5,
+            PL: 5, CHAMPIONSHIP: 4,
+            LALIGA: 5, SEGUNDA_ESP: 4,
+            SERIE_A_ITA: 5, SERIE_B_ITA: 4,
+            BUNDESLIGA: 5, BUNDESLIGA_2: 4,
+            LIGUE_1: 5, LIGUE_2: 4,
+          };
           return (rank[c.division] || 1) >= (rank[currentClub.division] || 1);
         });
 

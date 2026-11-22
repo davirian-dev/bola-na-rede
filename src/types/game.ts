@@ -81,7 +81,22 @@ export interface Player {
   };
 }
 
-export type Division = 'A' | 'B' | 'C' | 'D' | 'EUROPA';
+export type Division = 
+  | 'A' 
+  | 'B' 
+  | 'C' 
+  | 'D' 
+  | 'EUROPA'
+  | 'PL'            // Premier League (Inglaterra - Divisão A)
+  | 'CHAMPIONSHIP'  // EFL Championship (Inglaterra - Divisão B)
+  | 'LALIGA'        // La Liga EA Sports (Espanha - Divisão A)
+  | 'SEGUNDA_ESP'   // La Liga Hypermotion (Espanha - Divisão B)
+  | 'SERIE_A_ITA'   // Serie A Enilive (Itália - Divisão A)
+  | 'SERIE_B_ITA'   // Serie BKT (Itália - Divisão B)
+  | 'BUNDESLIGA'    // Bundesliga (Alemanha - Divisão A)
+  | 'BUNDESLIGA_2'  // 2. Bundesliga (Alemanha - Divisão B)
+  | 'LIGUE_1'       // Ligue 1 McDonald's (França - Divisão A)
+  | 'LIGUE_2';      // Ligue 2 BKT (França - Divisão B)
 
 export type CompetitionType = 
   | 'serie_a' 
@@ -90,7 +105,43 @@ export type CompetitionType =
   | 'serie_d' 
   | 'sub_20' 
   | 'copa_brasil'
-  | 'champions_league';
+  | 'champions_league'
+  | 'premier_league'
+  | 'championship'
+  | 'la_liga'
+  | 'segunda_division'
+  | 'serie_a_ita'
+  | 'serie_b_ita'
+  | 'bundesliga'
+  | 'bundesliga_2'
+  | 'ligue_1'
+  | 'ligue_2';
+
+export type KitPattern = 
+  | 'solid'           // Liso clássico
+  | 'stripes_v'       // Listras verticais (Juventus, Santos, Milan, Grêmio)
+  | 'stripes_h'       // Listras horizontais (Flamengo, Celtic, Sporting)
+  | 'diagonal_sash'   // Faixa diagonal (Vasco, River Plate, Ponte Preta)
+  | 'half_and_half'   // Meio a meio (Monaco, Blackburn)
+  | 'gradient'        // Degradê moderno (PSG, Man City)
+  | 'checkered';      // Xadrez (Croácia, Boavista)
+
+export interface CustomKit {
+  id?: string;
+  name?: string;
+  author?: string;
+  primaryColor: string;
+  secondaryColor: string;
+  detailColor?: string;
+  pattern: KitPattern;
+  collarType?: 'round' | 'v_neck' | 'polo';
+  sponsorText?: string;
+  sponsorLogoUrl?: string;
+  badgeUrl?: string;
+  shortsColor?: string;
+  socksColor?: string;
+  createdAt?: string;
+}
 
 export interface Club {
   id: string;
@@ -118,6 +169,13 @@ export interface Club {
   tactics?: {
     formation?: TacticalFormation;
     philosophy?: ManagerTacticsPhilosophy;
+  };
+  country?: string;      // Ex: 'Brasil', 'Inglaterra', 'Espanha', 'Itália', 'Alemanha', 'França'
+  countryFlag?: string;  // Ex: '🇧🇷', '🏴󠁧󠁢󠁥󠁮󠁧󠁿', '🇪🇸', '🇮🇹', '🇩🇪', '🇫🇷'
+  customKits?: {
+    home: CustomKit;
+    away: CustomKit;
+    third?: CustomKit;
   };
 }
 

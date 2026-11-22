@@ -300,6 +300,16 @@ export function simulateWeekMatches(state: GameState): {
     sub_20: {},
     copa_brasil: {},
     champions_league: {},
+    premier_league: {},
+    championship: {},
+    la_liga: {},
+    segunda_division: {},
+    serie_a_ita: {},
+    serie_b_ita: {},
+    bundesliga: {},
+    bundesliga_2: {},
+    ligue_1: {},
+    ligue_2: {},
   };
 
   // Carrega artilharia existente

@@ -10,6 +10,7 @@ import { AppHeader } from '@/components/layout/AppHeader';
 import { DesktopSidebar } from '@/components/layout/DesktopSidebar';
 import { MobileBottomNav } from '@/components/layout/MobileBottomNav';
 import { GuestBanner } from '@/components/layout/GuestBanner';
+import { CommunityKitHub } from '@/components/editor/CommunityKitHub';
 import { 
   Database, 
   Download, 
@@ -19,7 +20,8 @@ import {
   Edit3, 
   ShieldCheck, 
   ArrowLeft,
-  AlertCircle
+  AlertCircle,
+  Shirt
 } from 'lucide-react';
 
 export default function EditorPage() {
@@ -29,7 +31,7 @@ export default function EditorPage() {
   const exportCommunityPack = useGameStore((s) => s.exportCommunityPack);
   const importCommunityPack = useGameStore((s) => s.importCommunityPack);
 
-  const [editorTab, setEditorTab] = useState<'editor' | 'gallery'>('editor');
+  const [editorTab, setEditorTab] = useState<'editor' | 'kits' | 'gallery'>('editor');
   const [selectedDivision, setSelectedDivision] = useState<Division>('A');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedClubId, setSelectedClubId] = useState<string>('fla');
@@ -170,10 +172,10 @@ export default function EditorPage() {
           </div>
 
           {/* Alternador de Abas do Editor */}
-          <div className="flex items-center gap-2 border-b border-border pb-1">
+          <div className="flex items-center gap-2 border-b border-border pb-1 overflow-x-auto no-scrollbar">
             <button
               onClick={() => setEditorTab('editor')}
-              className={`py-2 px-4 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${
+              className={`py-2 px-4 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer shrink-0 ${
                 editorTab === 'editor'
                   ? 'bg-emerald-500 text-zinc-950 shadow-sm'
                   : 'bg-secondary text-muted-foreground hover:text-foreground'
@@ -182,14 +184,25 @@ export default function EditorPage() {
               🛠️ Editor de Clubes & Elencos
             </button>
             <button
+              onClick={() => setEditorTab('kits')}
+              className={`py-2 px-4 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
+                editorTab === 'kits'
+                  ? 'bg-emerald-500 text-zinc-950 shadow-sm'
+                  : 'bg-secondary text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <Shirt className="w-3.5 h-3.5" />
+              <span>👕 Kit Hub da Comunidade</span>
+            </button>
+            <button
               onClick={() => setEditorTab('gallery')}
-              className={`py-2 px-4 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1.5 ${
+              className={`py-2 px-4 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
                 editorTab === 'gallery'
                   ? 'bg-emerald-500 text-zinc-950 shadow-sm'
                   : 'bg-secondary text-muted-foreground hover:text-foreground'
               }`}
             >
-              🌟 Galeria da Comunidade (1 Clique)
+              🌟 Galeria de Patches (1 Clique)
             </button>
           </div>
 
@@ -212,8 +225,13 @@ export default function EditorPage() {
             </div>
           )}
 
+          {/* Conteúdo da Aba Kit Hub de Uniformes */}
+          {editorTab === 'kits' && (
+            <CommunityKitHub initialClubId={selectedClubId} />
+          )}
+
           {/* Conteúdo da Galeria de Pacotes (1 Clique) */}
-          {editorTab === 'gallery' ? (
+          {editorTab === 'gallery' && (
             <div className="space-y-4">
               <div className="p-4 rounded-2xl bg-secondary/40 border border-border">
                 <h3 className="font-display text-base font-black text-foreground">
@@ -268,28 +286,47 @@ export default function EditorPage() {
                 ))}
               </div>
             </div>
-          ) : (
+          )}
+
+          {/* Conteúdo do Editor de Clubes & Elencos */}
+          {editorTab === 'editor' && (
             <>
-              {/* Seletor de Divisões (Série A, B, C, D) e Busca */}
+              {/* Seletor de Divisões (Série A, B, C, D e Ligas Europeias) e Busca */}
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-                <div className="flex items-center gap-1.5 p-1 rounded-xl bg-secondary text-xs font-bold">
-                  {(['A', 'B', 'C', 'D', 'EUROPA'] as Division[]).map((div) => (
+                <div className="flex items-center gap-1.5 p-1 rounded-xl bg-secondary text-xs font-bold overflow-x-auto no-scrollbar">
+                  {([
+                    { id: 'A', label: 'Série A' },
+                    { id: 'B', label: 'Série B' },
+                    { id: 'C', label: 'Série C' },
+                    { id: 'D', label: 'Série D' },
+                    { id: 'PL', label: 'Premier League' },
+                    { id: 'CHAMPIONSHIP', label: 'Championship' },
+                    { id: 'LALIGA', label: 'La Liga' },
+                    { id: 'SEGUNDA_ESP', label: 'La Liga 2' },
+                    { id: 'SERIE_A_ITA', label: 'Serie A (ITA)' },
+                    { id: 'SERIE_B_ITA', label: 'Serie B (ITA)' },
+                    { id: 'BUNDESLIGA', label: 'Bundesliga' },
+                    { id: 'BUNDESLIGA_2', label: '2. Bundesliga' },
+                    { id: 'LIGUE_1', label: 'Ligue 1' },
+                    { id: 'LIGUE_2', label: 'Ligue 2' },
+                    { id: 'EUROPA', label: 'Champions' },
+                  ] as { id: Division; label: string }[]).map((tab) => (
                     <button
-                      key={div}
+                      key={tab.id}
                       onClick={() => {
-                        setSelectedDivision(div);
-                        const firstInDiv = Object.values(clubs).find((c) => c.division === div);
+                        setSelectedDivision(tab.id);
+                        const firstInDiv = Object.values(clubs).find((c) => c.division === tab.id);
                         if (firstInDiv) setSelectedClubId(firstInDiv.id);
                       }}
-                      className={`py-1.5 px-3.5 rounded-lg transition-all cursor-pointer ${
-                        selectedDivision === div
-                          ? div === 'EUROPA'
+                      className={`py-1.5 px-3 rounded-lg transition-all cursor-pointer shrink-0 ${
+                        selectedDivision === tab.id
+                          ? tab.id === 'EUROPA'
                             ? 'bg-amber-400 text-zinc-950 font-black shadow-sm'
                             : 'bg-emerald-500 text-zinc-950 font-black shadow-sm'
                           : 'text-muted-foreground hover:text-foreground'
                       }`}
                     >
-                      {div === 'EUROPA' ? '👑 Europa' : `Série ${div}`}
+                      {tab.label}
                     </button>
                   ))}
                 </div>

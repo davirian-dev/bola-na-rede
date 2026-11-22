@@ -85,6 +85,7 @@ export default function NewCareerPage() {
 
   // Controle de Etapa e Modal Pro
   const [step, setStep] = useState<1 | 2>(1);
+  const [playerSubStep, setPlayerSubStep] = useState<'profile' | 'playstyle_club'>('profile');
   const [chosenMode, setChosenMode] = useState<'player' | 'manager'>('player');
   const [isProModalOpen, setIsProModalOpen] = useState(false);
   const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
@@ -132,7 +133,7 @@ export default function NewCareerPage() {
   const [managerFormation, setManagerFormation] = useState<TacticalFormation>('4-3-3');
   const [selectedDivisionTab, setSelectedDivisionTab] = useState<Division>('D');
 
-  // Clubes agrupados por divisão
+  // Clubes agrupados por divisão (Brasil e Ligas Europeias Oficiais)
   const allClubsList = Object.values(clubs);
   const clubsByDivision = useMemo(() => {
     return {
@@ -140,6 +141,16 @@ export default function NewCareerPage() {
       B: allClubsList.filter((c) => c.division === 'B'),
       C: allClubsList.filter((c) => c.division === 'C'),
       D: allClubsList.filter((c) => c.division === 'D'),
+      PL: allClubsList.filter((c) => c.division === 'PL'),
+      CHAMPIONSHIP: allClubsList.filter((c) => c.division === 'CHAMPIONSHIP'),
+      LALIGA: allClubsList.filter((c) => c.division === 'LALIGA'),
+      SEGUNDA_ESP: allClubsList.filter((c) => c.division === 'SEGUNDA_ESP'),
+      SERIE_A_ITA: allClubsList.filter((c) => c.division === 'SERIE_A_ITA'),
+      SERIE_B_ITA: allClubsList.filter((c) => c.division === 'SERIE_B_ITA'),
+      BUNDESLIGA: allClubsList.filter((c) => c.division === 'BUNDESLIGA'),
+      BUNDESLIGA_2: allClubsList.filter((c) => c.division === 'BUNDESLIGA_2'),
+      LIGUE_1: allClubsList.filter((c) => c.division === 'LIGUE_1'),
+      LIGUE_2: allClubsList.filter((c) => c.division === 'LIGUE_2'),
       EUROPA: allClubsList.filter((c) => c.division === 'EUROPA'),
     };
   }, [allClubsList]);
@@ -715,13 +726,46 @@ export default function NewCareerPage() {
 
             {/* SE MODO JOGADOR */}
             {chosenMode === 'player' ? (
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                
-                {/* Coluna Esquerda: Formulário Completo do Atleta */}
-                <div className="lg:col-span-7 space-y-6">
-                  
-                  {/* Card 1: Identidade, Origem e Tom de Pele */}
-                  <div className="p-6 rounded-3xl bg-card border border-border space-y-4">
+              <div className="space-y-6">
+                {/* Seletor Visual das 2 Sub-Etapas */}
+                <div className="flex items-center gap-2 p-1.5 bg-secondary/80 rounded-2xl border border-border/80 w-full max-w-xl mx-auto shadow-sm">
+                  <button
+                    type="button"
+                    onClick={() => setPlayerSubStep('profile')}
+                    className={`flex-1 py-2 px-3 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center justify-center gap-2 ${
+                      playerSubStep === 'profile'
+                        ? 'bg-emerald-500 text-zinc-950 shadow-sm'
+                        : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    <User className="w-3.5 h-3.5" />
+                    <span>1. Ficha & Estilo</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPlayerSubStep('playstyle_club')}
+                    className={`flex-1 py-2 px-3 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center justify-center gap-2 ${
+                      playerSubStep === 'playstyle_club'
+                        ? 'bg-amber-500 text-zinc-950 shadow-sm font-black'
+                        : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    <Crown className="w-3.5 h-3.5" />
+                    <span>2. PlayStyle & Clube</span>
+                  </button>
+                </div>
+
+                {playerSubStep === 'profile' ? (
+                  /* ========================================================== */
+                  /* SUB-ETAPA 1: FICHA DE IDENTIDADE & ESTILO DE JOGO          */
+                  /* ========================================================== */
+                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                    
+                    {/* Coluna Esquerda: Formulário do Atleta */}
+                    <div className="lg:col-span-7 space-y-6">
+                      
+                      {/* Card 1: Identidade, Origem e Tom de Pele */}
+                      <div className="p-6 rounded-3xl bg-card border border-border space-y-4">
                     <h3 className="font-display text-xl font-black text-foreground flex items-center gap-2">
                       <Sparkles className="w-5 h-5 text-emerald-500" />
                       Ficha de Identidade & Visual
@@ -1082,6 +1126,146 @@ export default function NewCareerPage() {
                     </div>
                   </div>
 
+                  {/* Botão de Avançar para Sub-Etapa 2 */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPlayerSubStep('playstyle_club');
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    className="w-full py-4 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-black text-sm uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/25 transition-transform active:scale-95 cursor-pointer"
+                  >
+                    <span>Avançar para PlayStyle & Clube</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
+                </div>
+
+                {/* Coluna Direita: Card FUT do Atleta com 14 Atributos */}
+                <div className="lg:col-span-5 space-y-6">
+                  
+                  {/* Card do Atleta Estilo FUT / NSS */}
+                  <div className="p-6 rounded-3xl bg-gradient-to-b from-card to-secondary border border-border shadow-xl text-center relative overflow-hidden">
+                    <div className="absolute top-4 right-4">
+                      <span className="text-2xl font-black font-display text-emerald-500">
+                        {estimatedOverall}
+                      </span>
+                      <span className="text-[10px] uppercase font-bold text-muted-foreground block -mt-1">
+                        OVR
+                      </span>
+                    </div>
+
+                    {/* Avatar Oficial do Jogador com Envelhecimento e Personalização */}
+                    <div className="mx-auto flex justify-center mb-3 relative">
+                      <AvatarDisplay
+                        avatar={avatar}
+                        size="xl"
+                        clubPrimaryColor={selectedClub?.primaryColor}
+                        clubSecondaryColor={selectedClub?.secondaryColor}
+                        className="ring-2 ring-emerald-500/50 shadow-lg"
+                      />
+                      <span className="absolute bottom-0 right-1/2 translate-x-10 text-sm bg-card p-0.5 rounded-full border border-border shadow">
+                        {COUNTRIES.find((c) => c.name === nationality)?.flag || '🇧🇷'}
+                      </span>
+                    </div>
+
+                    <h4 className="font-display text-2xl font-black text-foreground">
+                      {playerNickname || playerName}
+                    </h4>
+                    <span className="text-xs font-black uppercase tracking-wider text-emerald-500">
+                      {playerPosition} · Camisa #{jerseyNumber} · {nationality}
+                    </span>
+
+                    <div className="mt-4 pt-4 border-t border-border grid grid-cols-3 gap-2 text-center text-xs font-bold">
+                      <div>
+                        <span className="text-[10px] text-muted-foreground uppercase block">Altura</span>
+                        <span>{playerHeight} cm</span>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-muted-foreground uppercase block">Pé</span>
+                        <span>{preferredFoot === 'right' ? 'Destro' : preferredFoot === 'left' ? 'Canhoto' : 'Ambidestro'}</span>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-muted-foreground uppercase block">Idade</span>
+                        <span>{playerAge} anos</span>
+                      </div>
+                    </div>
+
+                    {/* Painel Completo dos 14 Atributos de Jogo em Tempo Real */}
+                    <div className="mt-5 pt-4 border-t border-border text-left space-y-2.5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-black uppercase tracking-wider text-foreground flex items-center gap-1.5">
+                          <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
+                          Atributos Iniciais (14 Oficiais)
+                        </span>
+                        <span className="text-[10px] font-mono font-black text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full">
+                          Potencial: {estimatedPotential} ⭐
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-1.5">
+                        {ATTRIBUTES_CONFIG.map((attr) => {
+                          const val = (livePlayerAttributes as any)[attr.key] || 50;
+                          const isGkAttr = attr.key === 'elasticity';
+                          const goldBoost = (PLAYSTYLES_GOLD.find(g => g.id === selectedGoldPlayStyle)?.initialBoost as any)?.[attr.key];
+
+                          return (
+                            <div
+                              key={attr.key}
+                              className={`p-2 rounded-xl border flex items-center justify-between text-xs transition-all ${
+                                isGkAttr && playerPosition === 'GOL'
+                                  ? 'bg-cyan-500/15 border-cyan-500/40 text-cyan-300 shadow-sm'
+                                  : goldBoost
+                                  ? 'bg-amber-500/10 border-amber-500/30 text-amber-300'
+                                  : 'bg-secondary/40 border-border/70 text-foreground'
+                              }`}
+                            >
+                              <div className="flex items-center gap-1.5 min-w-0">
+                                <span className="text-xs shrink-0">{attr.icon}</span>
+                                <span className="text-[11px] font-bold truncate">
+                                  {attr.label}
+                                </span>
+                              </div>
+
+                              <div className="flex items-center gap-1 shrink-0">
+                                {goldBoost && (
+                                  <span className="text-[9px] font-black text-emerald-400 bg-emerald-500/20 px-1 py-0.2 rounded">
+                                    +{goldBoost}
+                                  </span>
+                                )}
+                                <span className={`font-mono font-black text-xs ${
+                                  val >= 75 ? 'text-emerald-400' : val >= 65 ? 'text-amber-400' : 'text-zinc-300'
+                                }`}>
+                                  {val}
+                                </span>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              /* ========================================================== */
+              /* SUB-ETAPA 2: HABILIDADES DE OURO & CLUBE DE INÍCIO        */
+              /* ========================================================== */
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                
+                {/* Coluna Esquerda: 5 Habilidades de Ouro (PlayStyles) */}
+                <div className="lg:col-span-7 space-y-6">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPlayerSubStep('profile');
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    className="inline-flex items-center gap-1.5 text-xs font-bold text-muted-foreground hover:text-foreground transition-colors cursor-pointer py-1.5 px-3 rounded-xl bg-secondary border border-border"
+                  >
+                    <ArrowLeft className="w-3.5 h-3.5" />
+                    Voltar para Ficha de Identidade
+                  </button>
+
                   {/* Card 2: 5 Habilidades de Ouro (PlayStyles) */}
                   <div className="p-6 rounded-3xl bg-card border-2 border-amber-500/30 shadow-xl space-y-4 relative overflow-hidden">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border/80 pb-3">
@@ -1183,124 +1367,32 @@ export default function NewCareerPage() {
                   </div>
                 </div>
 
-                {/* Coluna Direita: Preview do Atleta & Seleção de Divisão com PRO (Sticky no Desktop) */}
-                <div className="lg:col-span-5 space-y-6 lg:sticky lg:top-20 self-start max-h-[calc(100vh-6rem)] lg:overflow-y-auto no-scrollbar pb-6">
+                {/* Coluna Direita: Seleção do Clube com Abas das 15 Divisões e Iniciar */}
+                <div className="lg:col-span-5 space-y-6">
                   
-                  {/* Card do Atleta Estilo FUT / NSS */}
-                  <div className="p-6 rounded-3xl bg-gradient-to-b from-card to-secondary border border-border shadow-xl text-center relative overflow-hidden">
-                    <div className="absolute top-4 right-4">
-                      <span className="text-2xl font-black font-display text-emerald-500">
-                        {estimatedOverall}
-                      </span>
-                      <span className="text-[10px] uppercase font-bold text-muted-foreground block -mt-1">
-                        OVR
-                      </span>
-                    </div>
-
-                    {/* Avatar Oficial do Jogador com Envelhecimento e Personalização */}
-                    <div className="mx-auto flex justify-center mb-3 relative">
+                  {/* Mini Resumo do Atleta com PlayStyle */}
+                  <div className="p-4 rounded-2xl bg-secondary/60 border border-border flex items-center justify-between">
+                    <div className="flex items-center gap-3">
                       <AvatarDisplay
                         avatar={avatar}
-                        size="xl"
+                        size="md"
                         clubPrimaryColor={selectedClub?.primaryColor}
                         clubSecondaryColor={selectedClub?.secondaryColor}
-                        className="ring-2 ring-emerald-500/50 shadow-lg"
                       />
-                      <span className="absolute bottom-0 right-1/2 translate-x-10 text-sm bg-card p-0.5 rounded-full border border-border shadow">
-                        {COUNTRIES.find((c) => c.name === nationality)?.flag || '🇧🇷'}
-                      </span>
+                      <div>
+                        <h4 className="text-sm font-black text-foreground">{playerNickname || playerName}</h4>
+                        <span className="text-xs text-emerald-400 font-bold">
+                          OVR: {estimatedOverall} · {PLAYSTYLES_GOLD.find(g => g.id === selectedGoldPlayStyle)?.name.split(' ')[0]}
+                        </span>
+                      </div>
                     </div>
 
-                    <h4 className="font-display text-2xl font-black text-foreground">
-                      {playerNickname || playerName}
-                    </h4>
-                    <span className="text-xs font-black uppercase tracking-wider text-emerald-500">
-                      {playerPosition} · Camisa #{jerseyNumber} · {nationality}
+                    <span className="text-xs font-mono font-black text-amber-400 bg-amber-500/10 px-2 py-1 rounded-xl border border-amber-500/20">
+                      ⭐ Ouro Ativo
                     </span>
-
-                    <div className="mt-4 pt-4 border-t border-border grid grid-cols-3 gap-2 text-center text-xs font-bold">
-                      <div>
-                        <span className="text-[10px] text-muted-foreground uppercase block">Altura</span>
-                        <span>{playerHeight} cm</span>
-                      </div>
-                      <div>
-                        <span className="text-[10px] text-muted-foreground uppercase block">Pé</span>
-                        <span>{preferredFoot === 'right' ? 'Destro' : preferredFoot === 'left' ? 'Canhoto' : 'Ambidestro'}</span>
-                      </div>
-                      <div>
-                        <span className="text-[10px] text-muted-foreground uppercase block">Idade</span>
-                        <span>{playerAge} anos</span>
-                      </div>
-                    </div>
-
-                    {/* Habilidades Escolhidas */}
-                    <div className="mt-4 flex items-center justify-center gap-1.5 flex-wrap">
-                      {selectedSpecialties.map((spec) => (
-                        <span
-                          key={spec}
-                          className="text-[10px] font-black uppercase px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
-                        >
-                          {availableSpecialties.find((s) => s.id === spec)?.label}
-                        </span>
-                      ))}
-                    </div>
-
-                    {/* Painel Completo dos 14 Atributos de Jogo em Tempo Real */}
-                    <div className="mt-5 pt-4 border-t border-border text-left space-y-2.5">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-black uppercase tracking-wider text-foreground flex items-center gap-1.5">
-                          <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
-                          Atributos Iniciais (14 Oficiais)
-                        </span>
-                        <span className="text-[10px] font-mono font-black text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full">
-                          Potencial: {estimatedPotential} ⭐
-                        </span>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-1.5">
-                        {ATTRIBUTES_CONFIG.map((attr) => {
-                          const val = (livePlayerAttributes as any)[attr.key] || 50;
-                          const isGkAttr = attr.key === 'elasticity';
-                          const goldBoost = (PLAYSTYLES_GOLD.find(g => g.id === selectedGoldPlayStyle)?.initialBoost as any)?.[attr.key];
-
-                          return (
-                            <div
-                              key={attr.key}
-                              className={`p-2 rounded-xl border flex items-center justify-between text-xs transition-all ${
-                                isGkAttr && playerPosition === 'GOL'
-                                  ? 'bg-cyan-500/15 border-cyan-500/40 text-cyan-300 shadow-sm'
-                                  : goldBoost
-                                  ? 'bg-amber-500/10 border-amber-500/30 text-amber-300'
-                                  : 'bg-secondary/40 border-border/70 text-foreground'
-                              }`}
-                            >
-                              <div className="flex items-center gap-1.5 min-w-0">
-                                <span className="text-xs shrink-0">{attr.icon}</span>
-                                <span className="text-[11px] font-bold truncate">
-                                  {attr.label}
-                                </span>
-                              </div>
-
-                              <div className="flex items-center gap-1 shrink-0">
-                                {goldBoost && (
-                                  <span className="text-[9px] font-black text-emerald-400 bg-emerald-500/20 px-1 py-0.2 rounded">
-                                    +{goldBoost}
-                                  </span>
-                                )}
-                                <span className={`font-mono font-black text-xs ${
-                                  val >= 75 ? 'text-emerald-400' : val >= 65 ? 'text-amber-400' : 'text-zinc-300'
-                                }`}>
-                                  {val}
-                                </span>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
                   </div>
 
-                  {/* Seleção do Clube com Abas das Séries A, B, C e D (Recurso PRO) */}
+                  {/* Seleção do Clube com Abas Oficiais das 15 Divisões */}
                   <div className="p-6 rounded-3xl bg-card border border-border space-y-4">
                     <div className="flex items-center justify-between">
                       <div>
@@ -1309,8 +1401,8 @@ export default function NewCareerPage() {
                         </h3>
                         <p className="text-xs text-muted-foreground">
                           {planTier === 'pro' 
-                            ? '👑 Vantagem PRO: Comece em qualquer divisão!' 
-                            : 'Início na Série D. Séries A, B e C exclusivas para PRO.'}
+                            ? '👑 Vantagem PRO: Comece em qualquer gigante do Brasil ou da Europa!' 
+                            : 'Início na Série D. Séries A, B, C e Europa exclusivas para PRO.'}
                         </p>
                       </div>
 
@@ -1330,9 +1422,26 @@ export default function NewCareerPage() {
                       )}
                     </div>
 
-                    {/* Abas das Divisões */}
-                    <div className="grid grid-cols-5 gap-1 p-1 bg-secondary rounded-2xl text-[11px] sm:text-xs font-bold">
-                      {(['A', 'B', 'C', 'D', 'EUROPA'] as Division[]).map((div) => {
+                    {/* Abas das Divisões (Brasil e Europa) */}
+                    <div className="flex items-center gap-1 p-1 bg-secondary rounded-2xl text-[11px] sm:text-xs font-bold overflow-x-auto no-scrollbar">
+                      {([
+                        { id: 'D', label: 'Série D (Grátis)' },
+                        { id: 'C', label: 'Série C' },
+                        { id: 'B', label: 'Série B' },
+                        { id: 'A', label: 'Série A' },
+                        { id: 'PL', label: '🏴󠁧󠁢󠁥󠁮󠁧󠁿 Premier' },
+                        { id: 'CHAMPIONSHIP', label: '🏴󠁧󠁢󠁥󠁮󠁧󠁿 Ch\'ship' },
+                        { id: 'LALIGA', label: '🇪🇸 La Liga' },
+                        { id: 'SEGUNDA_ESP', label: '🇪🇸 La Liga 2' },
+                        { id: 'SERIE_A_ITA', label: '🇮🇹 Serie A' },
+                        { id: 'SERIE_B_ITA', label: '🇮🇹 Serie B' },
+                        { id: 'BUNDESLIGA', label: '🇩🇪 Bundesliga' },
+                        { id: 'BUNDESLIGA_2', label: '🇩🇪 2. Bundes' },
+                        { id: 'LIGUE_1', label: '🇫🇷 Ligue 1' },
+                        { id: 'LIGUE_2', label: '🇫🇷 Ligue 2' },
+                        { id: 'EUROPA', label: '👑 Champions' },
+                      ] as { id: Division; label: string }[]).map((tab) => {
+                        const div = tab.id;
                         const isLocked = planTier === 'free' && div !== 'D';
                         const isSelected = selectedDivisionTab === div;
 
@@ -1345,13 +1454,13 @@ export default function NewCareerPage() {
                                 setIsProModalOpen(true);
                               } else {
                                 setSelectedDivisionTab(div);
-                                const firstClub = clubsByDivision[div][0];
+                                const firstClub = clubsByDivision[div]?.[0];
                                 if (firstClub) setSelectedClubId(firstClub.id);
                               }
                             }}
-                            className={`py-2 px-1 rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1 ${
+                            className={`py-2 px-2.5 rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1 shrink-0 ${
                               isSelected
-                                ? div === 'EUROPA'
+                                ? div === 'EUROPA' || div === 'PL' || div === 'LALIGA'
                                   ? 'bg-amber-400 text-zinc-950 font-black shadow-sm'
                                   : 'bg-emerald-500 text-zinc-950 font-black shadow-sm'
                                 : isLocked
@@ -1359,7 +1468,7 @@ export default function NewCareerPage() {
                                 : 'text-muted-foreground hover:text-foreground'
                             }`}
                           >
-                            <span>{div === 'EUROPA' ? 'Europa' : `Série ${div}`}</span>
+                            <span>{tab.label}</span>
                             {isLocked && <Lock className="w-3 h-3 text-amber-400 shrink-0" />}
                           </button>
                         );
@@ -1384,13 +1493,13 @@ export default function NewCareerPage() {
                       </div>
 
                       <span className="text-xs font-black text-emerald-500">
-                        Série {selectedClub.division}
+                        {selectedClub.countryFlag ? `${selectedClub.countryFlag} ` : ''}{selectedClub.division}
                       </span>
                     </div>
 
                     {/* Lista dos Clubes da Divisão Ativa */}
                     <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1">
-                      {clubsByDivision[selectedDivisionTab].map((club) => (
+                      {clubsByDivision[selectedDivisionTab]?.map((club) => (
                         <button
                           key={club.id}
                           type="button"
@@ -1428,9 +1537,10 @@ export default function NewCareerPage() {
                     </button>
                   </div>
                 </div>
-
               </div>
-            ) : (
+            )}
+          </div>
+        ) : (
               /* SE MODO TREINADOR */
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
                 <div className="lg:col-span-7 space-y-6">
@@ -1629,8 +1739,25 @@ export default function NewCareerPage() {
                       )}
                     </div>
 
-                    <div className="grid grid-cols-5 gap-1 p-1 bg-secondary rounded-2xl text-[11px] sm:text-xs font-bold">
-                      {(['A', 'B', 'C', 'D', 'EUROPA'] as Division[]).map((div) => {
+                    <div className="flex items-center gap-1 p-1 bg-secondary rounded-2xl text-[11px] sm:text-xs font-bold overflow-x-auto no-scrollbar">
+                      {([
+                        { id: 'D', label: 'Série D (Grátis)' },
+                        { id: 'C', label: 'Série C' },
+                        { id: 'B', label: 'Série B' },
+                        { id: 'A', label: 'Série A' },
+                        { id: 'PL', label: '🏴󠁧󠁢󠁥󠁮󠁧󠁿 Premier' },
+                        { id: 'CHAMPIONSHIP', label: '🏴󠁧󠁢󠁥󠁮󠁧󠁿 Ch\'ship' },
+                        { id: 'LALIGA', label: '🇪🇸 La Liga' },
+                        { id: 'SEGUNDA_ESP', label: '🇪🇸 La Liga 2' },
+                        { id: 'SERIE_A_ITA', label: '🇮🇹 Serie A' },
+                        { id: 'SERIE_B_ITA', label: '🇮🇹 Serie B' },
+                        { id: 'BUNDESLIGA', label: '🇩🇪 Bundesliga' },
+                        { id: 'BUNDESLIGA_2', label: '🇩🇪 2. Bundes' },
+                        { id: 'LIGUE_1', label: '🇫🇷 Ligue 1' },
+                        { id: 'LIGUE_2', label: '🇫🇷 Ligue 2' },
+                        { id: 'EUROPA', label: '👑 Champions' },
+                      ] as { id: Division; label: string }[]).map((tab) => {
+                        const div = tab.id;
                         const isLocked = planTier === 'free' && div !== 'D';
                         const isSelected = selectedDivisionTab === div;
 
@@ -1643,13 +1770,13 @@ export default function NewCareerPage() {
                                 setIsProModalOpen(true);
                               } else {
                                 setSelectedDivisionTab(div);
-                                const firstClub = clubsByDivision[div][0];
+                                const firstClub = clubsByDivision[div]?.[0];
                                 if (firstClub) setSelectedClubId(firstClub.id);
                               }
                             }}
-                            className={`py-2 px-1 rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1 ${
+                            className={`py-2 px-3 rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 shrink-0 whitespace-nowrap ${
                               isSelected
-                                ? div === 'EUROPA'
+                                ? div === 'EUROPA' || ['PL', 'LALIGA', 'SERIE_A_ITA', 'BUNDESLIGA', 'LIGUE_1'].includes(div)
                                   ? 'bg-amber-400 text-zinc-950 font-black shadow-sm'
                                   : 'bg-emerald-500 text-zinc-950 font-black shadow-sm'
                                 : isLocked
@@ -1657,7 +1784,7 @@ export default function NewCareerPage() {
                                 : 'text-muted-foreground hover:text-foreground'
                             }`}
                           >
-                            <span>{div === 'EUROPA' ? 'Europa' : `Série ${div}`}</span>
+                            <span>{tab.label}</span>
                             {isLocked && <Lock className="w-3 h-3 text-amber-400 shrink-0" />}
                           </button>
                         );
@@ -1680,7 +1807,7 @@ export default function NewCareerPage() {
                     </div>
 
                     <div className="space-y-1.5 max-h-60 overflow-y-auto pr-1">
-                      {clubsByDivision[selectedDivisionTab].map((club) => (
+                      {(clubsByDivision[selectedDivisionTab] || []).map((club) => (
                         <button
                           key={club.id}
                           type="button"

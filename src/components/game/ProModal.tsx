@@ -70,6 +70,17 @@ export function ProModal({ isOpen, onClose }: ProModalProps) {
     setMounted(true);
   }, []);
 
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isOpen]);
+
   if (!isOpen || !mounted) return null;
 
   const handleUpgrade = async () => {
@@ -177,7 +188,7 @@ export function ProModal({ isOpen, onClose }: ProModalProps) {
         {/* Lista de Vantagens com Scroll Suave */}
         <div className="space-y-2.5 overflow-y-auto pr-1 flex-1 mb-5 text-left">
           {PRO_FEATURES.map((feat, i) => (
-            <div key={i} className="flex items-start gap-3 p-3 rounded-xl bg-zinc-900/90 border border-zinc-850 hover:border-zinc-700 transition-colors">
+            <div key={i} className="flex items-start gap-3 p-3 rounded-xl bg-zinc-900 border border-zinc-800 hover:border-zinc-700 transition-colors">
               <div className="p-1.5 rounded-lg bg-zinc-950 border border-zinc-800 shrink-0 mt-0.5">
                 {feat.icon}
               </div>
