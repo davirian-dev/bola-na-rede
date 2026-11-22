@@ -452,20 +452,20 @@ export function NSSPassMinigame({
       </div>
 
       {/* Canvas2D Interativo */}
-      <div className="relative rounded-2xl overflow-hidden border border-emerald-900/60 shadow-inner bg-emerald-950 flex justify-center">
+      <div className="relative rounded-2xl overflow-hidden border border-emerald-900/60 shadow-inner bg-emerald-950 flex justify-center touch-none select-none">
         <canvas
           ref={canvasRef}
           width={400}
           height={320}
-          className="w-full h-full cursor-crosshair touch-none"
+          className="w-full h-full cursor-crosshair touch-none select-none"
           onMouseDown={(e) => handleAimStart(e.clientX, e.clientY)}
           onMouseMove={(e) => handleAimMove(e.clientX, e.clientY)}
           onMouseUp={handleAimRelease}
           onTouchStart={(e) => {
-            if (e.touches[0]) handleAimStart(e.touches[0].clientX, e.touches[0].clientY);
+            if (e.touches && e.touches.length > 0) handleAimStart(e.touches[0].clientX, e.touches[0].clientY);
           }}
           onTouchMove={(e) => {
-            if (e.touches[0]) handleAimMove(e.touches[0].clientX, e.touches[0].clientY);
+            if (e.touches && e.touches.length > 0) handleAimMove(e.touches[0].clientX, e.touches[0].clientY);
           }}
           onTouchEnd={handleAimRelease}
         />

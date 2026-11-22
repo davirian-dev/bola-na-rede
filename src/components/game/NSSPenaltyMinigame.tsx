@@ -544,15 +544,15 @@ export function NSSPenaltyMinigame({
           ref={canvasRef}
           width={400}
           height={340}
-          className="w-full h-full cursor-crosshair"
+          className="w-full h-full cursor-crosshair touch-none select-none"
           onMouseDown={(e) => handleAimStart(e.clientX, e.clientY)}
           onMouseMove={(e) => handleAimMove(e.clientX, e.clientY)}
           onMouseUp={handleAimRelease}
           onTouchStart={(e) => {
-            if (e.touches[0]) handleAimStart(e.touches[0].clientX, e.touches[0].clientY);
+            if (e.touches && e.touches.length > 0) handleAimStart(e.touches[0].clientX, e.touches[0].clientY);
           }}
           onTouchMove={(e) => {
-            if (e.touches[0]) handleAimMove(e.touches[0].clientX, e.touches[0].clientY);
+            if (e.touches && e.touches.length > 0) handleAimMove(e.touches[0].clientX, e.touches[0].clientY);
           }}
           onTouchEnd={handleAimRelease}
         />

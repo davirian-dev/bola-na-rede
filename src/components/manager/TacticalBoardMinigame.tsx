@@ -263,7 +263,9 @@ export const TacticalBoardMinigame: React.FC<TacticalBoardMinigameProps> = ({
               )}
 
               {/* Campinho Tático em Canvas / SVG Interativo */}
-              <div className="relative w-full aspect-[16/10] bg-gradient-to-b from-emerald-900/60 to-emerald-950/80 rounded-2xl border-2 border-emerald-500/40 overflow-hidden shadow-inner flex items-center justify-center">
+              <div 
+                className="relative w-full aspect-[16/10] bg-gradient-to-b from-emerald-900/60 to-emerald-950/80 rounded-2xl border-2 border-emerald-500/40 overflow-hidden shadow-inner flex items-center justify-center touch-none select-none"
+              >
                 {/* Linhas do Campo de Futebol */}
                 <svg className="absolute inset-0 w-full h-full opacity-30 pointer-events-none" viewBox="0 0 100 100" preserveAspectRatio="none">
                   {/* Linha externa */}
@@ -291,7 +293,7 @@ export const TacticalBoardMinigame: React.FC<TacticalBoardMinigameProps> = ({
                       disabled={roundStatus !== 'playing' || isUser || isOpponent}
                       onClick={() => handleSelectNode(node.id)}
                       style={{ left: `${node.x}%`, top: `${node.y}%` }}
-                      className={`absolute -translate-x-1/2 -translate-y-1/2 p-1.5 rounded-full flex flex-col items-center justify-center transition-all ${
+                      className={`absolute -translate-x-1/2 -translate-y-1/2 p-2 rounded-full flex flex-col items-center justify-center transition-all touch-manipulation select-none active:scale-95 ${
                         isUser
                           ? 'bg-emerald-500 text-black font-black scale-110 shadow-lg ring-4 ring-emerald-400/40'
                           : isOpponent
@@ -301,7 +303,7 @@ export const TacticalBoardMinigame: React.FC<TacticalBoardMinigameProps> = ({
                           : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700 cursor-pointer'
                       }`}
                     >
-                      <div className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black">
+                      <div className="w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-black pointer-events-none">
                         {isOpponent ? '✕' : isUser ? '⚽' : node.id}
                       </div>
                       <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-black/70 text-white whitespace-nowrap mt-1 pointer-events-none">

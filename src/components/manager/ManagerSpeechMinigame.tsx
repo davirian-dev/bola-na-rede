@@ -54,6 +54,7 @@ export const ManagerSpeechMinigame: React.FC<ManagerSpeechMinigameProps> = ({
   const animationFrameRef = useRef<number | null>(null);
   const directionRef = useRef<number>(1);
   const speedRef = useRef<number>(1.6);
+  const isHandledRef = useRef<boolean>(false);
 
   // Animação do ponteiro oscilante (vai de 0 a 100 e volta)
   useEffect(() => {
@@ -81,8 +82,8 @@ export const ManagerSpeechMinigame: React.FC<ManagerSpeechMinigameProps> = ({
   }, [isOpen, isLocked, isFinished, sliderPos]);
 
   const handleSpeak = () => {
-    if (isLocked || isFinished) return;
-
+    if (isLocked || isFinished || isHandledRef.current) return;
+    isHandledRef.current = true;
     setIsLocked(true);
     if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
 
@@ -112,6 +113,7 @@ export const ManagerSpeechMinigame: React.FC<ManagerSpeechMinigameProps> = ({
   };
 
   const handleNextRound = () => {
+    isHandledRef.current = false;
     if (currentRound < SPEECH_ROUNDS.length - 1) {
       setCurrentRound((c) => c + 1);
       setIsLocked(false);
@@ -226,8 +228,17 @@ export const ManagerSpeechMinigame: React.FC<ManagerSpeechMinigameProps> = ({
                   </span>
                 </div>
 
-                {/* Trilha do Oscilador */}
-                <div className="relative h-10 w-full rounded-2xl bg-zinc-900 border-2 border-zinc-800 overflow-hidden shadow-inner flex items-center">
+                {/* Trilha do Oscilador (Interativa ao Toque) */}
+                <div 
+                  onClick={handleSpeak}
+                  onTouchStart={(e) => {
+                    if (e.touches && e.touches.length > 0) {
+                      e.preventDefault();
+                      handleSpeak();
+                    }
+                  }}
+                  className="relative h-12 w-full rounded-2xl bg-zinc-900 border-2 border-zinc-800 overflow-hidden shadow-inner flex items-center cursor-pointer touch-none select-none active:scale-[0.99] transition-transform"
+                >
                   {/* Zona Amarela Esquerda (Morno) */}
                   <div className="h-full w-[38%] bg-amber-500/20 border-r border-amber-500/30 flex items-center justify-center">
                     <span className="text-[9px] font-bold text-amber-400/80 uppercase">Morno</span>
@@ -247,7 +258,7 @@ export const ManagerSpeechMinigame: React.FC<ManagerSpeechMinigameProps> = ({
 
                   {/* Agulha / Marcador Móvel */}
                   <div
-                    className="absolute top-0 bottom-0 w-3 -ml-1.5 bg-white shadow-2xl rounded-full z-10 border border-zinc-950 transition-none pointer-events-none"
+                    className="absolute top-0 bottom-0 w-3.5 -ml-1.5 bg-white shadow-2xl rounded-full z-10 border border-zinc-950 transition-none pointer-events-none"
                     style={{ left: `${sliderPos}%` }}
                   >
                     <div className="w-full h-full bg-amber-400 rounded-full animate-pulse" />
@@ -266,7 +277,13 @@ export const ManagerSpeechMinigame: React.FC<ManagerSpeechMinigameProps> = ({
                 <button
                   type="button"
                   onClick={handleSpeak}
-                  className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-zinc-950 font-black text-sm uppercase tracking-wider shadow-lg hover:shadow-amber-500/25 transition cursor-pointer flex items-center justify-center gap-2"
+                  onTouchStart={(e) => {
+                    if (e.touches && e.touches.length > 0) {
+                      e.preventDefault();
+                      handleSpeak();
+                    }
+                  }}
+                  className="w-full py-4 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-zinc-950 font-black text-sm uppercase tracking-wider shadow-lg hover:shadow-amber-500/25 transition-transform active:scale-[0.98] cursor-pointer flex items-center justify-center gap-2 touch-manipulation select-none"
                 >
                   <Mic className="w-5 h-5 fill-zinc-950" />
                   SOLTAR A VOZ COM ENERGIA!

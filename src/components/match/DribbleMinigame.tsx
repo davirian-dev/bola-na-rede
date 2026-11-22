@@ -412,14 +412,20 @@ export function DribbleMinigame({
       </div>
 
       {/* Canvas 2D Interativo */}
-      <div className="relative w-full rounded-2xl overflow-hidden border-2 border-emerald-500/40 shadow-inner bg-zinc-950 flex justify-center">
+      <div className="relative w-full rounded-2xl overflow-hidden border-2 border-emerald-500/40 shadow-inner bg-zinc-950 flex justify-center touch-none select-none">
         <canvas
           ref={canvasRef}
           width={400}
           height={400}
-          className="w-full h-auto aspect-square max-h-[380px] touch-none cursor-pointer"
+          className="w-full h-auto aspect-square max-h-[380px] touch-none select-none cursor-pointer"
           onClick={() => {
             if (gameState === 'approaching') executeDribble('stepover');
+          }}
+          onTouchStart={(e) => {
+            if (e.touches && e.touches.length > 0 && gameState === 'approaching') {
+              e.preventDefault();
+              executeDribble('stepover');
+            }
           }}
         />
 
@@ -496,15 +502,15 @@ export function DribbleMinigame({
       </div>
 
       {/* 4 Botões Táteis Rápidos de Drible (Mobile & PC) */}
-      <div className="w-full grid grid-cols-2 gap-2 mt-3">
+      <div className="w-full grid grid-cols-2 gap-2 mt-3 select-none">
         {/* 1. Corte / Elástico */}
         <button
           type="button"
           onClick={() => executeDribble('elastic')}
           disabled={gameState !== 'approaching'}
-          className="p-2.5 rounded-xl bg-secondary hover:bg-secondary/80 border border-border text-left transition-transform active:scale-95 disabled:opacity-40 cursor-pointer flex items-center gap-2"
+          className="p-3 rounded-xl bg-secondary hover:bg-secondary/80 border border-border text-left transition-transform active:scale-95 disabled:opacity-40 cursor-pointer flex items-center gap-2 touch-manipulation select-none"
         >
-          <span className="text-lg">⚡</span>
+          <span className="text-xl">⚡</span>
           <div>
             <span className="font-display text-xs font-black text-foreground block leading-tight">
               Corte / Elástico
@@ -520,9 +526,9 @@ export function DribbleMinigame({
           type="button"
           onClick={() => executeDribble('nutmeg')}
           disabled={gameState !== 'approaching'}
-          className="p-2.5 rounded-xl bg-secondary hover:bg-secondary/80 border border-border text-left transition-transform active:scale-95 disabled:opacity-40 cursor-pointer flex items-center gap-2"
+          className="p-3 rounded-xl bg-secondary hover:bg-secondary/80 border border-border text-left transition-transform active:scale-95 disabled:opacity-40 cursor-pointer flex items-center gap-2 touch-manipulation select-none"
         >
-          <span className="text-lg">👖</span>
+          <span className="text-xl">👖</span>
           <div>
             <span className="font-display text-xs font-black text-foreground block leading-tight">
               Caneta (Rolinho)
@@ -538,9 +544,9 @@ export function DribbleMinigame({
           type="button"
           onClick={() => executeDribble('lob')}
           disabled={gameState !== 'approaching'}
-          className="p-2.5 rounded-xl bg-gradient-to-r from-amber-500/15 to-amber-400/10 hover:from-amber-500/25 border border-amber-500/30 text-left transition-transform active:scale-95 disabled:opacity-40 cursor-pointer flex items-center gap-2"
+          className="p-3 rounded-xl bg-gradient-to-r from-amber-500/15 to-amber-400/10 hover:from-amber-500/25 border border-amber-500/30 text-left transition-transform active:scale-95 disabled:opacity-40 cursor-pointer flex items-center gap-2 touch-manipulation select-none"
         >
-          <span className="text-lg">🎩</span>
+          <span className="text-xl">🎩</span>
           <div>
             <span className="font-display text-xs font-black text-amber-400 block leading-tight">
               Chapéu (Lençol)
@@ -556,9 +562,9 @@ export function DribbleMinigame({
           type="button"
           onClick={() => executeDribble('stepover')}
           disabled={gameState !== 'approaching'}
-          className="p-2.5 rounded-xl bg-secondary hover:bg-secondary/80 border border-border text-left transition-transform active:scale-95 disabled:opacity-40 cursor-pointer flex items-center gap-2"
+          className="p-3 rounded-xl bg-secondary hover:bg-secondary/80 border border-border text-left transition-transform active:scale-95 disabled:opacity-40 cursor-pointer flex items-center gap-2 touch-manipulation select-none"
         >
-          <span className="text-lg">✨</span>
+          <span className="text-xl">✨</span>
           <div>
             <span className="font-display text-xs font-black text-foreground block leading-tight">
               Pedalada & Finta

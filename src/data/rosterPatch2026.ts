@@ -19,13 +19,23 @@ export interface RosterMove {
   attrs?: Partial<PlayerAttributes>;
 }
 
+export interface RosterDeparture {
+  playerName: string;
+  fromClub: string;           // Clube de onde saiu
+  reason: string;             // Motivo (aposentadoria ou transferência exterior)
+}
+
 export const ROSTER_PATCH_2026 = {
-  version: "2026.11",
+  version: "2026.11-official",
   updatedAt: "2026-11-22",
-  description: "Patch Oficial 2026: Neymar Jr no Santos, Gabigol no Cruzeiro, Coutinho no Vasco e Atualizações dos Gigantes",
+  description: "Patch Oficial Novembro/2026: Neymar, Gabigol e Coutinho no Santos; Paulinho no Palmeiras; Cauly no São Paulo; Cancelo no Barça; Laporte no Athletic; e Despedidas/Aposentadorias",
+  
+  // ============================================================================
+  // TRANSFERÊNCIAS ATIVAS (NOVEMBRO / 2026)
+  // ============================================================================
   moves: [
     // --------------------------------------------------------------------------
-    // 1. NEYMAR JR NO SANTOS (Camisa 10, MEI / PE, atributos calibrados fase atual)
+    // 1. SANTOS FC - TRIO ESTELAR 2026 (NEYMAR JR, GABIGOL E PHILIPPE COUTINHO)
     // --------------------------------------------------------------------------
     {
       playerName: "Neymar da Silva Santos Jr",
@@ -38,31 +48,48 @@ export const ROSTER_PATCH_2026 = {
       age: 33,
       isStarter: true,
       attrs: {
-        pace: 74,        // Ritmo ajustado pela idade
-        dribbling: 90,   // Drible de elite
-        tackling: 36,
-        defending: 36,
-        attacking: 88,
-        finishing: 82,   // Finalização precisa
-        passing: 88,     // Passe cirúrgico
-        positioning: 86,
-        heading: 62,
-        crossing: 85,
-        shooting: 82,
-        jumping: 68,     // Físico equilibrado
-        playmaker: 90,   // Visão de jogo e compostura máximas
-        elasticity: 50,
+        pace: 74, dribbling: 90, tackling: 36, defending: 36, attacking: 88, finishing: 82,
+        passing: 88, positioning: 86, heading: 62, crossing: 85, shooting: 82, jumping: 68,
+        playmaker: 90, elasticity: 50,
       },
     },
-
-    // --------------------------------------------------------------------------
-    // 2. SANTOS FC - COMPANHEIROS DE ELENCO DE 2026
-    // --------------------------------------------------------------------------
+    {
+      playerName: "Gabriel Barbosa",
+      nickname: "Gabigol 🏹⚪⚫",
+      toClub: "san",
+      fromClub: "cru", // Emprestado pelo Cruzeiro em 2026
+      shirtNumber: 99,
+      position: "ATA" as Position,
+      overall: 81,
+      age: 29,
+      isStarter: true,
+      attrs: {
+        pace: 80, dribbling: 81, tackling: 35, defending: 34, attacking: 83, finishing: 84,
+        passing: 75, positioning: 85, heading: 75, crossing: 72, shooting: 83, jumping: 78,
+        playmaker: 77, elasticity: 45
+      }
+    },
+    {
+      playerName: "Philippe Coutinho",
+      nickname: "Coutinho 🪄⚪⚫",
+      toClub: "san",
+      fromClub: "vas", // Rescindiu com o Vasco e atua pelo Peixe
+      shirtNumber: 11,
+      position: "MEI" as Position,
+      overall: 80,
+      age: 32,
+      isStarter: true,
+      attrs: {
+        pace: 75, dribbling: 84, tackling: 42, defending: 40, attacking: 82, finishing: 80,
+        passing: 84, positioning: 82, heading: 58, crossing: 82, shooting: 84, jumping: 66,
+        playmaker: 86, elasticity: 46
+      }
+    },
     {
       playerName: "Guilherme Augusto",
       nickname: "Guilherme ⚡⚪⚫",
       toClub: "san",
-      shirtNumber: 11,
+      shirtNumber: 7,
       position: "PE" as Position,
       overall: 78,
       age: 29,
@@ -78,7 +105,7 @@ export const ROSTER_PATCH_2026 = {
       nickname: "Giuliano 🎯⚪⚫",
       toClub: "san",
       shirtNumber: 20,
-      position: "MEI" as Position,
+      position: "MC" as Position,
       overall: 77,
       age: 34,
       isStarter: true,
@@ -120,29 +147,92 @@ export const ROSTER_PATCH_2026 = {
     },
 
     // --------------------------------------------------------------------------
-    // 3. GABIGOL NO CRUZEIRO (Transferência Oficial 2025/2026)
+    // 2. PALMEIRAS - PAULINHO (CONTRATAÇÃO DE PESO NO ATAQUE DO VERDÃO)
     // --------------------------------------------------------------------------
     {
-      playerName: "Gabriel Barbosa",
-      nickname: "Gabigol 🏹🔵",
-      toClub: "cru",
-      fromClub: "fla", // Removido do Flamengo
-      shirtNumber: 9,
+      playerName: "Paulinho",
+      nickname: "Paulinho 🏹🟢",
+      toClub: "pal",
+      fromClub: "cam", // Contratado do Atlético-MG
+      shirtNumber: 10,
       position: "ATA" as Position,
+      overall: 81,
+      age: 25,
+      isStarter: true,
+      attrs: {
+        pace: 84, dribbling: 82, tackling: 42, defending: 40, attacking: 83, finishing: 83,
+        passing: 77, positioning: 84, heading: 75, crossing: 76, shooting: 82, jumping: 79,
+        playmaker: 78, elasticity: 46
+      }
+    },
+
+    // --------------------------------------------------------------------------
+    // 3. SÃO PAULO - CAULY (EMPRESTADO PELO BAHIA ATÉ O FIM DE 2026)
+    // --------------------------------------------------------------------------
+    {
+      playerName: "Cauly Oliveira Souza",
+      nickname: "Cauly 🎯🔴⚪⚫",
+      toClub: "sao",
+      fromClub: "bah", // Emprestado pelo Bahia
+      shirtNumber: 8,
+      position: "MEI" as Position,
       overall: 80,
       age: 29,
       isStarter: true,
       attrs: {
-        pace: 80, dribbling: 80, tackling: 35, defending: 34, attacking: 82, finishing: 83,
-        passing: 74, positioning: 84, heading: 74, crossing: 71, shooting: 82, jumping: 77,
-        playmaker: 76, elasticity: 45
+        pace: 78, dribbling: 83, tackling: 50, defending: 48, attacking: 81, finishing: 77,
+        passing: 83, positioning: 81, heading: 60, crossing: 82, shooting: 79, jumping: 68,
+        playmaker: 84, elasticity: 46
       }
     },
+
+    // --------------------------------------------------------------------------
+    // 4. BARCELONA - JOÃO CANCELO (RETORNO EM DEFINITIVO AO BARÇA EM 2026)
+    // --------------------------------------------------------------------------
+    {
+      playerName: "João Cancelo",
+      nickname: "Cancelo 🪄🔵🔴",
+      toClub: "bar",
+      fromClub: "hil", // Retornou do Al-Hilal em definitivo
+      shirtNumber: 2,
+      position: "LD" as Position,
+      overall: 84,
+      age: 31,
+      isStarter: true,
+      attrs: {
+        pace: 83, dribbling: 86, tackling: 79, defending: 78, attacking: 84, finishing: 72,
+        passing: 85, positioning: 82, heading: 68, crossing: 87, shooting: 75, jumping: 74,
+        playmaker: 85, elasticity: 48
+      }
+    },
+
+    // --------------------------------------------------------------------------
+    // 5. ATHLETIC BILBAO - AYMERIC LAPORTE (RETORNO À LA LIGA ESPANHOLA)
+    // --------------------------------------------------------------------------
+    {
+      playerName: "Aymeric Laporte",
+      nickname: "Laporte 🛡️🇪🇸",
+      toClub: "ath",
+      fromClub: "aln", // Voltou para a Espanha vindo do Al-Nassr
+      shirtNumber: 4,
+      position: "ZAG" as Position,
+      overall: 83,
+      age: 31,
+      isStarter: true,
+      attrs: {
+        pace: 68, dribbling: 68, tackling: 85, defending: 86, attacking: 55, finishing: 45,
+        passing: 79, positioning: 86, heading: 85, crossing: 58, shooting: 56, jumping: 82,
+        playmaker: 75, elasticity: 50
+      }
+    },
+
+    // --------------------------------------------------------------------------
+    // 6. CRUZEIRO - CÁSSIO E MATHEUS PEREIRA
+    // --------------------------------------------------------------------------
     {
       playerName: "Cássio Ramos",
       nickname: "Cássio 🧤🔵",
       toClub: "cru",
-      fromClub: "cor",
       shirtNumber: 1,
       position: "GOL" as Position,
       overall: 80,
@@ -171,41 +261,7 @@ export const ROSTER_PATCH_2026 = {
     },
 
     // --------------------------------------------------------------------------
-    // 4. VASCO DA GAMA - COUTINHO E VEGETTI
-    // --------------------------------------------------------------------------
-    {
-      playerName: "Philippe Coutinho",
-      nickname: "Coutinho 🪄💢",
-      toClub: "vas",
-      shirtNumber: 11,
-      position: "MEI" as Position,
-      overall: 80,
-      age: 32,
-      isStarter: true,
-      attrs: {
-        pace: 76, dribbling: 84, tackling: 42, defending: 40, attacking: 82, finishing: 80,
-        passing: 84, positioning: 82, heading: 58, crossing: 82, shooting: 84, jumping: 66,
-        playmaker: 86, elasticity: 46
-      }
-    },
-    {
-      playerName: "Pablo Vegetti",
-      nickname: "Vegetti 🏴‍☠️💢",
-      toClub: "vas",
-      shirtNumber: 99,
-      position: "ATA" as Position,
-      overall: 80,
-      age: 36,
-      isStarter: true,
-      attrs: {
-        pace: 68, dribbling: 72, tackling: 40, defending: 42, attacking: 83, finishing: 84,
-        passing: 68, positioning: 86, heading: 89, crossing: 58, shooting: 83, jumping: 86,
-        playmaker: 68, elasticity: 44
-      }
-    },
-
-    // --------------------------------------------------------------------------
-    // 5. FLUMINENSE - THIAGO SILVA E GANSO
+    // 7. FLUMINENSE - THIAGO SILVA E GANSO
     // --------------------------------------------------------------------------
     {
       playerName: "Thiago Silva",
@@ -239,7 +295,7 @@ export const ROSTER_PATCH_2026 = {
     },
 
     // --------------------------------------------------------------------------
-    // 6. CORINTHIANS - HUGO SOUZA NO GOL
+    // 8. CORINTHIANS - HUGO SOUZA NO GOL
     // --------------------------------------------------------------------------
     {
       playerName: "Hugo de Souza Nogueira",
@@ -258,7 +314,7 @@ export const ROSTER_PATCH_2026 = {
     },
 
     // --------------------------------------------------------------------------
-    // 7. GRÊMIO - MARTIN BRAITHWAITE
+    // 9. GRÊMIO - MARTIN BRAITHWAITE
     // --------------------------------------------------------------------------
     {
       playerName: "Martin Braithwaite",
@@ -277,7 +333,7 @@ export const ROSTER_PATCH_2026 = {
     },
 
     // --------------------------------------------------------------------------
-    // 8. INTERNACIONAL - RAFAEL BORRÉ
+    // 10. INTERNACIONAL - RAFAEL BORRÉ
     // --------------------------------------------------------------------------
     {
       playerName: "Rafael Santos Borré",
@@ -296,7 +352,7 @@ export const ROSTER_PATCH_2026 = {
     },
 
     // --------------------------------------------------------------------------
-    // 9. BAHIA - EVERTON RIBEIRO
+    // 11. BAHIA - EVERTON RIBEIRO
     // --------------------------------------------------------------------------
     {
       playerName: "Everton Ribeiro",
@@ -315,7 +371,7 @@ export const ROSTER_PATCH_2026 = {
     },
 
     // --------------------------------------------------------------------------
-    // 10. SÃO PAULO - LUCAS MOURA E CALLERI
+    // 12. SÃO PAULO - LUCAS MOURA E CALLERI
     // --------------------------------------------------------------------------
     {
       playerName: "Lucas Rodrigues Moura da Silva",
@@ -349,7 +405,7 @@ export const ROSTER_PATCH_2026 = {
     },
 
     // --------------------------------------------------------------------------
-    // 11. ATLÉTICO MINEIRO - HULK E PAULINHO
+    // 13. ATLÉTICO MINEIRO - HULK
     // --------------------------------------------------------------------------
     {
       playerName: "Givanildo Vieira de Sousa (Hulk)",
@@ -368,7 +424,7 @@ export const ROSTER_PATCH_2026 = {
     },
 
     // --------------------------------------------------------------------------
-    // 12. AL-HILAL - MARCOS LEONARDO (SUBSTITUI NEYMAR NO ATAQUE SAUDITA)
+    // 14. AL-HILAL - MARCOS LEONARDO NO COMANDO DO ATAQUE
     // --------------------------------------------------------------------------
     {
       playerName: "Marcos Leonardo Santos Almeida",
@@ -385,7 +441,38 @@ export const ROSTER_PATCH_2026 = {
         playmaker: 75, elasticity: 44
       }
     }
-  ]
+  ],
+
+  // ============================================================================
+  // REMOÇÕES / APOSENTADORIAS / TRANSFERÊNCIAS PARA FORA DA BASE (NOVEMBRO / 2026)
+  // ============================================================================
+  departures: [
+    {
+      playerName: "Pablo Vegetti",
+      fromClub: "vas",
+      reason: "Negociado com o Cerro Porteño (futebol paraguaio)"
+    },
+    {
+      playerName: "Aleksandar Mitrovic",
+      fromClub: "hil",
+      reason: "Transferido para o Al-Rayyan (futebol do Catar)"
+    },
+    {
+      playerName: "Roberto Firmino",
+      fromClub: "ahl",
+      reason: "Transferido para o Al-Sadd (futebol do Catar desde 2025)"
+    },
+    {
+      playerName: "Sergio Busquets",
+      fromClub: "mia",
+      reason: "Aposentado do futebol profissional ao fim da temporada 2025"
+    },
+    {
+      playerName: "Jordi Alba",
+      fromClub: "mia",
+      reason: "Aposentado do futebol profissional ao fim da temporada 2025"
+    }
+  ] as RosterDeparture[]
 };
 
 /**
@@ -412,6 +499,15 @@ function isPlayerNameMatch(nameA: string, nameB: string): boolean {
   if (a.includes('neymar') && b.includes('neymar')) return true;
   if ((a.includes('gabigol') || a.includes('gabrielbarbosa')) && (b.includes('gabigol') || b.includes('gabrielbarbosa'))) return true;
   if (a.includes('coutinho') && b.includes('coutinho')) return true;
+  if (a.includes('vegetti') && b.includes('vegetti')) return true;
+  if (a.includes('paulinho') && b.includes('paulinho')) return true;
+  if (a.includes('cauly') && b.includes('cauly')) return true;
+  if (a.includes('busquets') && b.includes('busquets')) return true;
+  if ((a.includes('jordialba') || a.includes('alba')) && (b.includes('jordialba') || b.includes('alba'))) return true;
+  if (a.includes('cancelo') && b.includes('cancelo')) return true;
+  if (a.includes('mitrovic') && b.includes('mitrovic')) return true;
+  if (a.includes('laporte') && b.includes('laporte')) return true;
+  if (a.includes('firmino') && b.includes('firmino')) return true;
   if (a.includes('thiagosilva') && b.includes('thiagosilva')) return true;
   if (a.includes('braithwaite') && b.includes('braithwaite')) return true;
   if (a.includes('depay') && b.includes('depay')) return true;
@@ -577,6 +673,35 @@ export function applyRosterPatch2026(clubs: Record<string, Club>): Record<string
       roster: destRoster,
       lineup: updatedLineup,
     };
+  });
+
+  // 1.4 Processa saídas, transferências para o exterior e aposentadorias oficiais
+  (ROSTER_PATCH_2026.departures || []).forEach((dep) => {
+    const fromClub = patchedClubs[dep.fromClub];
+    if (!fromClub || !fromClub.roster) return;
+
+    const filteredRoster = fromClub.roster.filter((p) => {
+      const matchName = isPlayerNameMatch(p.name, dep.playerName);
+      const matchNick = p.nickname ? isPlayerNameMatch(p.nickname, dep.playerName) : false;
+      return !matchName && !matchNick;
+    });
+
+    if (filteredRoster.length !== fromClub.roster.length) {
+      const removedIds = new Set(fromClub.roster.filter((p) => !filteredRoster.includes(p)).map((p) => p.id));
+      const updatedLineup = (fromClub.lineup || []).filter((id) => !removedIds.has(id));
+
+      while (updatedLineup.length < 11 && filteredRoster.length > updatedLineup.length) {
+        const nextReserve = filteredRoster.find((p) => !updatedLineup.includes(p.id));
+        if (nextReserve) updatedLineup.push(nextReserve.id);
+        else break;
+      }
+
+      patchedClubs[dep.fromClub] = {
+        ...fromClub,
+        roster: filteredRoster,
+        lineup: updatedLineup,
+      };
+    }
   });
 
   // 2. Validação geral e sanitização de todos os clubes
