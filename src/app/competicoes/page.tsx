@@ -41,6 +41,18 @@ export default function CompeticoesPage() {
     activeTab === 'sub_20' ? 'sub_20' :
     activeTab === 'copa' ? 'copa_brasil' :
     activeTab === 'EUROPA' ? 'champions_league' :
+    activeTab === 'PL' ? 'premier_league' :
+    activeTab === 'CHAMPIONSHIP' ? 'championship' :
+    activeTab === 'LALIGA' ? 'la_liga' :
+    activeTab === 'SEGUNDA_ESP' ? 'segunda_division' :
+    activeTab === 'SERIE_A_ITA' ? 'serie_a_ita' :
+    activeTab === 'SERIE_B_ITA' ? 'serie_b_ita' :
+    activeTab === 'BUNDESLIGA' ? 'bundesliga' :
+    activeTab === 'BUNDESLIGA_2' ? 'bundesliga_2' :
+    activeTab === 'LIGUE_1' ? 'ligue_1' :
+    activeTab === 'LIGUE_2' ? 'ligue_2' :
+    activeTab === 'MLS' ? 'mls' :
+    activeTab === 'SAUDI_PRO' ? 'saudi_pro' :
     `serie_${activeTab.toLowerCase()}` as CompetitionType;
 
   const currentScorers = topScorers?.[compKey] || [];
@@ -76,8 +88,22 @@ export default function CompeticoesPage() {
 
           {/* Abas das Competições */}
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar text-xs font-bold">
-            {(['A', 'B', 'C', 'D', 'EUROPA'] as Division[]).map((div) => {
-              const isEuropa = div === 'EUROPA';
+            {([
+              { id: 'A', label: 'Série A' },
+              { id: 'B', label: 'Série B' },
+              { id: 'C', label: 'Série C' },
+              { id: 'D', label: 'Série D' },
+              { id: 'PL', label: '🏴󠁧󠁢󠁥󠁮󠁧󠁿 Premier League' },
+              { id: 'LALIGA', label: '🇪🇸 La Liga' },
+              { id: 'SERIE_A_ITA', label: '🇮🇹 Serie A' },
+              { id: 'BUNDESLIGA', label: '🇩🇪 Bundesliga' },
+              { id: 'LIGUE_1', label: '🇫🇷 Ligue 1' },
+              { id: 'MLS', label: '🇺🇸 MLS (Messi)' },
+              { id: 'SAUDI_PRO', label: '🇸🇦 Saudita (CR7)' },
+              { id: 'EUROPA', label: '👑 Champions' },
+            ] as { id: Division; label: string }[]).map((tab) => {
+              const div = tab.id;
+              const isEuropaOrGlobal = ['EUROPA', 'PL', 'LALIGA', 'MLS', 'SAUDI_PRO'].includes(div);
               const isSelected = activeTab === div;
 
               return (
@@ -87,15 +113,15 @@ export default function CompeticoesPage() {
                     setActiveTab(div);
                     setSubTab('tabela');
                   }}
-                  className={`py-2 px-3.5 rounded-xl transition-all cursor-pointer whitespace-nowrap ${
+                  className={`py-2 px-3.5 rounded-xl transition-all cursor-pointer whitespace-nowrap shrink-0 ${
                     isSelected
-                      ? isEuropa
+                      ? isEuropaOrGlobal
                         ? 'bg-amber-400 text-zinc-950 font-black shadow-sm'
                         : 'bg-emerald-500 text-zinc-950 font-black shadow-sm'
                       : 'bg-secondary text-muted-foreground hover:text-foreground'
                   }`}
                 >
-                  {isEuropa ? '👑 Champions • Europa' : `Brasileirão Série ${div}`}
+                  {tab.label}
                 </button>
               );
             })}

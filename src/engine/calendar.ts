@@ -100,7 +100,8 @@ export function generateAnnualCalendar(
     'LALIGA', 'SEGUNDA_ESP',
     'SERIE_A_ITA', 'SERIE_B_ITA',
     'BUNDESLIGA', 'BUNDESLIGA_2',
-    'LIGUE_1', 'LIGUE_2'
+    'LIGUE_1', 'LIGUE_2',
+    'MLS', 'SAUDI_PRO'
   ];
 
   const LEAGUE_METADATA: Record<Division, { name: string; comp: CompetitionType; isPro: boolean; id: string }> = {
@@ -119,6 +120,8 @@ export function generateAnnualCalendar(
     BUNDESLIGA_2: { name: '2. Bundesliga (Alemanha B)', comp: 'bundesliga_2', isPro: true, id: '2-bundesliga' },
     LIGUE_1: { name: 'Ligue 1 McDonald\'s (França)', comp: 'ligue_1', isPro: true, id: 'ligue-1' },
     LIGUE_2: { name: 'Ligue 2 BKT (França B)', comp: 'ligue_2', isPro: true, id: 'ligue-2' },
+    MLS: { name: 'MLS (Major League Soccer • EUA)', comp: 'mls', isPro: true, id: 'major-league-soccer' },
+    SAUDI_PRO: { name: 'Saudi Pro League (Liga Saudita)', comp: 'saudi_pro', isPro: true, id: 'saudi-pro-league' },
   };
 
   const leagues = {} as Record<Division, League>;

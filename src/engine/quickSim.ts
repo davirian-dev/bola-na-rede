@@ -310,6 +310,8 @@ export function simulateWeekMatches(state: GameState): {
     bundesliga_2: {},
     ligue_1: {},
     ligue_2: {},
+    mls: {},
+    saudi_pro: {},
   };
 
   // Carrega artilharia existente

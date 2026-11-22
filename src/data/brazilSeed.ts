@@ -4,6 +4,7 @@
 
 import { Club, Division, Player, Position, League, LeagueStanding, Fixture, CompetitionType } from '@/types/game';
 import { calculateOverall, calculateMarketValue, calculateWeeklyWage } from '@/lib/calculations';
+import { injectFamousStars } from './famousStarRosters';
 
 // Nomes e Sobrenomes para geração brasileira autêntica
 const FIRST_NAMES = [
@@ -276,9 +277,12 @@ export function generateBrazilDatabase(): {
 
   RAW_CLUBS.forEach((raw) => {
     // 18 jogadores no elenco profissional
-    const roster: Player[] = ROSTER_POSITIONS.map((pos, idx) => 
+    let roster: Player[] = ROSTER_POSITIONS.map((pos, idx) => 
       generatePlayer(raw.id, idx + 1, pos, raw.division, false)
     );
+
+    // Injeta os craques reais atualizados
+    roster = injectFamousStars(raw.id, roster);
 
     // 11 jogadores no elenco Sub-20
     const youthRoster: Player[] = YOUTH_POSITIONS.map((pos, idx) => 

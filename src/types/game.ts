@@ -96,7 +96,9 @@ export type Division =
   | 'BUNDESLIGA'    // Bundesliga (Alemanha - Divisão A)
   | 'BUNDESLIGA_2'  // 2. Bundesliga (Alemanha - Divisão B)
   | 'LIGUE_1'       // Ligue 1 McDonald's (França - Divisão A)
-  | 'LIGUE_2';      // Ligue 2 BKT (França - Divisão B)
+  | 'LIGUE_2'       // Ligue 2 BKT (França - Divisão B)
+  | 'MLS'           // Major League Soccer (EUA - Liga do Messi)
+  | 'SAUDI_PRO';    // Saudi Pro League (Arábia Saudita - Liga do Cristiano Ronaldo)
 
 export type CompetitionType = 
   | 'serie_a' 
@@ -115,7 +117,9 @@ export type CompetitionType =
   | 'bundesliga'
   | 'bundesliga_2'
   | 'ligue_1'
-  | 'ligue_2';
+  | 'ligue_2'
+  | 'mls'
+  | 'saudi_pro';
 
 export type KitPattern = 
   | 'solid'           // Liso clássico

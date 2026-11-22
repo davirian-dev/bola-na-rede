@@ -14,7 +14,8 @@ import {
   CareerLength,
   MatchSimSystem,
   ManagerArchetype,
-  Division
+  Division,
+  Club
 } from '@/types/game';
 import { ClubBadge } from '@/components/game/ClubBadge';
 import { AppHeader } from '@/components/layout/AppHeader';
@@ -135,7 +136,7 @@ export default function NewCareerPage() {
 
   // Clubes agrupados por divisão (Brasil e Ligas Europeias Oficiais)
   const allClubsList = Object.values(clubs);
-  const clubsByDivision = useMemo(() => {
+  const clubsByDivision: Record<Division, Club[]> = useMemo(() => {
     return {
       A: allClubsList.filter((c) => c.division === 'A'),
       B: allClubsList.filter((c) => c.division === 'B'),
@@ -151,6 +152,8 @@ export default function NewCareerPage() {
       BUNDESLIGA_2: allClubsList.filter((c) => c.division === 'BUNDESLIGA_2'),
       LIGUE_1: allClubsList.filter((c) => c.division === 'LIGUE_1'),
       LIGUE_2: allClubsList.filter((c) => c.division === 'LIGUE_2'),
+      MLS: allClubsList.filter((c) => c.division === 'MLS'),
+      SAUDI_PRO: allClubsList.filter((c) => c.division === 'SAUDI_PRO'),
       EUROPA: allClubsList.filter((c) => c.division === 'EUROPA'),
     };
   }, [allClubsList]);
@@ -1439,6 +1442,8 @@ export default function NewCareerPage() {
                         { id: 'BUNDESLIGA_2', label: '🇩🇪 2. Bundes' },
                         { id: 'LIGUE_1', label: '🇫🇷 Ligue 1' },
                         { id: 'LIGUE_2', label: '🇫🇷 Ligue 2' },
+                        { id: 'MLS', label: '🇺🇸 MLS (Messi)' },
+                        { id: 'SAUDI_PRO', label: '🇸🇦 Saudita (CR7)' },
                         { id: 'EUROPA', label: '👑 Champions' },
                       ] as { id: Division; label: string }[]).map((tab) => {
                         const div = tab.id;
@@ -1460,7 +1465,7 @@ export default function NewCareerPage() {
                             }}
                             className={`py-2 px-2.5 rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1 shrink-0 ${
                               isSelected
-                                ? div === 'EUROPA' || div === 'PL' || div === 'LALIGA'
+                                ? ['EUROPA', 'PL', 'LALIGA', 'MLS', 'SAUDI_PRO'].includes(div)
                                   ? 'bg-amber-400 text-zinc-950 font-black shadow-sm'
                                   : 'bg-emerald-500 text-zinc-950 font-black shadow-sm'
                                 : isLocked
@@ -1755,6 +1760,8 @@ export default function NewCareerPage() {
                         { id: 'BUNDESLIGA_2', label: '🇩🇪 2. Bundes' },
                         { id: 'LIGUE_1', label: '🇫🇷 Ligue 1' },
                         { id: 'LIGUE_2', label: '🇫🇷 Ligue 2' },
+                        { id: 'MLS', label: '🇺🇸 MLS (Messi)' },
+                        { id: 'SAUDI_PRO', label: '🇸🇦 Saudita (CR7)' },
                         { id: 'EUROPA', label: '👑 Champions' },
                       ] as { id: Division; label: string }[]).map((tab) => {
                         const div = tab.id;
@@ -1776,7 +1783,7 @@ export default function NewCareerPage() {
                             }}
                             className={`py-2 px-3 rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 shrink-0 whitespace-nowrap ${
                               isSelected
-                                ? div === 'EUROPA' || ['PL', 'LALIGA', 'SERIE_A_ITA', 'BUNDESLIGA', 'LIGUE_1'].includes(div)
+                                ? ['EUROPA', 'PL', 'LALIGA', 'SERIE_A_ITA', 'BUNDESLIGA', 'LIGUE_1', 'MLS', 'SAUDI_PRO'].includes(div)
                                   ? 'bg-amber-400 text-zinc-950 font-black shadow-sm'
                                   : 'bg-emerald-500 text-zinc-950 font-black shadow-sm'
                                 : isLocked

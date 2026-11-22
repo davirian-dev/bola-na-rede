@@ -5,6 +5,7 @@
 
 import { Club, Division, Player, Position } from '@/types/game';
 import { generatePlayer } from './brazilSeed';
+import { injectFamousStars } from './famousStarRosters';
 
 export interface RawEuropeanClubDef {
   id: string;
@@ -223,9 +224,12 @@ export function generateEuropeanClubs(): Record<string, Club> {
   ];
 
   for (const raw of RAW_EUROPEAN_CLUBS) {
-    const roster: Player[] = ROSTER_POSITIONS.map((pos, idx) =>
+    let roster: Player[] = ROSTER_POSITIONS.map((pos, idx) =>
       generatePlayer(raw.id, idx, pos, raw.division, false)
     );
+
+    // Injeta os craques reais atualizados
+    roster = injectFamousStars(raw.id, roster);
 
     const youthRoster: Player[] = YOUTH_POSITIONS.map((pos, idx) =>
       generatePlayer(raw.id, idx, pos, raw.division, true)
