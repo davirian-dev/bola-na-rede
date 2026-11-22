@@ -711,23 +711,48 @@ export function applyRosterPatch2026(clubs: Record<string, Club>): Record<string
 
     let roster = [...(club.roster || [])];
 
-    // Garante que haja pelo menos 18 jogadores
+    // Garante que haja pelo menos 18 jogadores com nomes reais e posições distribuídas
     if (roster.length < 18) {
       const needed = 18 - roster.length;
+      const fillerPositions: Position[] = ['ZAG', 'MC', 'ATA', 'VOL', 'LE', 'LD', 'MEI', 'PE', 'PD', 'GOL'];
+      const realFirstNames = ['Lucas', 'Mateo', 'Alex', 'Liam', 'Noah', 'Gabriel', 'Julian', 'Marco', 'Diego', 'Carlos', 'David', 'Felipe', 'Arthur', 'Rodrigo', 'Leo', 'Enzo'];
+      const realLastNames = ['Silva', 'Santos', 'Johnson', 'Smith', 'Al-Dawsari', 'Gomez', 'Fernandez', 'Miller', 'Williams', 'Oliveira', 'Rodriguez', 'Brown', 'Davis', 'Martinez'];
+
       for (let i = 0; i < needed; i++) {
+        const assignedPos = fillerPositions[i % fillerPositions.length];
+        const fn = realFirstNames[(club.name.charCodeAt(0) + i) % realFirstNames.length];
+        const ln = realLastNames[(club.name.charCodeAt(1) + i * 2) % realLastNames.length];
+        const baseOvr = club.reputation >= 85 ? 74 : club.reputation >= 80 ? 70 : 66;
+
         const filler: Player = {
           id: `${clubId}-filler-${Date.now()}-${i}`,
-          name: `Atleta ${club.shortName} ${roster.length + 1}`,
-          age: 22,
-          position: 'MC',
-          attributes: { pace: 65, dribbling: 65, tackling: 60, defending: 60, attacking: 65, finishing: 60, passing: 65, positioning: 65, heading: 60, crossing: 60, shooting: 60, jumping: 65, playmaker: 65, elasticity: 45 },
-          overall: 65,
-          potential: 72,
+          name: `${fn} ${ln}`,
+          nickname: `${ln}`,
+          age: 20 + ((i * 3) % 12),
+          position: assignedPos,
+          attributes: {
+            pace: baseOvr - 2,
+            dribbling: baseOvr - 1,
+            tackling: assignedPos === 'ZAG' || assignedPos === 'VOL' ? baseOvr + 4 : baseOvr - 8,
+            defending: assignedPos === 'ZAG' || assignedPos === 'VOL' || assignedPos === 'GOL' ? baseOvr + 5 : baseOvr - 8,
+            attacking: assignedPos === 'ATA' || assignedPos === 'MEI' ? baseOvr + 5 : baseOvr - 6,
+            finishing: assignedPos === 'ATA' ? baseOvr + 6 : baseOvr - 7,
+            passing: baseOvr,
+            positioning: baseOvr,
+            heading: assignedPos === 'ZAG' || assignedPos === 'ATA' ? baseOvr + 4 : baseOvr - 4,
+            crossing: baseOvr - 2,
+            shooting: assignedPos === 'ATA' || assignedPos === 'MEI' ? baseOvr + 4 : baseOvr - 6,
+            jumping: baseOvr,
+            playmaker: assignedPos === 'MEI' || assignedPos === 'MC' ? baseOvr + 5 : baseOvr - 5,
+            elasticity: assignedPos === 'GOL' ? baseOvr + 8 : 45,
+          },
+          overall: baseOvr,
+          potential: baseOvr + 6,
           energy: 100,
           morale: 85,
           contractWeeks: 52,
-          marketValue: 800000,
-          wage: 15000,
+          marketValue: baseOvr * 30000,
+          wage: baseOvr * 350,
           isYouth: false,
         };
         roster.push(filler);

@@ -501,6 +501,9 @@ export interface PlayerCareerProfile {
   isInjured?: boolean;           // Se está lesionado no departamento médico
   injuryWeeks?: number;          // Semanas restantes de recuperação
   titles?: Record<string, number>; // Contagem de títulos conquistados por ID de troféu
+  secondaryPositions?: Position[]; // Posições secundárias já dominadas (sem penalidade)
+  positionAdaptability?: Partial<Record<Position, number>>; // 0 a 100% de adaptação em posições em treino
+  trainingPosition?: Position;   // Posição secundária atualmente em treino semanal
 }
 
 export type ManagerTacticsPhilosophy = 
@@ -904,6 +907,17 @@ export interface GameState {
   roundResultModalOpen?: boolean;
   onlineStats?: OnlineStats;
   rosterPatchVersion?: string; // Versão do Patch de Elencos aplicado (ex: '2026.11')
+  // Sistema Anti-Tédio: Fila de Memória Cooldown min 10 eventos
+  recentDilemmaIds?: string[];
+  recentNewsTemplates?: string[];
+  recentCommentaryIds?: string[];
+  // Sistema de Injeção de Vício: Missões, Sequência, Reviravoltas e Rivalidade
+  flashMissions?: FlashMission[];
+  completedFlashMissionsLastMatch?: FlashMission[];
+  onFireStreak?: OnFireStreak;
+  specialMatchEvent?: SpecialMatchEvent;
+  seasonRivalry?: SeasonRivalry;
+  tieredAchievements?: TieredAchievement[];
   lastSeasonSummary?: {
     year: number;
     champions: {
@@ -978,4 +992,121 @@ export interface CustomUserMatchResult {
   ratings?: Record<string, number>;
   mvpPlayerId?: string;
 }
+
+// -------------------------------------------------------------
+// 1. MISSÕES RELÂMPAGO PRÉ-JOGO (Injeção de Dopamina Curto Prazo)
+// -------------------------------------------------------------
+export type FlashMissionType = 
+  // Modo Jogador
+  | 'player_goal_or_assist'
+  | 'player_score_goal'
+  | 'player_provide_assist'
+  | 'player_high_rating'
+  | 'player_no_cards'
+  | 'player_dribble_success'
+  | 'player_brace'
+  // Modo Treinador
+  | 'manager_clean_sheet'
+  | 'manager_away_win'
+  | 'manager_speech_hit'
+  | 'manager_score_two_plus'
+  | 'manager_win_match';
+
+export interface FlashMission {
+  id: string;
+  type: FlashMissionType;
+  title: string;
+  description: string;
+  icon: string;
+  rewardMoney: number;
+  rewardXP: number;
+  rewardMorale: number;
+  completed: boolean;
+  forMode: 'player' | 'manager';
+}
+
+// -------------------------------------------------------------
+// 2. SISTEMA DE SEQUÊNCIA ("EM CHAMAS 🔥")
+// -------------------------------------------------------------
+export interface OnFireStreak {
+  currentStreak: number;
+  bestStreak: number;
+  isOnFire: boolean;
+  multiplier: number; // 1.5x quando ativo
+  lastMatchSuccess: boolean;
+}
+
+// -------------------------------------------------------------
+// 3. REVIRAVOLTAS E JOGOS ESPECIAIS (Plot Twists a cada 4-6 semanas)
+// -------------------------------------------------------------
+export type SpecialMatchEventType = 
+  | 'scout_attendance'     // 👀 Olheiro Europeu na Arquibancada (Nota >= 8.0 gera proposta real)
+  | 'high_stakes_derby'     // ⚡ Clássico Lotado / Jogo de 6 Pontos (Recompensa dobrada, pressão máxima)
+  | 'golden_opportunity'    // 🚑 Chance de Ouro (Titular suspenso/lesionado - titularidade imediata)
+  | 'board_double_bonus';   // 💰 Bicho Dobrado (Diretoria promete premiação dobrada)
+
+export interface SpecialMatchEvent {
+  id: string;
+  type: SpecialMatchEventType;
+  title: string;
+  badge: string;
+  tagline: string;
+  description: string;
+  activeWeek: number;
+  bonusMultiplier?: number;
+  minRatingTarget?: number;
+  resolved?: boolean;
+  rewardClaimed?: boolean;
+}
+
+// -------------------------------------------------------------
+// 4. RIVALIDADE PESSOAL NA TEMPORADA
+// -------------------------------------------------------------
+export interface SeasonRivalry {
+  seasonYear: number;
+  rivalId: string;
+  rivalName: string;
+  rivalClubId: string;
+  rivalClubName: string;
+  rivalClubShortName: string;
+  rivalPrimaryColor: string;
+  rivalAvatarIcon: string;
+  rivalRole: string; // Ex: 'Artilheiro do Palmeiras' ou 'Técnico do Flamengo'
+  rivalOverall: number;
+  stats: {
+    userGoals: number;
+    rivalGoals: number;
+    userAssists: number;
+    rivalAssists: number;
+    userAverageRating: number;
+    rivalAverageRating: number;
+    userWins: number;
+    rivalWins: number;
+    matchesPlayed: number;
+  };
+  winnerDetermined?: boolean;
+  userWonRivalry?: boolean;
+}
+
+// -------------------------------------------------------------
+// 5. CENTRAL DE CONQUISTAS & DESAFIOS (Tiers Bronze -> Prata -> Ouro -> Lendário)
+// -------------------------------------------------------------
+export type AchievementTier = 'bronze' | 'silver' | 'gold' | 'legendary';
+
+export interface TieredAchievement {
+  id: string;
+  title: string;
+  description: string;
+  icon: string;
+  tier: AchievementTier;
+  category: 'goals' | 'matches' | 'titles' | 'derbies' | 'dynasty' | 'skills';
+  currentValue: number;
+  targetValue: number;
+  unlocked: boolean;
+  claimed: boolean;
+  rewardType: 'money' | 'boot' | 'ball' | 'points';
+  rewardValue: number;
+  rewardLabel: string;
+}
+
 

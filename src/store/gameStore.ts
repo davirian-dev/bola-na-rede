@@ -40,8 +40,19 @@ import {
   OnlineLeaderboardEntry,
   CommunityPackItem,
   TopScorer,
-  CustomUserMatchResult
+  CustomUserMatchResult,
+  FlashMission,
+  OnFireStreak,
+  SpecialMatchEvent,
+  SeasonRivalry,
+  TieredAchievement
 } from '@/types/game';
+import { progressPositionTraining, calculatePositionPenalty, TRAINABLE_POSITIONS } from '@/engine/positionEngine';
+import { generateFlashMissions, evaluateFlashMissions } from '@/engine/missionEngine';
+import { evaluateOnFireStreak } from '@/engine/streakEngine';
+import { shouldTriggerSpecialEvent, generateSpecialMatchEvent, resolveSpecialMatchEvent } from '@/engine/specialEventsEngine';
+import { initializeSeasonRivalry, updateSeasonRivalryRound } from '@/engine/rivalryEngine';
+import { INITIAL_TIERED_ACHIEVEMENTS } from '@/data/tieredAchievementsSeed';
 import { generateBrazilDatabase } from '@/data/brazilSeed';
 import { generateEuropeanClubs } from '@/data/europeanLeaguesSeed';
 import { generateGlobalClubs } from '@/data/globalLeaguesSeed';
@@ -194,6 +205,10 @@ interface GameStoreActions {
   dismissDilemma: () => void;
   triggerDilemmaCheck: (context?: DilemmaEvaluationContext) => void;
   holdLockerRoomMeeting: () => { success: boolean; message: string };
+
+  // Versatilidade Posicional & Desafios
+  setTrainingSecondaryPosition: (position: Position | null) => { success: boolean; message: string };
+  claimTieredAchievementReward: (achievementId: string) => { success: boolean; message: string };
 }
 
 export type GameStore = GameState & GameStoreActions;
@@ -260,6 +275,21 @@ export const useGameStore = create<GameStore>()(
       ownedBallIds: ['classic_capotao'],
       pendingDilemma: null,
       dilemmaHistory: [],
+      recentDilemmaIds: [],
+      recentNewsTemplates: [],
+      recentCommentaryIds: [],
+      flashMissions: [],
+      completedFlashMissionsLastMatch: [],
+      onFireStreak: {
+        currentStreak: 0,
+        bestStreak: 0,
+        isOnFire: false,
+        multiplier: 1.0,
+        lastMatchSuccess: false,
+      },
+      specialMatchEvent: undefined,
+      seasonRivalry: undefined,
+      tieredAchievements: INITIAL_TIERED_ACHIEVEMENTS,
       onlineStats: {
         elo: 1200,
         division: 'Prata',
@@ -1306,6 +1336,9 @@ export const useGameStore = create<GameStore>()(
           ? { leagues: state.leagues, copaDoBrasil: state.copaDoBrasil, sub20Tournament: state.sub20Tournament, allFixtures: state.allFixtures }
           : generateAnnualCalendar(updatedClubs, 2026);
 
+        const initialMissions = generateFlashMissions('player', playerProfile.position, false);
+        const initialRivalry = initializeSeasonRivalry(2026, 'player', club, updatedClubs);
+
         set({
           mode: 'player',
           clubs: updatedClubs,
@@ -1313,6 +1346,18 @@ export const useGameStore = create<GameStore>()(
           managerProfile: undefined,
           currentWeek: 1,
           rosterPatchVersion: ROSTER_PATCH_2026.version,
+          flashMissions: initialMissions,
+          completedFlashMissionsLastMatch: [],
+          onFireStreak: {
+            currentStreak: 0,
+            bestStreak: 0,
+            isOnFire: false,
+            multiplier: 1.0,
+            lastMatchSuccess: false,
+          },
+          specialMatchEvent: undefined,
+          seasonRivalry: initialRivalry,
+          tieredAchievements: INITIAL_TIERED_ACHIEVEMENTS,
           leagues: cal.leagues,
           copaDoBrasil: cal.copaDoBrasil,
           sub20Tournament: cal.sub20Tournament,
@@ -1431,12 +1476,27 @@ export const useGameStore = create<GameStore>()(
           ? { leagues: state.leagues, copaDoBrasil: state.copaDoBrasil, sub20Tournament: state.sub20Tournament, allFixtures: state.allFixtures }
           : generateAnnualCalendar(availableClubs, 2026);
 
+        const initialMissions = generateFlashMissions('manager', 'ATA', false);
+        const initialRivalry = initializeSeasonRivalry(2026, 'manager', club, availableClubs);
+
         set({
           mode: 'manager',
           managerProfile,
           playerProfile: undefined,
           currentWeek: 1,
           rosterPatchVersion: ROSTER_PATCH_2026.version,
+          flashMissions: initialMissions,
+          completedFlashMissionsLastMatch: [],
+          onFireStreak: {
+            currentStreak: 0,
+            bestStreak: 0,
+            isOnFire: false,
+            multiplier: 1.0,
+            lastMatchSuccess: false,
+          },
+          specialMatchEvent: undefined,
+          seasonRivalry: initialRivalry,
+          tieredAchievements: INITIAL_TIERED_ACHIEVEMENTS,
           leagues: cal.leagues,
           copaDoBrasil: cal.copaDoBrasil,
           sub20Tournament: cal.sub20Tournament,
@@ -2092,16 +2152,7 @@ export const useGameStore = create<GameStore>()(
           }
         }
 
-        // 5. GERAÇÃO DINÂMICA DE NOTÍCIAS DA RODADA
-        const weeklyNews = generateWeeklyNews(
-          state,
-          thisWeekFixtures,
-          promoted ? updatedPlayerProfile?.name : undefined
-        );
-
-        const nextWeek = state.currentWeek + 1;
-
-        // 6. ENCONTRA A PARTIDA DO USUÁRIO E OUTROS JOGOS DA RODADA
+        // 5. ENCONTRA A PARTIDA DO USUÁRIO E OUTROS JOGOS DA RODADA
         const userMatch = (updatedPlayerProfile ? thisWeekFixtures.find((f) => 
           (f.homeClubId === updatedPlayerProfile?.clubId || f.awayClubId === updatedPlayerProfile?.clubId) &&
           (updatedPlayerProfile?.isYouthTeam ? f.isYouth || f.competition === 'sub_20' : !f.isYouth)
@@ -2114,7 +2165,182 @@ export const useGameStore = create<GameStore>()(
           (f) => f.id !== userMatch?.id && f.competition === targetCompetition
         ).slice(0, 8);
 
-        // 7. COLETIVA DE IMPRENSA OBRIGATÓRIA PÓS-JOGO & DILEMAS DE CARREIRA
+        const userGoalsThisWeek = userMatch ? (userMatch.scorers || []).filter((s) => s.playerId === updatedPlayerProfile?.id).length : 0;
+        const userAssistsThisWeek = userMatch ? (userMatch.scorers || []).filter((s) => s.assistPlayerId === updatedPlayerProfile?.id).length : 0;
+        const userYellowsThisWeek = userMatch ? (userMatch.cards || []).filter((c) => c.playerId === updatedPlayerProfile?.id && c.type === 'yellow').length : 0;
+        const userRedsThisWeek = userMatch ? (userMatch.cards || []).filter((c) => c.playerId === updatedPlayerProfile?.id && c.type === 'red').length : 0;
+        const userRatingThisWeek = userMatch?.ratings?.[updatedPlayerProfile?.id || ''] || 6.0;
+
+        const isUserWin = userMatch?.isPlayed && ((userMatch.homeClubId === (updatedPlayerProfile?.clubId || updatedManagerProfile?.clubId) && (userMatch.homeGoals || 0) > (userMatch.awayGoals || 0)) || (userMatch.awayClubId === (updatedPlayerProfile?.clubId || updatedManagerProfile?.clubId) && (userMatch.awayGoals || 0) > (userMatch.homeGoals || 0)));
+        const isUserLoss = userMatch?.isPlayed && ((userMatch.homeClubId === (updatedPlayerProfile?.clubId || updatedManagerProfile?.clubId) && (userMatch.homeGoals || 0) < (userMatch.awayGoals || 0)) || (userMatch.awayClubId === (updatedPlayerProfile?.clubId || updatedManagerProfile?.clubId) && (userMatch.awayGoals || 0) < (userMatch.homeGoals || 0)));
+
+        // 6. TREINAMENTO DE POSIÇÃO SECUNDÁRIA (VERSATILIDADE POSICIONAL)
+        if (updatedPlayerProfile?.trainingPosition) {
+          const tPos = updatedPlayerProfile.trainingPosition;
+          const currentAdap = updatedPlayerProfile.positionAdaptability?.[tPos] || 0;
+          const { newProgress, isCompleted } = progressPositionTraining(currentAdap, 1);
+          
+          const updatedAdaptabilityMap = {
+            ...(updatedPlayerProfile.positionAdaptability || {}),
+            [tPos]: newProgress,
+          };
+
+          let newSecPositions = [...(updatedPlayerProfile.secondaryPositions || [])];
+          if (isCompleted && !newSecPositions.includes(tPos)) {
+            newSecPositions.push(tPos);
+          }
+
+          updatedPlayerProfile = {
+            ...updatedPlayerProfile,
+            positionAdaptability: updatedAdaptabilityMap,
+            secondaryPositions: newSecPositions,
+            trainingPosition: isCompleted ? undefined : tPos,
+          };
+        }
+
+        // 7. MISSÕES RELÂMPAGO PRÉ-JOGO: AVALIAÇÃO E RECOMPENSA IMEDIATA
+        const activeMissions = state.flashMissions && state.flashMissions.length > 0 
+          ? state.flashMissions 
+          : generateFlashMissions(state.mode, updatedPlayerProfile?.position || 'ATA', false);
+
+        const missionEval = evaluateFlashMissions(activeMissions, {
+          mode: state.mode,
+          playerId: updatedPlayerProfile?.id,
+          clubId: updatedPlayerProfile?.clubId || updatedManagerProfile?.clubId,
+          userFixture: userMatch,
+          userRating: userRatingThisWeek,
+          userGoals: userGoalsThisWeek,
+          userAssists: userAssistsThisWeek,
+          userCards: { yellow: userYellowsThisWeek, red: userRedsThisWeek },
+        });
+
+        if (missionEval.totalRewardMoney > 0 && updatedPlayerProfile) {
+          updatedPlayerProfile = {
+            ...updatedPlayerProfile,
+            bankBalance: updatedPlayerProfile.bankBalance + missionEval.totalRewardMoney,
+            morale: Math.min(100, updatedPlayerProfile.morale + missionEval.totalRewardMorale),
+          };
+        }
+
+        const nextWeek = state.currentWeek + 1;
+        const nextFlashMissions = generateFlashMissions(
+          state.mode,
+          updatedPlayerProfile?.position || 'ATA',
+          false
+        );
+
+        // 8. SISTEMA DE SEQUÊNCIA ("EM CHAMAS 🔥")
+        const isMatchSuccess = state.mode === 'player'
+          ? (userGoalsThisWeek > 0 || userAssistsThisWeek > 0 || userRatingThisWeek >= 7.5)
+          : (isUserWin || (!isUserLoss && isUserWin !== false));
+
+        const actorName = state.mode === 'player' 
+          ? (updatedPlayerProfile?.name || 'Seu Atleta') 
+          : (updatedManagerProfile?.name || 'Seu Treinador');
+        const myClubName = state.clubs[updatedPlayerProfile?.clubId || updatedManagerProfile?.clubId || '']?.name || 'Seu Clube';
+
+        const streakResult = evaluateOnFireStreak(
+          state.onFireStreak,
+          Boolean(isMatchSuccess),
+          actorName,
+          myClubName,
+          state.currentWeek,
+          state.seasonYear
+        );
+
+        // 9. REVIRAVOLTAS E JOGOS ESPECIAIS (PLOT TWISTS)
+        let newTransferOffer = state.pendingTransferOffer;
+        if (state.specialMatchEvent) {
+          const resSpecial = resolveSpecialMatchEvent(
+            state.specialMatchEvent,
+            Boolean(isUserWin),
+            userRatingThisWeek,
+            state.mode
+          );
+          if (resSpecial.bonusMoney > 0 && updatedPlayerProfile) {
+            updatedPlayerProfile = {
+              ...updatedPlayerProfile,
+              bankBalance: updatedPlayerProfile.bankBalance + resSpecial.bonusMoney,
+              morale: Math.min(100, updatedPlayerProfile.morale + resSpecial.bonusMorale),
+            };
+          }
+          if (resSpecial.transferOfferToTrigger) {
+            newTransferOffer = resSpecial.transferOfferToTrigger;
+          }
+        }
+
+        // Gera novo evento especial para próximas rodadas se aplicável
+        let nextSpecialMatchEvent: SpecialMatchEvent | undefined;
+        if (shouldTriggerSpecialEvent(nextWeek, state.specialMatchEvent?.activeWeek)) {
+          const myClub = state.clubs[updatedPlayerProfile?.clubId || updatedManagerProfile?.clubId || ''];
+          const nextFixture = state.allFixtures?.find((f) => f.week === nextWeek && (f.homeClubId === myClub?.id || f.awayClubId === myClub?.id));
+          const oppClubId = nextFixture ? (nextFixture.homeClubId === myClub?.id ? nextFixture.awayClubId : nextFixture.homeClubId) : undefined;
+          const oppClub = oppClubId ? state.clubs[oppClubId] : myClub;
+          if (myClub && oppClub) {
+            const isDerbyNext = Boolean(myClub.rivalClubIds?.includes(oppClub.id));
+            nextSpecialMatchEvent = generateSpecialMatchEvent(nextWeek, state.mode, myClub, oppClub, isDerbyNext);
+          }
+        }
+
+        // 10. DUELO DA TEMPORADA (RIVALIDADE PESSOAL)
+        let updatedRivalry = state.seasonRivalry;
+        if (!updatedRivalry) {
+          const myClub = state.clubs[updatedPlayerProfile?.clubId || updatedManagerProfile?.clubId || ''];
+          if (myClub) {
+            updatedRivalry = initializeSeasonRivalry(state.seasonYear, state.mode, myClub, state.clubs);
+          }
+        }
+        if (updatedRivalry) {
+          updatedRivalry = updateSeasonRivalryRound(
+            updatedRivalry,
+            {
+              goals: userGoalsThisWeek,
+              assists: userAssistsThisWeek,
+              rating: userRatingThisWeek,
+              isWin: Boolean(isUserWin),
+            },
+            nextWeek > 48
+          );
+        }
+
+        // 11. CENTRAL DE CONQUISTAS E DESAFIOS (PROGRESSÃO VISUAL)
+        const currentAchs = state.tieredAchievements && state.tieredAchievements.length > 0
+          ? state.tieredAchievements
+          : INITIAL_TIERED_ACHIEVEMENTS;
+
+        const totalGoals = updatedPlayerProfile?.stats.goals || 0;
+        const totalWins = updatedManagerProfile?.stats.wins || 0;
+        const maxVersatility = (updatedPlayerProfile?.secondaryPositions?.length || 0) > 0 
+          ? 100 
+          : Math.max(0, ...Object.values(updatedPlayerProfile?.positionAdaptability || {}));
+
+        const updatedAchs = currentAchs.map((ach) => {
+          let curVal = ach.currentValue;
+          if (ach.category === 'goals') {
+            curVal = state.mode === 'player' ? totalGoals : totalWins;
+          } else if (ach.category === 'matches') {
+            curVal = Math.max(ach.currentValue, streakResult.updatedStreak.bestStreak);
+          } else if (ach.category === 'skills') {
+            curVal = Math.max(ach.currentValue, maxVersatility);
+          } else if (ach.category === 'dynasty') {
+            curVal = state.mode === 'player' ? totalGoals + (updatedPlayerProfile?.stats.assists || 0) : totalWins;
+          }
+          const unlocked = curVal >= ach.targetValue;
+          return { ...ach, currentValue: curVal, unlocked: ach.unlocked || unlocked };
+        });
+
+        // 12. GERAÇÃO DINÂMICA DE NOTÍCIAS DA RODADA (COM COOLDOWN ANTI-TÉDIO)
+        const { news: weeklyNews, updatedRecentTemplates } = generateWeeklyNews(
+          state,
+          thisWeekFixtures,
+          promoted ? updatedPlayerProfile?.name : undefined
+        );
+
+        if (streakResult.newsItem) {
+          weeklyNews.unshift(streakResult.newsItem);
+        }
+
+        // 13. COLETIVA DE IMPRENSA OBRIGATÓRIA PÓS-JOGO & DILEMAS DE CARREIRA
         let nextPendingControversy = state.pendingControversy;
         if (userMatch || !nextPendingControversy) {
           const answeredIds = (state.controversyHistory || []).map((h) => h.event.id);
@@ -2124,10 +2350,8 @@ export const useGameStore = create<GameStore>()(
         }
 
         let nextDilemma = state.pendingDilemma;
+        let updatedRecentDilemmas = state.recentDilemmaIds || [];
         if (!nextDilemma && Math.random() < 0.5) {
-          const isUserWin = userMatch?.isPlayed && ((userMatch.homeClubId === (updatedPlayerProfile?.clubId || updatedManagerProfile?.clubId) && (userMatch.homeGoals || 0) > (userMatch.awayGoals || 0)) || (userMatch.awayClubId === (updatedPlayerProfile?.clubId || updatedManagerProfile?.clubId) && (userMatch.awayGoals || 0) > (userMatch.homeGoals || 0)));
-          const isUserLoss = userMatch?.isPlayed && ((userMatch.homeClubId === (updatedPlayerProfile?.clubId || updatedManagerProfile?.clubId) && (userMatch.homeGoals || 0) < (userMatch.awayGoals || 0)) || (userMatch.awayClubId === (updatedPlayerProfile?.clubId || updatedManagerProfile?.clubId) && (userMatch.awayGoals || 0) < (userMatch.homeGoals || 0)));
-          
           nextDilemma = evaluateDilemmaTrigger(
             { ...state, playerProfile: updatedPlayerProfile, managerProfile: updatedManagerProfile },
             {
@@ -2135,6 +2359,9 @@ export const useGameStore = create<GameStore>()(
               matchResult: isUserWin ? 'win' : isUserLoss ? 'loss' : 'draw',
             }
           );
+          if (nextDilemma) {
+            updatedRecentDilemmas = [...updatedRecentDilemmas, nextDilemma.id].slice(-10);
+          }
         }
 
         set({
@@ -2149,6 +2376,15 @@ export const useGameStore = create<GameStore>()(
           managerProfile: updatedManagerProfile,
           pendingControversy: nextPendingControversy,
           pendingDilemma: nextDilemma,
+          pendingTransferOffer: newTransferOffer,
+          recentDilemmaIds: updatedRecentDilemmas,
+          recentNewsTemplates: updatedRecentTemplates,
+          flashMissions: nextFlashMissions,
+          completedFlashMissionsLastMatch: missionEval.updatedMissions.filter((m) => m.completed),
+          onFireStreak: streakResult.updatedStreak,
+          specialMatchEvent: nextSpecialMatchEvent,
+          seasonRivalry: updatedRivalry,
+          tieredAchievements: updatedAchs,
           newsFeed: [...weeklyNews, ...state.newsFeed.slice(0, 30)],
           promotionModalOpen: promoted ? true : state.promotionModalOpen,
           lastRoundResult: {
@@ -3208,6 +3444,69 @@ export const useGameStore = create<GameStore>()(
           success: true,
           message: `Reunião de vestiário realizada com sucesso! Você motivou o grupo e a moral do elenco subiu para ${newMorale} (+15 pts).`,
         };
+      },
+
+      setTrainingSecondaryPosition: (position: Position | null) => {
+        const state = get();
+        if (state.mode !== 'player' || !state.playerProfile) {
+          return { success: false, message: 'Disponível apenas no Modo Jogador.' };
+        }
+        if (!position) {
+          set({
+            playerProfile: {
+              ...state.playerProfile,
+              trainingPosition: undefined,
+            },
+          });
+          return { success: true, message: 'Treinamento de posição secundária cancelado.' };
+        }
+        if (state.playerProfile.position === position) {
+          return { success: false, message: 'Esta já é a sua posição natural de origem!' };
+        }
+        if (state.playerProfile.secondaryPositions?.includes(position)) {
+          return { success: false, message: 'Você já domina esta posição perfeitamente (100% adaptado)!' };
+        }
+        set({
+          playerProfile: {
+            ...state.playerProfile,
+            trainingPosition: position,
+          },
+        });
+        return { success: true, message: `Treinamento intensivo para a posição ${position} iniciado! A cada semana você ganhará adaptabilidade.` };
+      },
+
+      claimTieredAchievementReward: (achievementId: string) => {
+        const state = get();
+        const achs = state.tieredAchievements || INITIAL_TIERED_ACHIEVEMENTS;
+        const target = achs.find((a) => a.id === achievementId);
+        if (!target) return { success: false, message: 'Conquista não encontrada.' };
+        if (!target.unlocked) return { success: false, message: 'Conquista ainda não foi desbloqueada!' };
+        if (target.claimed) return { success: false, message: 'Recompensa já resgatada anteriormente!' };
+
+        const updatedAchs = achs.map((a) => a.id === achievementId ? { ...a, claimed: true } : a);
+
+        let updatedPlayer = state.playerProfile;
+        let updatedOnlineStats = state.onlineStats;
+
+        if (target.rewardType === 'money' && updatedPlayer) {
+          updatedPlayer = {
+            ...updatedPlayer,
+            bankBalance: updatedPlayer.bankBalance + target.rewardValue,
+          };
+        } else if (target.rewardType === 'points' && updatedOnlineStats) {
+          updatedOnlineStats = {
+            ...updatedOnlineStats,
+            elo: updatedOnlineStats.elo + target.rewardValue,
+          };
+        }
+
+        set({
+          tieredAchievements: updatedAchs,
+          playerProfile: updatedPlayer,
+          onlineStats: updatedOnlineStats,
+        });
+
+        return { success: true, message: `Recompensa de "${target.rewardLabel}" resgatada com sucesso!` };
       },
     }),
     {

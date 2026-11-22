@@ -519,8 +519,12 @@ export default function NewCareerPage() {
       });
     }
 
-    if (!isGuest) {
-      await syncWithSupabase();
+    try {
+      if (!isGuest) {
+        await syncWithSupabase();
+      }
+    } catch (err) {
+      console.warn('Sincronização com nuvem em background:', err);
     }
 
     router.push('/dashboard');

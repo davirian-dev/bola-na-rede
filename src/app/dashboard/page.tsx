@@ -47,8 +47,9 @@ import { getBootById } from '@/data/boots';
 import { getBallById } from '@/data/balls';
 import { NRG_DRINKS_CATALOG } from '@/data/nssCatalogSeed';
 import { EPIC_SKILLS_CATALOG } from '@/data/epicSkillsSeed';
-import { NRGType } from '@/types/game';
+import { NRGType, Position } from '@/types/game';
 import { PerformanceIndicator } from '@/components/game/PerformanceIndicator';
+import { TRAINABLE_POSITIONS, calculatePositionPenalty } from '@/engine/positionEngine';
 import { 
   Play, 
   FastForward, 
@@ -115,8 +116,15 @@ export default function DashboardPage() {
   const dismissDilemma = useGameStore((s) => s.dismissDilemma);
   const holdLockerRoomMeeting = useGameStore((s) => s.holdLockerRoomMeeting);
   const equippedBallId = useGameStore((s) => s.equippedBallId);
+  const flashMissions = useGameStore((s) => s.flashMissions);
+  const onFireStreak = useGameStore((s) => s.onFireStreak);
+  const specialMatchEvent = useGameStore((s) => s.specialMatchEvent);
+  const seasonRivalry = useGameStore((s) => s.seasonRivalry);
+  const tieredAchievements = useGameStore((s) => s.tieredAchievements);
+  const setTrainingSecondaryPosition = useGameStore((s) => s.setTrainingSecondaryPosition);
   const fullState = useGameStore();
 
+  const [mounted, setMounted] = useState(false);
   const [activeTab, setActiveTab] = useState<'overview' | 'roster' | 'table' | 'life'>('overview');
   const [advancing, setAdvancing] = useState(false);
   const [meetingToast, setMeetingToast] = useState<{ message: string; success: boolean } | null>(null);
@@ -149,12 +157,32 @@ export default function DashboardPage() {
   const [isManagerSpeechOpen, setIsManagerSpeechOpen] = useState(false);
 
   useEffect(() => {
-    if (!playerProfile && !managerProfile) {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
+    
+    // Verifica se já existe um save persistido no localStorage para evitar expulsão acidental antes da hidratação do Zustand
+    let hasStoredSave = false;
+    if (typeof window !== 'undefined') {
+      try {
+        const raw = localStorage.getItem('bola-na-rede-storage');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed?.state?.playerProfile || parsed?.state?.managerProfile) {
+            hasStoredSave = true;
+          }
+        }
+      } catch {}
+    }
+
+    if (!playerProfile && !managerProfile && !hasStoredSave) {
       router.push('/new-career');
     } else {
       initDatabaseIfEmpty();
     }
-  }, [playerProfile, managerProfile, router, initDatabaseIfEmpty]);
+  }, [mounted, playerProfile, managerProfile, router, initDatabaseIfEmpty]);
 
   // Dispara confetes se for promovido
   useEffect(() => {
@@ -168,7 +196,7 @@ export default function DashboardPage() {
     }
   }, [promotionModalOpen]);
 
-  if (!playerProfile && !managerProfile) {
+  if (!mounted || (!playerProfile && !managerProfile)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background text-foreground">
         <div className="text-center space-y-3">
@@ -345,6 +373,67 @@ export default function DashboardPage() {
                   >
                     Analisar Proposta →
                   </button>
+                </div>
+              )}
+
+              {/* Banner de Status: EM CHAMAS 🔥 */}
+              {onFireStreak?.isOnFire && (
+                <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-rose-500/25 via-amber-500/20 to-orange-500/15 border-2 border-rose-500/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-lg animate-in fade-in">
+                  <div className="flex items-center gap-3">
+                    <span className="text-3xl animate-pulse">🔥</span>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-black uppercase tracking-wider bg-rose-500 text-white px-2 py-0.5 rounded shadow-sm">
+                          Modo On Fire • {onFireStreak.currentStreak} Jogos em Alta
+                        </span>
+                        <span className="text-xs font-mono font-bold text-amber-300">
+                          +2 em Todos os Atributos • Bônus 1.5x XP/R$
+                        </span>
+                      </div>
+                      <h4 className="font-display text-sm sm:text-base font-black text-white mt-0.5">
+                        Você está impossível dentro das quatro linhas!
+                      </h4>
+                      <p className="text-xs text-zinc-200 mt-0.5">
+                        A imprensa e a torcida estão em êxtase com sua sequência. Mantenha nota acima de 7.0 para continuar Em Chamas!
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="px-3 py-1.5 rounded-xl bg-zinc-950/80 border border-amber-500/40 text-amber-300 font-mono text-xs font-black">
+                      ⚡ x1.5 Multiplicador
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Banner de Evento Especial da Rodada (Plot Twist) */}
+              {specialMatchEvent && (
+                <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-indigo-500/20 via-purple-500/15 to-card border border-indigo-500/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-md animate-in fade-in">
+                  <div className="flex items-center gap-3">
+                    <span className="text-3xl">
+                      {specialMatchEvent.type === 'scout_attendance' ? '🕵️' :
+                       specialMatchEvent.type === 'high_stakes_derby' ? '🏟️' :
+                       specialMatchEvent.type === 'board_double_bonus' ? '💰' : '⭐'}
+                    </span>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-black uppercase tracking-wider bg-indigo-500 text-white px-2 py-0.5 rounded">
+                          {specialMatchEvent.badge}
+                        </span>
+                        <h4 className="font-display text-sm sm:text-base font-black text-foreground">
+                          {specialMatchEvent.title}
+                        </h4>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {specialMatchEvent.description}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="shrink-0">
+                    <span className="px-3 py-1 rounded-xl bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 text-xs font-bold">
+                      {specialMatchEvent.tagline}
+                    </span>
+                  </div>
                 </div>
               )}
 
@@ -1266,6 +1355,164 @@ export default function DashboardPage() {
                 </div>
               )}
 
+              {/* SISTEMA DE RETENÇÃO: MISSÕES RELÂMPAGO & DUELO DA TEMPORADA */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* 1. Missões Relâmpago Pré-Jogo */}
+                <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-card via-card to-emerald-950/20 border border-emerald-500/30 shadow-sm flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center justify-between mb-3 border-b border-border/60 pb-2">
+                      <div className="flex items-center gap-2">
+                        <span className="p-1.5 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-400">
+                          <Target className="w-4 h-4" />
+                        </span>
+                        <div>
+                          <h4 className="font-display text-sm font-black text-foreground">
+                            Missões Relâmpago Pré-Jogo
+                          </h4>
+                          <span className="text-[10px] text-muted-foreground block">
+                            Objetivos táticos para cumprir nesta partida
+                          </span>
+                        </div>
+                      </div>
+                      <span className="text-[10px] font-mono font-black uppercase text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                        2 Missões Ativas
+                      </span>
+                    </div>
+
+                    <div className="space-y-2.5">
+                      {flashMissions && flashMissions.length > 0 ? (
+                        flashMissions.map((m) => (
+                          <div 
+                            key={m.id}
+                            className="p-2.5 rounded-xl bg-secondary/50 border border-border/80 flex items-center justify-between gap-2"
+                          >
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <span className="text-xl shrink-0">{m.icon}</span>
+                              <div className="min-w-0">
+                                <span className="text-xs font-bold text-foreground block truncate">
+                                  {m.title}
+                                </span>
+                                <span className="text-[10px] text-muted-foreground block truncate">
+                                  {m.description}
+                                </span>
+                              </div>
+                            </div>
+                            <div className="text-right shrink-0">
+                              <span className="text-[10px] font-black font-mono text-emerald-400 block">
+                                +{formatCurrency(m.rewardMoney)}
+                              </span>
+                              <span className="text-[9px] font-semibold text-amber-400 block">
+                                +{m.rewardXP} XP {m.rewardMorale ? `• +${m.rewardMorale} Moral` : ''}
+                              </span>
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-xs text-muted-foreground italic">
+                          Missões da rodada serão sorteadas na próxima semana.
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="mt-3 pt-2 border-t border-border/50 flex items-center justify-between text-[11px] text-muted-foreground">
+                    <span>💡 Cumprir missões acelera a evolução do Overall.</span>
+                    <button
+                      type="button"
+                      onClick={() => setIsAchievementsOpen(true)}
+                      className="text-emerald-400 hover:underline font-bold text-[10px]"
+                    >
+                      Ver Todas Conquistas →
+                    </button>
+                  </div>
+                </div>
+
+                {/* 2. Duelo da Temporada ⚔️ (Rivalidade Direta) */}
+                <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-card via-card to-amber-950/20 border border-amber-500/30 shadow-sm flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center justify-between mb-3 border-b border-border/60 pb-2">
+                      <div className="flex items-center gap-2">
+                        <span className="p-1.5 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-400">
+                          <Swords className="w-4 h-4" />
+                        </span>
+                        <div>
+                          <h4 className="font-display text-sm font-black text-foreground">
+                            Duelo da Temporada ⚔️
+                          </h4>
+                          <span className="text-[10px] text-muted-foreground block">
+                            Rivalidade direta pelo topo da {currentClub?.division || 'Divisão'}
+                          </span>
+                        </div>
+                      </div>
+                      <span className="text-[10px] font-mono font-black uppercase text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
+                        {seasonRivalry?.rivalClubName || 'Rival'}
+                      </span>
+                    </div>
+
+                    {seasonRivalry ? (
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between text-xs bg-secondary/40 p-2 rounded-xl border border-border">
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-foreground">
+                              {mode === 'player' ? (playerProfile?.nickname || playerProfile?.name || 'Você') : (managerProfile?.name || 'Seu Time')}
+                            </span>
+                          </div>
+                          <span className="font-black text-amber-400 text-xs uppercase tracking-wider">X</span>
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-zinc-300">
+                              {seasonRivalry.rivalName}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-3 gap-2 text-center text-xs">
+                          <div className="p-2 rounded-xl bg-secondary/30 border border-border">
+                            <span className="text-[10px] text-muted-foreground block uppercase font-bold">
+                              {mode === 'player' ? 'Gols' : 'Vitórias'}
+                            </span>
+                            <div className="flex items-center justify-center gap-2 font-mono font-black mt-0.5">
+                              <span className="text-emerald-400">{mode === 'player' ? seasonRivalry.stats.userGoals : seasonRivalry.stats.userWins}</span>
+                              <span className="text-muted-foreground">:</span>
+                              <span className="text-rose-400">{mode === 'player' ? seasonRivalry.stats.rivalGoals : seasonRivalry.stats.rivalWins}</span>
+                            </div>
+                          </div>
+
+                          <div className="p-2 rounded-xl bg-secondary/30 border border-border">
+                            <span className="text-[10px] text-muted-foreground block uppercase font-bold">
+                              {mode === 'player' ? 'Assists' : 'Jogos'}
+                            </span>
+                            <div className="flex items-center justify-center gap-2 font-mono font-black mt-0.5">
+                              <span className="text-emerald-400">{mode === 'player' ? seasonRivalry.stats.userAssists : seasonRivalry.stats.matchesPlayed}</span>
+                              <span className="text-muted-foreground">:</span>
+                              <span className="text-rose-400">{mode === 'player' ? seasonRivalry.stats.rivalAssists : seasonRivalry.stats.matchesPlayed}</span>
+                            </div>
+                          </div>
+
+                          <div className="p-2 rounded-xl bg-secondary/30 border border-border">
+                            <span className="text-[10px] text-muted-foreground block uppercase font-bold">
+                              Nota Média
+                            </span>
+                            <div className="flex items-center justify-center gap-2 font-mono font-black mt-0.5">
+                              <span className="text-emerald-400">{seasonRivalry.stats.userAverageRating.toFixed(1)}</span>
+                              <span className="text-muted-foreground">:</span>
+                              <span className="text-rose-400">{seasonRivalry.stats.rivalAverageRating.toFixed(1)}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-xs text-muted-foreground italic">
+                        Rivalidade será estabelecida na primeira rodada.
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="mt-3 pt-2 border-t border-border/50 text-[11px] text-muted-foreground">
+                    <span>🏆 Supere seu rival até o fim do ano para ganhar reputação e bônus da torcida.</span>
+                  </div>
+                </div>
+              </div>
+
               {/* Grid 2 Colunas: Próxima Partida & Ações Rápidas */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {/* Coluna 1 & 2: Próxima Partida */}
@@ -2033,6 +2280,147 @@ export default function DashboardPage() {
                           </div>
                         );
                       })}
+                    </div>
+                  </div>
+
+                  {/* SEÇÃO DE VERSATILIDADE POSICIONAL & TREINO DE POSIÇÃO SECUNDÁRIA */}
+                  <div className="p-5 rounded-2xl bg-gradient-to-br from-card via-card to-cyan-950/20 border border-cyan-500/30 space-y-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border/80 pb-3">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="p-1.5 rounded-lg bg-cyan-500/15 border border-cyan-500/30 text-cyan-400">
+                            🔄
+                          </span>
+                          <h4 className="font-display text-base font-black text-foreground">
+                            Versatilidade Tática & Posição Secundária
+                          </h4>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          Aprenda novas posições para poder ser escalado em múltiplos setores sem penalidade de Overall.
+                        </p>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-mono font-black uppercase text-cyan-400 bg-cyan-500/10 px-2.5 py-1 rounded-xl border border-cyan-500/30">
+                          Posição Natural: {playerProfile.position}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Lado Esquerdo: Posições Dominadas e Posição em Treino */}
+                      <div className="space-y-3">
+                        <div>
+                          <span className="text-xs font-bold text-foreground block mb-1.5">
+                            Posições Dominadas (100% Eficiência)
+                          </span>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="px-3 py-1 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-xs font-black">
+                              ★ {playerProfile.position} (Origem)
+                            </span>
+                            {playerProfile.secondaryPositions && playerProfile.secondaryPositions.length > 0 ? (
+                              playerProfile.secondaryPositions.map((pos) => (
+                                <span 
+                                  key={pos}
+                                  className="px-3 py-1 rounded-xl bg-cyan-500/20 border border-cyan-500/40 text-cyan-300 text-xs font-black"
+                                >
+                                  ✓ {pos} (Secundária)
+                                </span>
+                              ))
+                            ) : (
+                              <span className="text-xs text-muted-foreground italic">
+                                Nenhuma posição secundária dominada ainda.
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Posição Atualmente em Treinamento */}
+                        <div className="p-3.5 rounded-xl bg-secondary/50 border border-border">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-xs font-bold text-foreground">
+                              Treinamento Atual de Posição
+                            </span>
+                            {playerProfile.trainingPosition ? (
+                              <span className="text-xs font-mono font-black text-cyan-400">
+                                {playerProfile.positionAdaptability?.[playerProfile.trainingPosition] || 0}% Adaptado
+                              </span>
+                            ) : (
+                              <span className="text-xs text-muted-foreground">
+                                Inativo
+                              </span>
+                            )}
+                          </div>
+
+                          {playerProfile.trainingPosition ? (
+                            <div className="space-y-2">
+                              <div className="w-full h-2.5 bg-secondary rounded-full overflow-hidden border border-border">
+                                <div 
+                                  className="h-full bg-gradient-to-r from-cyan-500 to-emerald-400 rounded-full transition-all duration-500"
+                                  style={{ width: `${playerProfile.positionAdaptability?.[playerProfile.trainingPosition] || 0}%` }}
+                                />
+                              </div>
+                              <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                                <span>Treinando para ser <strong>{playerProfile.trainingPosition}</strong> (+15% a 25%/semana)</span>
+                                <button
+                                  type="button"
+                                  onClick={() => setTrainingSecondaryPosition(null)}
+                                  className="text-rose-400 hover:underline font-bold text-[10px]"
+                                >
+                                  Cancelar Treino
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <p className="text-[11px] text-muted-foreground">
+                              Selecione uma posição ao lado para seu atleta começar a treinar nesta semana.
+                            </p>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Lado Direito: Seletor de Nova Posição para Treinar */}
+                      <div className="p-3.5 rounded-xl bg-secondary/40 border border-border space-y-2.5">
+                        <span className="text-xs font-bold text-foreground block">
+                          Iniciar Treino de Nova Posição:
+                        </span>
+                        <div className="grid grid-cols-3 gap-1.5">
+                          {TRAINABLE_POSITIONS
+                            .filter(tp => tp.id !== playerProfile.position && !playerProfile.secondaryPositions?.includes(tp.id))
+                            .map((tp) => {
+                              const isCurrentTraining = playerProfile.trainingPosition === tp.id;
+                              const currentProgress = playerProfile.positionAdaptability?.[tp.id] || 0;
+
+                              return (
+                                <button
+                                  key={tp.id}
+                                  type="button"
+                                  onClick={() => setTrainingSecondaryPosition(tp.id)}
+                                  className={`p-2 rounded-xl border text-center transition-all cursor-pointer ${
+                                    isCurrentTraining
+                                      ? 'bg-cyan-500/25 border-cyan-400 text-cyan-200 shadow-sm'
+                                      : 'bg-card border-border hover:border-cyan-500/40 text-foreground'
+                                  }`}
+                                >
+                                  <span className="font-mono font-black text-xs block">
+                                    {tp.id}
+                                  </span>
+                                  <span className="text-[9px] text-muted-foreground block truncate">
+                                    {tp.sector}
+                                  </span>
+                                  {currentProgress > 0 && (
+                                    <span className="text-[9px] text-cyan-400 font-mono font-bold block mt-0.5">
+                                      {currentProgress}%
+                                    </span>
+                                  )}
+                                </button>
+                              );
+                            })}
+                        </div>
+                        <p className="text-[10px] text-muted-foreground leading-snug">
+                          ⚠️ Jogadores escalados fora de suas posições naturais ou secundárias sofrem de <strong>-4 a -16 de penalidade no Overall</strong> durante as partidas.
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </div>

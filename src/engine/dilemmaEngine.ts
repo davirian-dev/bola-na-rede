@@ -22,15 +22,21 @@ export function evaluateDilemmaTrigger(
   context?: DilemmaEvaluationContext
 ): DilemmaEvent | null {
   const currentMode = state.mode;
-  const history = state.dilemmaHistory || [];
-  const answeredIds = new Set(history.map((h) => h.dilemmaId));
+  // Fila de Memória Anti-Tédio: Cooldown de no mínimo 10 eventos
+  const recentQueue = state.recentDilemmaIds || [];
+  const blockedIds = new Set(recentQueue.slice(-10));
 
-  // Filtra candidatos disponíveis para o modo atual que não foram respondidos recentemente
-  const available = DILEMMAS_DATABASE.filter((d) => {
+  // Filtra candidatos disponíveis para o modo atual que não estejam na fila recente dos últimos 10
+  let available = DILEMMAS_DATABASE.filter((d) => {
     if (d.forMode !== 'both' && d.forMode !== currentMode) return false;
-    if (answeredIds.has(d.id)) return false;
+    if (blockedIds.has(d.id)) return false;
     return true;
   });
+
+  // Fallback de segurança se todos estiverem em cooldown
+  if (available.length === 0) {
+    available = DILEMMAS_DATABASE.filter((d) => d.forMode === 'both' || d.forMode === currentMode);
+  }
 
   if (available.length === 0) return null;
 

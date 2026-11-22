@@ -15,8 +15,11 @@ import {
   TopScorer, 
   CompetitionType,
   Division,
-  CustomUserMatchResult
+  CustomUserMatchResult,
+  OnFireStreak,
+  SpecialMatchEvent
 } from '@/types/game';
+import { calculatePositionPenalty } from '@/engine/positionEngine';
 
 interface MatchSimResult {
   homeGoals: number;
@@ -41,6 +44,8 @@ export function simulateMatch(
     managerClubId?: string;
     managerArchetype?: string;
     playerProfile?: PlayerCareerProfile;
+    onFireStreak?: OnFireStreak;
+    specialMatchEvent?: SpecialMatchEvent;
   }
 ): MatchSimResult {
   const homeRoster = isYouth ? homeClub.youthRoster : homeClub.roster;
@@ -56,6 +61,12 @@ export function simulateMatch(
     const isUserHome = userProfile.clubId === homeClub.id;
     const targetLineup = isUserHome ? homeLineup : awayLineup;
 
+    // Bônus do estado "Em Chamas 🔥" (+2 Overall e Atributos em campo)
+    let calculatedOvr = userProfile.overall;
+    if (userState?.onFireStreak?.isOnFire) {
+      calculatedOvr = Math.min(99, calculatedOvr + 2);
+    }
+
     if (!targetLineup.some((p) => p.id === userPlayerId)) {
       const userPlayer: Player = {
         id: userProfile.id,
@@ -64,7 +75,7 @@ export function simulateMatch(
         age: userProfile.age,
         position: userProfile.position,
         attributes: userProfile.attributes,
-        overall: userProfile.overall,
+        overall: calculatedOvr,
         potential: userProfile.potential,
         energy: userProfile.energy,
         morale: userProfile.morale,
@@ -471,6 +482,8 @@ export function simulateWeekMatches(
           managerClubId: state.managerProfile?.clubId,
           managerArchetype: state.managerProfile?.archetype,
           playerProfile: state.playerProfile,
+          onFireStreak: state.onFireStreak,
+          specialMatchEvent: state.specialMatchEvent,
         }
       );
     }

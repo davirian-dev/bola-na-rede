@@ -539,20 +539,26 @@ export function NSSPenaltyMinigame({
       </div>
 
       {/* Canvas 2D Interativo */}
-      <div className="relative mx-auto rounded-2xl overflow-hidden border-2 border-emerald-500/30 shadow-inner bg-zinc-950 w-full max-w-[400px] h-[340px] touch-none select-none">
+      <div className="relative mx-auto rounded-2xl overflow-hidden border-2 border-emerald-500/30 shadow-inner bg-zinc-950 w-full max-w-[400px] h-[340px] touch-none select-none overscroll-none">
         <canvas
           ref={canvasRef}
           width={400}
           height={340}
-          className="w-full h-full cursor-crosshair touch-none select-none"
+          className="w-full h-full cursor-crosshair touch-none select-none overscroll-none"
           onMouseDown={(e) => handleAimStart(e.clientX, e.clientY)}
           onMouseMove={(e) => handleAimMove(e.clientX, e.clientY)}
           onMouseUp={handleAimRelease}
           onTouchStart={(e) => {
-            if (e.touches && e.touches.length > 0) handleAimStart(e.touches[0].clientX, e.touches[0].clientY);
+            if (e.touches && e.touches.length > 0) {
+              e.preventDefault();
+              handleAimStart(e.touches[0].clientX, e.touches[0].clientY);
+            }
           }}
           onTouchMove={(e) => {
-            if (e.touches && e.touches.length > 0) handleAimMove(e.touches[0].clientX, e.touches[0].clientY);
+            if (e.touches && e.touches.length > 0) {
+              e.preventDefault();
+              handleAimMove(e.touches[0].clientX, e.touches[0].clientY);
+            }
           }}
           onTouchEnd={handleAimRelease}
         />

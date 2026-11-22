@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useGameStore } from '@/store/gameStore';
 import { TacticalFormation, Player } from '@/types/game';
+import { calculatePositionPenalty } from '@/engine/positionEngine';
 import { OverallBadge } from './OverallBadge';
 import { PerformanceIndicator } from './PerformanceIndicator';
 import { ClubBadge } from './ClubBadge';
@@ -360,6 +361,14 @@ export function TacticsBoard({
               const isPenalty = (club.penaltyTakerPlayerId || starters[10]?.id) === player.id;
               const isFreeKick = (club.freeKickTakerPlayerId || starters[9]?.id) === player.id;
 
+              const posEval = calculatePositionPenalty(
+                player.position,
+                pos.role,
+                player.overall,
+                player.id === playerProfile?.id ? playerProfile?.secondaryPositions : undefined,
+                player.id === playerProfile?.id ? playerProfile?.positionAdaptability : undefined
+              );
+
               return (
                 <button
                   key={player.id}
@@ -375,7 +384,9 @@ export function TacticsBoard({
                       className={`w-8 h-8 rounded-full border-2 flex items-center justify-center text-[10px] font-black shadow-md ${
                         isSelected
                           ? 'bg-amber-400 text-zinc-950 border-white ring-4 ring-amber-400/50 animate-pulse'
-                          : 'bg-emerald-500 text-zinc-950 border-white'
+                          : posEval.penalty > 0
+                            ? 'bg-amber-500 text-zinc-950 border-amber-200'
+                            : 'bg-emerald-500 text-zinc-950 border-white'
                       }`}
                     >
                       #{idx + 1}
@@ -404,8 +415,13 @@ export function TacticsBoard({
                   <span className="mt-0.5 px-1 rounded bg-black/80 text-[9px] font-bold text-white max-w-[65px] truncate text-center">
                     {player.name.split(' ')[0]}
                   </span>
-                  <span className="text-[8px] font-mono text-emerald-300 font-bold leading-tight">
-                    {pos.role} • {player.overall}
+                  <span className={`text-[8px] font-mono font-bold leading-tight flex items-center gap-0.5 ${
+                    posEval.penalty >= 15 ? 'text-rose-400' : posEval.penalty > 0 ? 'text-amber-300' : 'text-emerald-300'
+                  }`}>
+                    {pos.role} • {posEval.effectiveOverall}
+                    {posEval.penalty > 0 && (
+                      <span className="text-[7px] text-rose-300">(-{posEval.penalty})</span>
+                    )}
                   </span>
                 </button>
               );
@@ -432,6 +448,15 @@ export function TacticsBoard({
               {starters.map((player, idx) => {
                 const isSelected = selectedPlayerIndex === idx;
 
+                const targetRole = positions[idx]?.role || player.position;
+                const evalP = calculatePositionPenalty(
+                  player.position,
+                  targetRole,
+                  player.overall,
+                  player.id === playerProfile?.id ? playerProfile?.secondaryPositions : undefined,
+                  player.id === playerProfile?.id ? playerProfile?.positionAdaptability : undefined
+                );
+
                 return (
                   <div
                     key={player.id}
@@ -443,7 +468,7 @@ export function TacticsBoard({
                     }`}
                   >
                     <div className="flex items-center gap-2">
-                      <OverallBadge overall={player.overall} size="sm" />
+                      <OverallBadge overall={evalP.effectiveOverall} size="sm" />
                       <div>
                         <div className="flex items-center gap-1">
                           <span className="text-xs font-bold text-foreground block max-w-[110px] truncate">
@@ -461,9 +486,16 @@ export function TacticsBoard({
                             <span className="text-[10px]" title="Cobrador de Faltas">☄️</span>
                           )}
                         </div>
-                        <span className="text-[10px] text-muted-foreground font-mono">
-                          {player.position} • {player.age} anos
-                        </span>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="text-[10px] text-muted-foreground font-mono">
+                            {player.position} ➔ {targetRole} • {player.age} anos
+                          </span>
+                          {evalP.penalty > 0 && (
+                            <span className="text-[9px] px-1.5 py-0.2 rounded bg-rose-500/20 text-rose-300 font-bold">
+                              -{evalP.penalty} OVR
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
 

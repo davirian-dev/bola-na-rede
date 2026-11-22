@@ -34,6 +34,8 @@ export function RoundResultModal({
   const managerProfile = useGameStore((s) => s.managerProfile);
   const mode = useGameStore((s) => s.mode);
   const pendingControversy = useGameStore((s) => s.pendingControversy);
+  const completedFlashMissionsLastMatch = useGameStore((s) => s.completedFlashMissionsLastMatch);
+  const onFireStreak = useGameStore((s) => s.onFireStreak);
 
   if (!isOpen || !lastRoundResult) return null;
 
@@ -205,6 +207,53 @@ export function RoundResultModal({
                   <span className="px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-400 font-black text-[11px]">
                     +XP & Moral 🔥
                   </span>
+                </div>
+              )}
+
+              {/* Bônus de Missões Relâmpago Cumpridas */}
+              {completedFlashMissionsLastMatch && completedFlashMissionsLastMatch.length > 0 && (
+                <div className="p-3 rounded-2xl bg-gradient-to-r from-emerald-500/20 via-emerald-500/10 to-transparent border border-emerald-500/40 space-y-2 animate-in slide-in-from-bottom duration-200">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+                      Missões Relâmpago Cumpridas (+Recompensas Imediatas)
+                    </span>
+                    <span className="text-[10px] font-bold text-emerald-400 font-mono">
+                      +{completedFlashMissionsLastMatch.length} Bônus
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                    {completedFlashMissionsLastMatch.map((m) => (
+                      <div key={m.id} className="p-2 rounded-xl bg-background/80 border border-emerald-500/30 flex items-center justify-between text-xs">
+                        <div className="flex items-center gap-2">
+                          <span className="text-base">{m.icon}</span>
+                          <span className="font-bold text-foreground truncate">{m.title}</span>
+                        </div>
+                        <span className="text-[10px] text-emerald-400 font-mono font-black shrink-0">
+                          +R$ {m.rewardMoney.toLocaleString('pt-BR')}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Status "Em Chamas 🔥" */}
+              {onFireStreak?.isOnFire && (
+                <div className="p-3 rounded-2xl bg-gradient-to-r from-amber-500/20 via-rose-500/15 to-transparent border border-amber-500/50 flex items-center justify-between animate-in zoom-in-95">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-xl bg-amber-500 text-zinc-950 flex items-center justify-center font-black text-lg shadow-md animate-bounce">
+                      🔥
+                    </div>
+                    <div>
+                      <span className="text-xs font-black text-amber-300 block uppercase tracking-wider">
+                        SEQUÊNCIA EM CHAMAS! ({onFireStreak.currentStreak} JOGOS)
+                      </span>
+                      <span className="text-[11px] text-muted-foreground block">
+                        Multiplicador de 1.5x ativado e +2 bônus em todos os atributos!
+                      </span>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>

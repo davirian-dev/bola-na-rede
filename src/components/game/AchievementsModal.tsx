@@ -1,7 +1,9 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useGameStore } from '@/store/gameStore';
+import { AchievementTier, TieredAchievement } from '@/types/game';
+import { INITIAL_TIERED_ACHIEVEMENTS } from '@/data/tieredAchievementsSeed';
 import { 
   Award, 
   Trophy, 
@@ -11,125 +13,73 @@ import {
   Lock, 
   X,
   Crown,
-  Users
+  Gift,
+  Coins
 } from 'lucide-react';
+import confetti from 'canvas-confetti';
 
 interface AchievementsModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-interface BadgeDef {
-  id: string;
-  title: string;
-  desc: string;
-  icon: string;
-  bonusPoints: number;
-  isUnlocked: boolean;
-}
-
 export function AchievementsModal({ isOpen, onClose }: AchievementsModalProps) {
-  const playerProfile = useGameStore((s) => s.playerProfile);
-  const managerProfile = useGameStore((s) => s.managerProfile);
-  const trophies = useGameStore((s) => s.trophies);
-  const generation = useGameStore((s) => s.generation);
-  const mode = useGameStore((s) => s.mode);
+  const tieredAchievements = useGameStore((s) => s.tieredAchievements) || INITIAL_TIERED_ACHIEVEMENTS;
+  const claimReward = useGameStore((s) => s.claimTieredAchievementReward);
+
+  const [activeTier, setActiveTier] = useState<'all' | AchievementTier>('all');
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
-  const goals = playerProfile?.stats.goals || 0;
-  const balance = playerProfile?.bankBalance || 0;
-  const hasNationalTeam = !!playerProfile?.nationalTeam && playerProfile.nationalTeam.status !== 'none';
+  const filteredAchievements = activeTier === 'all'
+    ? tieredAchievements
+    : tieredAchievements.filter((a) => a.tier === activeTier);
 
-  const badges: BadgeDef[] = [
-    {
-      id: 'badge-d-to-a',
-      title: 'Da Série D à Glória',
-      desc: 'Suba de divisão com seu clube e prove seu valor no futebol nacional.',
-      icon: '🚀',
-      bonusPoints: 50,
-      isUnlocked: trophies.some((t) => t.category === 'league'),
-    },
-    {
-      id: 'badge-generation',
-      title: 'Linhagem de Ouro',
-      desc: 'Transmita o talento nos genes: inicie a carreira com o Filho do Craque (Geração 2+).',
-      icon: '👑',
-      bonusPoints: 40,
-      isUnlocked: generation >= 2,
-    },
-    {
-      id: 'badge-top-scorer',
-      title: 'Artilheiro Nato',
-      desc: 'Marque 15 ou mais gols oficiais em partidas de campeonato.',
-      icon: '⚽',
-      bonusPoints: 35,
-      isUnlocked: goals >= 15,
-    },
-    {
-      id: 'badge-national-team',
-      title: 'Manto Amarelo',
-      desc: 'Receba a tão sonhada convocação para a Seleção Brasileira (Sub-20 ou Principal).',
-      icon: '🇧🇷',
-      bonusPoints: 45,
-      isUnlocked: hasNationalTeam,
-    },
-    {
-      id: 'badge-tycoon',
-      title: 'Magnata da Bola',
-      desc: 'Acumule mais de R$ 500.000 em patrimônio bancário e bens de luxo.',
-      icon: '💰',
-      bonusPoints: 30,
-      isUnlocked: balance >= 500000,
-    },
-    {
-      id: 'badge-derby-king',
-      title: 'Rei dos Clássicos',
-      desc: 'Decida e vença um clássico histórico de rivalidade estadual.',
-      icon: '🔥',
-      bonusPoints: 30,
-      isUnlocked: (playerProfile?.stats.matchesPlayed || 0) >= 6,
-    },
-    {
-      id: 'badge-trophy-collector',
-      title: 'Colecionador de Taças',
-      desc: 'Conquiste pelo menos 2 títulos oficiais no currículo profissional.',
-      icon: '🏆',
-      bonusPoints: 40,
-      isUnlocked: trophies.length >= 2,
-    },
-    {
-      id: 'badge-golden-ball',
-      title: 'The Best do Mundo',
-      desc: 'Entre para o Hall da Fama como o melhor jogador da temporada.',
-      icon: '⭐',
-      bonusPoints: 100,
-      isUnlocked: (playerProfile?.overall || 0) >= 86,
-    },
-  ];
+  const totalUnlocked = tieredAchievements.filter((a) => a.unlocked).length;
+  const totalClaimable = tieredAchievements.filter((a) => a.unlocked && !a.claimed).length;
 
-  const unlockedCount = badges.filter((b) => b.isUnlocked).length;
-  const totalBonusPoints = badges.filter((b) => b.isUnlocked).reduce((acc, b) => acc + b.bonusPoints, 0);
+  const handleClaim = (achId: string) => {
+    const res = claimReward(achId);
+    if (res.success) {
+      confetti({ particleCount: 70, spread: 60, origin: { y: 0.6 } });
+      setToastMessage(res.message);
+      setTimeout(() => setToastMessage(null), 3500);
+    }
+  };
+
+  const getTierBadge = (tier: AchievementTier) => {
+    switch (tier) {
+      case 'bronze':
+        return <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-amber-700/20 text-amber-500 border border-amber-700/40">Bronze 🥉</span>;
+      case 'silver':
+        return <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-zinc-400/20 text-zinc-300 border border-zinc-400/40">Prata 🥈</span>;
+      case 'gold':
+        return <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-yellow-500/20 text-yellow-400 border border-yellow-500/40">Ouro 🥇</span>;
+      case 'legendary':
+        return <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-purple-500/20 text-purple-300 border border-purple-500/40 animate-pulse">Lendário 💎</span>;
+    }
+  };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/85 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="bg-card text-foreground border-2 border-amber-500/40 rounded-3xl max-w-2xl w-full p-5 sm:p-7 shadow-2xl relative flex flex-col max-h-[92vh] overflow-hidden">
-        
-        {/* Glow */}
-        <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-200">
+      <div className="bg-card text-foreground border-2 border-emerald-500/40 rounded-3xl max-w-2xl w-full p-5 sm:p-7 shadow-2xl relative overflow-hidden flex flex-col max-h-[92vh]">
+        {/* Glows decorativos */}
+        <div className="absolute -top-24 -right-24 w-60 h-60 bg-emerald-500/15 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-24 -left-24 w-60 h-60 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
 
         {/* Topo */}
         <div className="flex items-center justify-between pb-3 mb-3 border-b border-border/80">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center font-black">
-              🎖️
+            <div className="w-9 h-9 rounded-2xl bg-amber-500/20 text-amber-400 flex items-center justify-center text-lg font-black shadow-md">
+              🏆
             </div>
             <div>
-              <span className="text-[10px] font-black uppercase tracking-widest text-amber-400 block">
-                Hall da Fama & Conquistas
+              <span className="text-[10px] font-black uppercase tracking-widest text-emerald-400 block">
+                Central de Desafios & Carreira
               </span>
-              <h3 className="font-display text-base sm:text-lg font-black text-foreground">
-                Medalhas Desbloqueáveis ({unlockedCount}/{badges.length})
+              <h3 className="font-display text-lg sm:text-xl font-black text-foreground">
+                Conquistas & Glórias ({totalUnlocked}/{tieredAchievements.length})
               </h3>
             </div>
           </div>
@@ -142,70 +92,124 @@ export function AchievementsModal({ isOpen, onClose }: AchievementsModalProps) {
           </button>
         </div>
 
-        {/* Banner de Pontuação no Ranking */}
-        <div className="p-3.5 rounded-2xl bg-gradient-to-r from-amber-500/20 via-amber-500/10 to-transparent border border-amber-500/30 flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <Crown className="w-5 h-5 text-amber-400" />
-            <div>
-              <span className="text-xs font-bold text-foreground block">
-                Bônus no Ranking Online
-              </span>
-              <span className="text-[11px] text-muted-foreground">
-                Cada medalha soma pontos na pontuação final da carreira.
-              </span>
-            </div>
+        {/* Toast de Resgate */}
+        {toastMessage && (
+          <div className="mb-3 p-3 rounded-xl bg-emerald-500 text-zinc-950 font-black text-xs text-center flex items-center justify-center gap-1.5 animate-in fade-in">
+            <CheckCircle2 className="w-4 h-4" />
+            {toastMessage}
           </div>
+        )}
 
-          <span className="font-mono text-sm font-black text-amber-400 bg-background/80 px-3 py-1 rounded-xl border border-amber-500/40">
-            +{totalBonusPoints} pts
-          </span>
-        </div>
-
-        {/* Grade de Conquistas */}
-        <div className="flex-1 overflow-y-auto grid grid-cols-1 sm:grid-cols-2 gap-3 pr-1">
-          {badges.map((b) => (
-            <div
-              key={b.id}
-              className={`p-3.5 rounded-2xl border transition-all flex items-start gap-3 ${
-                b.isUnlocked
-                  ? 'bg-secondary/60 border-amber-500/50 shadow-sm'
-                  : 'bg-secondary/20 border-border/50 opacity-60'
+        {/* Filtros de Tiers */}
+        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-2 mb-2">
+          {[
+            { id: 'all', label: `Todas (${tieredAchievements.length})` },
+            { id: 'bronze', label: 'Bronze 🥉' },
+            { id: 'silver', label: 'Prata 🥈' },
+            { id: 'gold', label: 'Ouro 🥇' },
+            { id: 'legendary', label: 'Lendário 💎' },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTier(tab.id as any)}
+              className={`py-1.5 px-3 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
+                activeTier === tab.id
+                  ? 'bg-emerald-500 text-zinc-950 shadow-md font-black'
+                  : 'bg-secondary/60 text-muted-foreground hover:text-foreground'
               }`}
             >
-              <div className="w-10 h-10 rounded-2xl bg-background border border-border flex items-center justify-center text-xl shrink-0">
-                {b.isUnlocked ? b.icon : '🔒'}
-              </div>
-
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between gap-1">
-                  <h4 className="font-display text-xs font-black text-foreground truncate">
-                    {b.title}
-                  </h4>
-                  <span className="text-[10px] font-mono font-bold text-amber-400 shrink-0">
-                    +{b.bonusPoints} pts
-                  </span>
-                </div>
-
-                <p className="text-[11px] text-muted-foreground leading-tight mt-1">
-                  {b.desc}
-                </p>
-
-                <div className="mt-2">
-                  {b.isUnlocked ? (
-                    <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/30">
-                      <CheckCircle2 className="w-3 h-3" />
-                      Desbloqueada
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center gap-1 text-[9px] font-bold text-muted-foreground bg-secondary px-2 py-0.5 rounded-md">
-                      <Lock className="w-3 h-3" />
-                      Em Progresso
-                    </span>
-                  )}
-                </div>
-              </div>
-            </div>
+              {tab.label}
+            </button>
           ))}
+        </div>
+
+        {/* Lista de Conquistas com Progresso */}
+        <div className="flex-1 overflow-y-auto space-y-2.5 pr-1">
+          {filteredAchievements.map((ach) => {
+            const pct = Math.min(100, Math.round((ach.currentValue / ach.targetValue) * 100));
+            const isReadyToClaim = ach.unlocked && !ach.claimed;
+
+            return (
+              <div
+                key={ach.id}
+                className={`p-3.5 rounded-2xl border transition-all ${
+                  ach.claimed
+                    ? 'bg-secondary/20 border-border opacity-75'
+                    : isReadyToClaim
+                    ? 'bg-gradient-to-r from-emerald-500/15 via-emerald-500/5 to-transparent border-emerald-500/60 shadow-md ring-1 ring-emerald-500/40'
+                    : 'bg-secondary/40 border-border'
+                }`}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className={`w-10 h-10 rounded-2xl flex items-center justify-center text-xl shrink-0 ${
+                      ach.unlocked ? 'bg-amber-500/20 text-amber-300' : 'bg-secondary text-muted-foreground opacity-60'
+                    }`}>
+                      {ach.icon}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h4 className="font-display font-black text-xs sm:text-sm text-foreground truncate">
+                          {ach.title}
+                        </h4>
+                        {getTierBadge(ach.tier)}
+                      </div>
+                      <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">
+                        {ach.description}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Botão Resgatar ou Status */}
+                  <div className="shrink-0 text-right">
+                    {ach.claimed ? (
+                      <span className="text-[10px] font-black text-muted-foreground uppercase flex items-center gap-1 justify-end">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                        Resgatado
+                      </span>
+                    ) : isReadyToClaim ? (
+                      <button
+                        type="button"
+                        onClick={() => handleClaim(ach.id)}
+                        className="py-1.5 px-3 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-400 hover:from-emerald-400 hover:to-emerald-300 text-zinc-950 font-black text-xs uppercase tracking-wider shadow-md transition-transform active:scale-95 cursor-pointer flex items-center gap-1"
+                      >
+                        <Gift className="w-3.5 h-3.5" />
+                        Resgatar
+                      </button>
+                    ) : (
+                      <span className="text-[10px] font-mono font-bold text-muted-foreground">
+                        {ach.currentValue} / {ach.targetValue}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Barra de Progresso Visual */}
+                <div className="mt-3 space-y-1">
+                  <div className="flex items-center justify-between text-[10px] font-mono font-bold text-muted-foreground">
+                    <span className="text-emerald-400">{ach.rewardLabel}</span>
+                    <span>{pct}%</span>
+                  </div>
+                  <div className="w-full h-1.5 bg-secondary rounded-full overflow-hidden">
+                    <div
+                      className={`h-full transition-all duration-500 rounded-full ${
+                        ach.unlocked ? 'bg-emerald-500' : 'bg-amber-500/80'
+                      }`}
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Rodapé com Dica */}
+        <div className="pt-3 mt-2 border-t border-border flex items-center justify-between text-[11px] text-muted-foreground">
+          <span>Resgate recompensas para acelerar seu patrimônio e legado.</span>
+          <span className="font-mono text-emerald-400 font-bold">
+            {totalClaimable} pendente(s)
+          </span>
         </div>
       </div>
     </div>

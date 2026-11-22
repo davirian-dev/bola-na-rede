@@ -1,6 +1,6 @@
 // ==============================================================================
 // BOLA NA REDE: CARREIRA - DYNAMIC NEWS GENERATOR (src/engine/newsGenerator.ts)
-// Notícias com Fotos Reais, Teasers em Vídeo, Portais Oficiais e Interações
+// Motor Anti-Tédio: Narrativa Contextualizada, Clássicos Reais, Sequência "Em Chamas" e Cooldown de 10 Eventos
 // ==============================================================================
 
 import { Fixture, NewsItem, Club, GameState, Division } from '@/types/game';
@@ -20,19 +20,30 @@ function randomEngagements() {
 }
 
 /**
- * Analisa os resultados da rodada e gera manchetes dinâmicas com fotos reais e narrativa brasileira
+ * Analisa os resultados da rodada e gera manchetes dinâmicas com fotos reais, sem repetições
  */
 export function generateWeeklyNews(
   state: GameState,
   weekFixtures: Fixture[],
   promotedPlayerName?: string
-): NewsItem[] {
+): { news: NewsItem[]; updatedRecentTemplates: string[] } {
   const news: NewsItem[] = [];
   const week = state.currentWeek;
   const year = state.seasonYear;
 
+  // Fila de Memória Anti-Tédio: Cooldown de no mínimo 10 templates recentes
+  const recentTemplates = state.recentNewsTemplates || [];
+  const blockedTemplates = new Set(recentTemplates.slice(-10));
+  const newUsedTemplates: string[] = [];
+
+  const isTemplateAllowed = (tplKey: string) => !blockedTemplates.has(tplKey);
+  const markTemplateUsed = (tplKey: string) => {
+    newUsedTemplates.push(tplKey);
+  };
+
   // 1. Notícia de Promoção do Jogador (se ocorreu nesta semana)
-  if (promotedPlayerName) {
+  if (promotedPlayerName && isTemplateAllowed('tpl_youth_promotion')) {
+    markTemplateUsed('tpl_youth_promotion');
     const eng = randomEngagements();
     news.push({
       id: `news-promo-${week}-${Date.now()}`,
@@ -50,12 +61,53 @@ export function generateWeeklyNews(
     });
   }
 
-  // 2. Busca por Goleadas (diferença >= 3 gols)
+  // 2. Notícia de Clássico Regional da Rodada (Derby)
+  const derbyFixture = weekFixtures.find((f) => {
+    if (!f.isPlayed) return false;
+    const h = state.clubs[f.homeClubId];
+    const a = state.clubs[f.awayClubId];
+    return (h?.rivalClubIds && h.rivalClubIds.includes(f.awayClubId)) ||
+           (a?.rivalClubIds && a.rivalClubIds.includes(f.homeClubId));
+  });
+
+  if (derbyFixture && isTemplateAllowed('tpl_derby_epic')) {
+    const home = state.clubs[derbyFixture.homeClubId];
+    const away = state.clubs[derbyFixture.awayClubId];
+    if (home && away) {
+      markTemplateUsed('tpl_derby_epic');
+      const derbyTitle = home.derbyName || away.derbyName || `Clássico ${home.shortName} x ${away.shortName}`;
+      const hGoals = derbyFixture.homeGoals || 0;
+      const aGoals = derbyFixture.awayGoals || 0;
+      const eng = randomEngagements();
+
+      const headline = hGoals === aGoals
+        ? `TUDO IGUAL NO ${derbyTitle.toUpperCase()}! ${home.name} e ${away.name} empatam por ${hGoals} a ${aGoals} em jogo eletrizante!`
+        : (hGoals > aGoals
+          ? `DONOS DO CLÁSSICO! ${home.name} supera o ${away.name} por ${hGoals} a ${aGoals} e cala a torcida rival!`
+          : `FESTA VISITANTE NO ${derbyTitle.toUpperCase()}! ${away.name} bate o ${home.name} por ${aGoals} a ${hGoals}!`);
+
+      news.push({
+        id: `news-derby-${week}-${Date.now()}`,
+        week,
+        seasonYear: year,
+        category: 'destaque',
+        headline,
+        body: `Em atmosfera incandescente nas arquibancadas, o clássico entregou lances plásticos, divididas ríspidas e emoção até o apito final na rodada ${week}.`,
+        imageUrl: '/images/news/estadio.webp',
+        portalName: 'Lance!',
+        authorName: 'Mauro Cezar',
+        likesCount: eng.likesCount * 3,
+        commentsCount: eng.commentsCount * 3,
+      });
+    }
+  }
+
+  // 3. Busca por Goleadas (diferença >= 3 gols)
   const goleada = weekFixtures.find((f) => 
     f.isPlayed && Math.abs((f.homeGoals || 0) - (f.awayGoals || 0)) >= 3
   );
 
-  if (goleada) {
+  if (goleada && isTemplateAllowed('tpl_goleada_atropelo')) {
     const winnerClub = (goleada.homeGoals || 0) > (goleada.awayGoals || 0)
       ? state.clubs[goleada.homeClubId]
       : state.clubs[goleada.awayClubId];
@@ -67,6 +119,7 @@ export function generateWeeklyNews(
     const lScore = Math.min(goleada.homeGoals || 0, goleada.awayGoals || 0);
 
     if (winnerClub && loserClub) {
+      markTemplateUsed('tpl_goleada_atropelo');
       const eng = randomEngagements();
       news.push({
         id: `news-goleada-${week}-${Date.now()}`,
@@ -87,45 +140,48 @@ export function generateWeeklyNews(
     }
   }
 
-  // 3. Busca por Hat-Trick (jogador com 3 ou mais gols no mesmo jogo)
-  weekFixtures.forEach((f) => {
-    if (!f.scorers || f.scorers.length < 3) return;
-    const countMap: Record<string, { count: number; name: string }> = {};
-    f.scorers.forEach((s) => {
-      if (!countMap[s.playerId]) {
-        countMap[s.playerId] = { count: 0, name: s.playerName };
-      }
-      countMap[s.playerId].count++;
-    });
+  // 4. Busca por Hat-Trick (jogador com 3 ou mais gols no mesmo jogo)
+  if (isTemplateAllowed('tpl_hat_trick')) {
+    weekFixtures.forEach((f) => {
+      if (!f.scorers || f.scorers.length < 3) return;
+      const countMap: Record<string, { count: number; name: string }> = {};
+      f.scorers.forEach((s) => {
+        if (!countMap[s.playerId]) {
+          countMap[s.playerId] = { count: 0, name: s.playerName };
+        }
+        countMap[s.playerId].count++;
+      });
 
-    Object.values(countMap).forEach((scorer) => {
-      if (scorer.count >= 3 && news.length < 4) {
-        const eng = randomEngagements();
-        news.push({
-          id: `news-hattrick-${week}-${Date.now()}-${scorer.name}`,
-          week,
-          seasonYear: year,
-          category: 'destaque',
-          headline: `PEDE MÚSICA NO FANTÁSTICO! ${scorer.name} anota ${scorer.count} gols e comanda show!`,
-          body: `Atuação de cinema! O atacante foi o grande nome da semana ao balançar as redes repetidas vezes com finalizações cirúrgicas e levar a bola do jogo para casa.`,
-          imageUrl: '/images/news/drible.webp',
-          videoTeaserUrl: '/videos/news/drible-loop.mp4',
-          imageCaption: `${scorer.name} celebrou a tripleta com a torcida`,
-          portalName: 'GE Globo Esporte',
-          authorName: 'PVC',
-          likesCount: eng.likesCount * 4,
-          commentsCount: eng.commentsCount * 3,
-        });
-      }
+      Object.values(countMap).forEach((scorer) => {
+        if (scorer.count >= 3 && news.length < 4) {
+          markTemplateUsed('tpl_hat_trick');
+          const eng = randomEngagements();
+          news.push({
+            id: `news-hattrick-${week}-${Date.now()}-${scorer.name}`,
+            week,
+            seasonYear: year,
+            category: 'destaque',
+            headline: `PEDE MÚSICA NO FANTÁSTICO! ${scorer.name} anota ${scorer.count} gols e comanda show!`,
+            body: `Atuação de cinema! O atacante foi o grande nome da semana ao balançar as redes repetidas vezes com finalizações cirúrgicas e levar a bola do jogo para casa.`,
+            imageUrl: '/images/news/drible.webp',
+            videoTeaserUrl: '/videos/news/drible-loop.mp4',
+            imageCaption: `${scorer.name} celebrou a tripleta com a torcida`,
+            portalName: 'GE Globo Esporte',
+            authorName: 'PVC',
+            likesCount: eng.likesCount * 4,
+            commentsCount: eng.commentsCount * 3,
+          });
+        }
+      });
     });
-  });
+  }
 
-  // 4. Zebra na Copa do Brasil
+  // 5. Zebra na Copa do Brasil
   const copaFixture = weekFixtures.find((f) => 
     f.competition === 'copa_brasil' && f.isPlayed
   );
 
-  if (copaFixture) {
+  if (copaFixture && isTemplateAllowed('tpl_copa_zebra')) {
     const home = state.clubs[copaFixture.homeClubId];
     const away = state.clubs[copaFixture.awayClubId];
 
@@ -143,6 +199,7 @@ export function generateWeeklyNews(
       const awayRank = divRank[away.division] || 1;
 
       if ((copaFixture.homeGoals || 0) > (copaFixture.awayGoals || 0) && homeRank < awayRank) {
+        markTemplateUsed('tpl_copa_zebra');
         const eng = randomEngagements();
         news.push({
           id: `news-zebra-${week}-${Date.now()}`,
@@ -163,60 +220,36 @@ export function generateWeeklyNews(
     }
   }
 
-  // 5. Pênalti ou momento de tensão da rodada
-  const penaltyMatch = weekFixtures.find((f) => f.isPlayed && (f.homeGoals === 1 && f.awayGoals === 0));
-  if (penaltyMatch && news.length < 3) {
-    const home = state.clubs[penaltyMatch.homeClubId];
-    const away = state.clubs[penaltyMatch.awayClubId];
-    if (home && away) {
-      const eng = randomEngagements();
-      news.push({
-        id: `news-penalty-${week}-${Date.now()}`,
-        week,
-        seasonYear: year,
-        category: 'rodada',
-        headline: `DECISÃO NA MARCA DA CAL! ${home.name} bate o ${away.name} em duelo dramático!`,
-        body: `Jogo tenso até os acréscimos! Uma penalidade cobrada com frieza selou os três pontos fundamentais para os mandantes na tabela.`,
-        clubId: home.id,
-        imageUrl: '/images/news/penalti.webp',
-        imageCaption: 'Momento da cobrança decisiva que incendiou a partida',
-        portalName: 'Lance!',
-        authorName: 'Redação Lance',
-        likesCount: eng.likesCount,
-        commentsCount: eng.commentsCount,
-      });
-    }
-  }
-
-  // 6. Notícia de bastidores / tática do treinador
-  if (state.mode === 'manager' && state.managerProfile && news.length < 3) {
-    const eng = randomEngagements();
-    news.push({
-      id: `news-tactics-${week}-${Date.now()}`,
-      week,
-      seasonYear: year,
-      category: 'destaque',
-      headline: `PRANQUETA EM AÇÃO: ${state.managerProfile.name} inova na formação e recebe elogios`,
-      body: `Especialistas destacam a leitura tática do comandante brasileiro, que tem ajustado transições rápidas e solidez defensiva no elenco.`,
-      imageUrl: '/images/news/tatica.webp',
-      imageCaption: 'Comissão técnica analisa prancheta tática e movimentações',
-      portalName: 'UOL Esporte',
-      authorName: 'Ana Thaís Matos',
-      likesCount: eng.likesCount,
-      commentsCount: eng.commentsCount,
-    });
-  }
-
-  // 7. Notícia padrão da rodada se nenhuma especial tiver sido criada
+  // 6. Notícia padrão da rodada se nenhuma especial tiver sido criada
   if (news.length === 0) {
+    const standardTemplates = [
+      {
+        key: 'tpl_std_fever',
+        headline: `Rodada ${week} agita torcidas com equilíbrio em todas as divisões do país`,
+        body: `A disputa segue intensa no topo da tabela e na briga contra o rebaixamento. Os elencos iniciam preparação com treinos intensivos para os próximos desafios.`,
+      },
+      {
+        key: 'tpl_std_tactics',
+        headline: `Equilíbrio tático marca a rodada ${week}: defesas sólidas e gols nos acréscimos`,
+        body: `Treinadores apostam em linhas compactas e transições velozes. A corrida pelos pontos da temporada ganha contornos dramáticos.`,
+      },
+      {
+        key: 'tpl_std_table',
+        headline: `Classificação embolada: cada ponto na rodada ${week} vale ouro na temporada`,
+        body: `Com confrontos diretos decididos no detalhe, os clubes brasileiros mostram que a temporada 2026 será uma das mais disputadas da década.`,
+      },
+    ];
+
+    const pick = standardTemplates.find((t) => isTemplateAllowed(t.key)) || standardTemplates[0];
+    markTemplateUsed(pick.key);
     const eng = randomEngagements();
     news.push({
       id: `news-standard-${week}-${Date.now()}`,
       week,
       seasonYear: year,
       category: 'rodada',
-      headline: `Rodada ${week} agita torcidas com equilíbrio em todas as divisões do país`,
-      body: `A disputa segue intensa no topo da tabela e na briga contra o rebaixamento. Os elencos iniciam preparação com treinos intensivos para os próximos desafios.`,
+      headline: pick.headline,
+      body: pick.body,
       imageUrl: '/images/news/torcida.webp',
       imageCaption: 'Torcedores lotam as arenas pelo Brasil afora na rodada',
       portalName: 'GE Globo Esporte',
@@ -226,5 +259,8 @@ export function generateWeeklyNews(
     });
   }
 
-  return news;
+  // Atualiza a fila recente de templates (mantendo no máximo 10 elementos)
+  const updatedRecentTemplates = [...recentTemplates, ...newUsedTemplates].slice(-10);
+
+  return { news, updatedRecentTemplates };
 }
