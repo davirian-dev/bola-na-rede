@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 160" width="100%" height="100%">
+  <defs>
+    <linearGradient id="emeraldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#10b981"/>
+      <stop offset="50%" stop-color="#059669"/>
+      <stop offset="100%" stop-color="#047857"/>
+    </linearGradient>
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fef08a"/>
+      <stop offset="50%" stop-color="#f59e0b"/>
+      <stop offset="100%" stop-color="#b45309"/>
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="4" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+
+  <!-- Rede de fundo estilizada -->
+  <g stroke="rgba(16, 185, 129, 0.25)" stroke-width="1.5" stroke-dasharray="2 4">
+    <path d="M 40 30 L 130 30 L 145 130 L 25 130 Z" fill="none"/>
+    <path d="M 60 30 L 50 130"/>
+    <path d="M 85 30 L 80 130"/>
+    <path d="M 110 30 L 115 130"/>
+    <path d="M 35 55 L 135 55"/>
+    <path d="M 30 80 L 140 80"/>
+    <path d="M 27 105 L 142 105"/>
+  </g>
+
+  <!-- Bola dinâmica estilizada -->
+  <g transform="translate(80, 80)">
+    <!-- Rastro de movimento -->
+    <path d="M -45 -5 C -25 -25 10 -25 30 -5 C 20 15 -10 20 -40 10 Z" fill="url(#emeraldGrad)" opacity="0.4" filter="url(#glow)"/>
+    <!-- Círculo da bola -->
+    <circle cx="0" cy="0" r="32" fill="#f8fafc" stroke="#0f172a" stroke-width="3"/>
+    <!-- Gomos da bola -->
+    <polygon points="0,-16 12,-7 7,10 -7,10 -12,-7" fill="#0f172a"/>
+    <line x1="0" y1="-16" x2="0" y2="-32" stroke="#0f172a" stroke-width="2.5"/>
+    <line x1="12" y1="-7" x2="28" y2="-12" stroke="#0f172a" stroke-width="2.5"/>
+    <line x1="7" y1="10" x2="20" y2="25" stroke="#0f172a" stroke-width="2.5"/>
+    <line x1="-7" y1="10" x2="-20" y2="25" stroke="#0f172a" stroke-width="2.5"/>
+    <line x1="-12" y1="-7" x2="-28" y2="-12" stroke="#0f172a" stroke-width="2.5"/>
+    <!-- Brilho ouro -->
+    <circle cx="-10" cy="-10" r="5" fill="#ffffff" opacity="0.8"/>
+  </g>
+
+  <!-- Textos -->
+  <text x="165" y="82" font-family="system-ui, -apple-system, sans-serif" font-weight="900" font-size="44" fill="#ffffff" letter-spacing="-1">
+    BOLA NA <tspan fill="url(#emeraldGrad)">REDE</tspan>
+  </text>
+  
+  <rect x="168" y="98" width="160" height="26" rx="6" fill="#132a1e" stroke="url(#goldGrad)" stroke-width="1.5"/>
+  <text x="180" y="116" font-family="system-ui, -apple-system, sans-serif" font-weight="800" font-size="14" fill="url(#goldGrad)" letter-spacing="4">
+    CARREIRA
+  </text>
+  
+  <!-- Mini Estrelas decorativas -->
+  <g fill="url(#goldGrad)">
+    <polygon points="340,111 343,105 346,111 352,111 347,114 349,120 344,116 339,120 341,114 336,111" transform="scale(0.8) translate(80, 20)"/>
+    <polygon points="355,111 358,105 361,111 367,111 362,114 364,120 359,116 354,120 356,114 351,111" transform="scale(0.8) translate(90, 20)"/>
+    <polygon points="370,111 373,105 376,111 382,111 377,114 379,120 374,116 369,120 371,114 366,111" transform="scale(0.8) translate(100, 20)"/>
+  </g>
+</svg>

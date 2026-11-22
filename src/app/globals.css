@@ -1,26 +1,108 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
+@theme {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-gold: var(--gold);
 }
 
-@media (prefers-color-scheme: dark) {
+@layer base {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #f8fafc;
+    --foreground: #09130c;
+    --card: #ffffff;
+    --card-foreground: #09130c;
+    --popover: #ffffff;
+    --popover-foreground: #09130c;
+    --primary: #059669;
+    --primary-foreground: #ffffff;
+    --secondary: #edf3ee;
+    --secondary-foreground: #142a1b;
+    --muted: #edf3ee;
+    --muted-foreground: #526658;
+    --accent: #e1ede4;
+    --accent-foreground: #09130c;
+    --destructive: #ef4444;
+    --destructive-foreground: #ffffff;
+    --border: #d5e3d9;
+    --input: #d5e3d9;
+    --ring: #10b981;
+    --gold: #d97706;
+  }
+
+  .dark {
+    --background: #09130d;
+    --foreground: #f4fbf6;
+    --card: #0f1f15;
+    --card-foreground: #f4fbf6;
+    --popover: #0f1f15;
+    --popover-foreground: #f4fbf6;
+    --primary: #10b981;
+    --primary-foreground: #042918;
+    --secondary: #14291c;
+    --secondary-foreground: #f4fbf6;
+    --muted: #14291c;
+    --muted-foreground: #8aa393;
+    --accent: #1b3827;
+    --accent-foreground: #f4fbf6;
+    --destructive: #ef4444;
+    --destructive-foreground: #ffffff;
+    --border: #1f3d2a;
+    --input: #1f3d2a;
+    --ring: #10b981;
+    --gold: #fbbf24;
   }
 }
 
 body {
-  background: var(--background);
+  background-color: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-inter), system-ui, -apple-system, sans-serif;
+}
+
+h1, h2, h3, .font-display {
+  font-family: var(--font-display), var(--font-inter), Impact, sans-serif;
+}
+
+/* Correção definitiva de Select e Option em Dark Mode (Linux / Chromium / WebKit) */
+select {
+  color-scheme: dark;
+}
+
+select option {
+  background-color: #0f1f15;
+  color: #f4fbf6;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(16, 185, 129, 0.2);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(16, 185, 129, 0.4);
 }

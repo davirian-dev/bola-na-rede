@@ -1,0 +1,478 @@
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { useGameStore } from '@/store/gameStore';
+import { AppHeader } from '@/components/layout/AppHeader';
+import { DesktopSidebar } from '@/components/layout/DesktopSidebar';
+import { MobileBottomNav } from '@/components/layout/MobileBottomNav';
+import { GuestBanner } from '@/components/layout/GuestBanner';
+import { OnlinePvPArena } from '@/components/online/OnlinePvPArena';
+import { OnlineLeaderboardEntry } from '@/types/game';
+import { isSupabaseConfigured } from '@/lib/supabase/client';
+import { 
+  Globe, 
+  Swords, 
+  Trophy, 
+  Download, 
+  Upload, 
+  Sparkles, 
+  ShieldCheck, 
+  Crown, 
+  Flame, 
+  Users, 
+  RefreshCw,
+  CheckCircle2,
+  AlertCircle,
+  Zap,
+  ArrowRight
+} from 'lucide-react';
+import confetti from 'canvas-confetti';
+
+export default function OnlineModePage() {
+  const mode = useGameStore((s) => s.mode);
+  const playerProfile = useGameStore((s) => s.playerProfile);
+  const managerProfile = useGameStore((s) => s.managerProfile);
+  const clubs = useGameStore((s) => s.clubs);
+  const planTier = useGameStore((s) => s.planTier);
+  const onlineStats = useGameStore((s) => s.onlineStats) || {
+    elo: 1200,
+    division: 'Prata',
+    wins: 0,
+    losses: 0,
+    draws: 0,
+  };
+  const syncCareerToLeaderboard = useGameStore((s) => s.syncCareerToLeaderboard);
+  const fetchOnlineLeaderboard = useGameStore((s) => s.fetchOnlineLeaderboard);
+  const applyCommunityPack = useGameStore((s) => s.applyCommunityPack);
+
+  type OnlineTab = 'arena' | 'ranking' | 'community_packs';
+  const [activeTab, setActiveTab] = useState<OnlineTab>('arena');
+
+  // Estados de Leaderboard e Sincronização
+  const [leaderboard, setLeaderboard] = useState<OnlineLeaderboardEntry[]>([]);
+  const [isLoadingRankings, setIsLoadingRankings] = useState(false);
+  const [syncToast, setSyncToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [packFeedback, setPackFeedback] = useState<string | null>(null);
+
+  const userActorName = mode === 'player' 
+    ? (playerProfile?.name || 'Seu Atleta') 
+    : (managerProfile?.name || 'Seu Treinador');
+  const userClub = mode === 'player' 
+    ? (playerProfile?.clubId ? clubs[playerProfile.clubId] : clubs['fla'])
+    : (managerProfile?.clubId ? clubs[managerProfile.clubId] : clubs['pal']);
+
+  // Carrega ranking ao abrir a aba
+  useEffect(() => {
+    if (activeTab === 'ranking') {
+      loadRankings();
+    }
+  }, [activeTab]);
+
+  const loadRankings = async () => {
+    setIsLoadingRankings(true);
+    try {
+      const data = await fetchOnlineLeaderboard(mode);
+      setLeaderboard(data);
+    } finally {
+      setIsLoadingRankings(false);
+    }
+  };
+
+  const handleSyncCareer = async () => {
+    setIsSyncing(true);
+    try {
+      const res = await syncCareerToLeaderboard();
+      setSyncToast({
+        message: res.message,
+        type: res.success ? 'success' : 'error',
+      });
+      if (res.success) {
+        confetti({ particleCount: 80, spread: 60, origin: { y: 0.6 } });
+        loadRankings();
+      }
+      setTimeout(() => setSyncToast(null), 5000);
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  // Pacotes pré-definidos da comunidade para download com 1 clique
+  const COMMUNITY_PACKS = [
+    {
+      id: 'pack-brasileirao-2026',
+      title: 'Brasileirão Série A & B 2026 (Oficial)',
+      author: 'Comunidade Bola na Rede',
+      downloads: 4820,
+      likes: 934,
+      description: 'Todos os 40 clubes das Séries A e B com nomes oficiais, cores reais e elencos alinhados para 2026.',
+      isOfficial: true,
+      data: {
+        fla: { name: 'Flamengo', shortName: 'FLA', primaryColor: '#c8102e', secondaryColor: '#000000' },
+        pal: { name: 'Palmeiras', shortName: 'PAL', primaryColor: '#006437', secondaryColor: '#ffffff' },
+        cor: { name: 'Corinthians', shortName: 'COR', primaryColor: '#ffffff', secondaryColor: '#000000' },
+        sao: { name: 'São Paulo', shortName: 'SAO', primaryColor: '#e11d48', secondaryColor: '#000000' },
+        vas: { name: 'Vasco da Gama', shortName: 'VAS', primaryColor: '#000000', secondaryColor: '#ffffff' },
+        san: { name: 'Santos', shortName: 'SAN', primaryColor: '#ffffff', secondaryColor: '#000000' },
+        gre: { name: 'Grêmio', shortName: 'GRE', primaryColor: '#0d85c8', secondaryColor: '#000000' },
+        int: { name: 'Internacional', shortName: 'INT', primaryColor: '#e11d48', secondaryColor: '#ffffff' },
+        cam: { name: 'Atlético Mineiro', shortName: 'CAM', primaryColor: '#000000', secondaryColor: '#ffffff' },
+        cru: { name: 'Cruzeiro', shortName: 'CRU', primaryColor: '#003a94', secondaryColor: '#ffffff' },
+      },
+    },
+    {
+      id: 'pack-retro-90s',
+      title: 'Lendas Retrô dos Anos 90 & 2000',
+      author: 'Nostalgia FC',
+      downloads: 2310,
+      likes: 512,
+      description: 'Grandes esquadrões históricos do futebol brasileiro com cores clássicas e atmosfera retrô.',
+      isOfficial: false,
+      data: {
+        fla: { name: 'Flamengo 92 (Zico/Júnior)', shortName: 'FLA', primaryColor: '#b91c1c', secondaryColor: '#18181b' },
+        pal: { name: 'Palmeiras 99 (Era Parmalat)', shortName: 'PAL', primaryColor: '#047857', secondaryColor: '#f8fafc' },
+        sao: { name: 'São Paulo 93 (Telê Santana)', shortName: 'SAO', primaryColor: '#dc2626', secondaryColor: '#ffffff' },
+        san: { name: 'Santos 2002 (Meninos da Vila)', shortName: 'SAN', primaryColor: '#ffffff', secondaryColor: '#000000' },
+      },
+    },
+    {
+      id: 'pack-interior-raiz',
+      title: 'Futebol Raiz: Séries C & D 2026',
+      author: 'Arquibancada Raiz',
+      downloads: 1450,
+      likes: 320,
+      description: 'Clubes tradicionais do interior do Brasil para quem ama iniciar a carreira na poeira da Série D.',
+      isOfficial: false,
+      data: {
+        brasil_pel: { name: 'Brasil de Pelotas (Xavante)', shortName: 'BRA', primaryColor: '#b91c1c', secondaryColor: '#000000' },
+        cax: { name: 'Caxias do Sul', shortName: 'CAX', primaryColor: '#831843', secondaryColor: '#0284c7' },
+        ferroviaria: { name: 'Ferroviária de Araraquara', shortName: 'AFE', primaryColor: '#7f1d1d', secondaryColor: '#ffffff' },
+      },
+    },
+  ];
+
+  const handleInstallPack = (pack: typeof COMMUNITY_PACKS[0]) => {
+    const { updatedCount } = applyCommunityPack(pack.data as any);
+    setPackFeedback(`🎉 Pacote "${pack.title}" instalado com sucesso! ${updatedCount} clubes atualizados.`);
+    confetti({ particleCount: 70, spread: 50, origin: { y: 0.6 } });
+    setTimeout(() => setPackFeedback(null), 4000);
+  };
+
+  return (
+    <div className="min-h-screen bg-background text-foreground flex flex-col">
+      <GuestBanner />
+      <AppHeader />
+
+      <div className="flex-1 flex overflow-hidden">
+        <DesktopSidebar />
+
+        <main className="flex-1 overflow-y-auto px-4 lg:px-8 py-6 pb-24 md:pb-8 max-w-5xl mx-auto w-full space-y-6">
+          {/* Toast de Feedback */}
+          {syncToast && (
+            <div className={`p-4 rounded-2xl border flex items-center justify-between gap-3 text-xs font-bold animate-in slide-in-from-top duration-200 ${
+              syncToast.type === 'success' 
+                ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300' 
+                : 'bg-rose-500/15 border-rose-500/40 text-rose-300'
+            }`}>
+              <div className="flex items-center gap-2">
+                {syncToast.type === 'success' ? <CheckCircle2 className="w-4 h-4 text-emerald-400" /> : <AlertCircle className="w-4 h-4 text-rose-400" />}
+                <span>{syncToast.message}</span>
+              </div>
+              <button onClick={() => setSyncToast(null)} className="text-muted-foreground hover:text-foreground">✕</button>
+            </div>
+          )}
+
+          {packFeedback && (
+            <div className="p-4 rounded-2xl bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 text-xs font-bold flex items-center justify-between animate-in slide-in-from-top duration-200">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                <span>{packFeedback}</span>
+              </div>
+              <button onClick={() => setPackFeedback(null)} className="text-muted-foreground hover:text-foreground">✕</button>
+            </div>
+          )}
+
+          {/* Cabeçalho da Página Online */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-4">
+            <div>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-emerald-500 animate-pulse" />
+                <h1 className="font-display text-2xl sm:text-3xl font-black text-foreground">
+                  Modo Online • Arena PvP & Comunidade
+                </h1>
+              </div>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Duelos de bola parada X1 em tempo real, ranking global no Supabase e pacotes de times da comunidade.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0">
+              <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5">
+                <ShieldCheck className="w-3.5 h-3.5" />
+                Servidor Ativo
+              </span>
+
+              <button
+                type="button"
+                disabled={isSyncing}
+                onClick={handleSyncCareer}
+                className="py-2 px-3.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-black text-xs uppercase tracking-wider flex items-center gap-1.5 shadow-md shadow-emerald-500/20 transition-transform active:scale-95 cursor-pointer disabled:opacity-50"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
+                {isSyncing ? 'Sincronizando...' : 'Sincronizar Carreira'}
+              </button>
+            </div>
+          </div>
+
+          {/* Card do Perfil Online do Jogador */}
+          <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-r from-card via-card to-emerald-950/20 border-2 border-emerald-500/30 shadow-xl flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-4 text-center sm:text-left">
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-700 text-zinc-950 flex items-center justify-center text-2xl font-black shadow-lg shadow-emerald-500/25 shrink-0">
+                ⚡
+              </div>
+              <div>
+                <div className="flex items-center gap-2 justify-center sm:justify-start">
+                  <h3 className="font-display text-xl font-black text-foreground">
+                    {userActorName}
+                  </h3>
+                  {planTier === 'pro' && (
+                    <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-amber-400 text-zinc-950 flex items-center gap-0.5 shadow-sm">
+                      <Crown className="w-2.5 h-2.5" />
+                      VIP
+                    </span>
+                  )}
+                </div>
+                <span className="text-xs text-muted-foreground block truncate">
+                  {userClub?.name} • Modo {mode === 'player' ? 'Jogador' : 'Treinador'}
+                </span>
+              </div>
+            </div>
+
+            {/* Badges de Divisão e ELO Online */}
+            <div className="flex items-center gap-4 border-t sm:border-t-0 sm:border-l border-border pt-3 sm:pt-0 sm:pl-5 w-full sm:w-auto justify-around sm:justify-start">
+              <div className="text-center">
+                <span className="text-xl sm:text-2xl font-black text-emerald-400 font-mono block">
+                  {onlineStats.elo}
+                </span>
+                <span className="text-[10px] text-muted-foreground uppercase font-black">
+                  Pontos de ELO
+                </span>
+              </div>
+
+              <div className="text-center">
+                <span className="text-xs sm:text-sm font-black px-2.5 py-1 rounded-lg bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 block">
+                  {onlineStats.division}
+                </span>
+                <span className="text-[10px] text-muted-foreground uppercase font-black block mt-0.5">
+                  Divisão Online
+                </span>
+              </div>
+
+              <div className="text-center">
+                <span className="text-sm font-black text-foreground font-mono block">
+                  {onlineStats.wins}V - {onlineStats.draws}E - {onlineStats.losses}D
+                </span>
+                <span className="text-[10px] text-muted-foreground uppercase font-black block mt-0.5">
+                  Cartel PvP
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Abas Principais do Modo Online */}
+          <div className="flex items-center gap-2 border-b border-border pb-2 overflow-x-auto no-scrollbar">
+            <button
+              type="button"
+              onClick={() => setActiveTab('arena')}
+              className={`py-2 px-4 rounded-xl font-black text-xs uppercase tracking-wider flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap ${
+                activeTab === 'arena'
+                  ? 'bg-emerald-500 text-zinc-950 shadow-md shadow-emerald-500/20'
+                  : 'bg-secondary/60 text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <Swords className="w-4 h-4" />
+              Arena PvP X1 (Bolas Paradas)
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab('ranking')}
+              className={`py-2 px-4 rounded-xl font-black text-xs uppercase tracking-wider flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap ${
+                activeTab === 'ranking'
+                  ? 'bg-emerald-500 text-zinc-950 shadow-md shadow-emerald-500/20'
+                  : 'bg-secondary/60 text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <Trophy className="w-4 h-4" />
+              Ranking Global (Leaderboard)
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab('community_packs')}
+              className={`py-2 px-4 rounded-xl font-black text-xs uppercase tracking-wider flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap ${
+                activeTab === 'community_packs'
+                  ? 'bg-emerald-500 text-zinc-950 shadow-md shadow-emerald-500/20'
+                  : 'bg-secondary/60 text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <Download className="w-4 h-4" />
+              Pacotes da Comunidade (1 Clique)
+            </button>
+          </div>
+
+          {/* ABA 1: ARENA PVP X1 */}
+          {activeTab === 'arena' && (
+            <OnlinePvPArena />
+          )}
+
+          {/* ABA 2: RANKING GLOBAL ONLINE (LEADERBOARD) */}
+          {activeTab === 'ranking' && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-display text-lg font-black text-foreground">
+                    Top Craques do Brasil • Temporada 2026
+                  </h3>
+                  <p className="text-xs text-muted-foreground">
+                    Ranking sincronizado com a tabela oficial de saves e carreiras.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={loadRankings}
+                  className="py-1.5 px-3 rounded-lg bg-secondary hover:bg-secondary/80 text-foreground text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${isLoadingRankings ? 'animate-spin' : ''}`} />
+                  Atualizar
+                </button>
+              </div>
+
+              {/* Tabela do Leaderboard */}
+              <div className="rounded-2xl border border-border overflow-hidden bg-card shadow-sm">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-secondary/70 border-b border-border text-[10px] uppercase font-black text-muted-foreground">
+                      <tr>
+                        <th className="py-3 px-4">#</th>
+                        <th className="py-3 px-4">Craque / Usuário</th>
+                        <th className="py-3 px-4">Clube</th>
+                        <th className="py-3 px-4 text-center">OVR</th>
+                        <th className="py-3 px-4 text-center">Títulos</th>
+                        <th className="py-3 px-4 text-right">Pontos de Carreira</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border/60">
+                      {leaderboard.map((item, idx) => {
+                        const isUserRow = item.username.includes('(Você)');
+                        return (
+                          <tr
+                            key={item.id || idx}
+                            className={`transition-colors ${
+                              isUserRow 
+                                ? 'bg-emerald-500/15 font-bold text-emerald-300' 
+                                : 'hover:bg-secondary/40 text-foreground'
+                            }`}
+                          >
+                            <td className="py-3 px-4 font-black font-mono">
+                              {idx === 0 ? '🥇 1' : idx === 1 ? '🥈 2' : idx === 2 ? '🥉 3' : `#${idx + 1}`}
+                            </td>
+                            <td className="py-3 px-4">
+                              <div className="flex items-center gap-2">
+                                <span className="font-bold truncate">{item.username}</span>
+                                {item.is_pro && (
+                                  <span className="text-[8px] bg-amber-400 text-zinc-950 font-black px-1.5 py-0.2 rounded-full">
+                                    PRO
+                                  </span>
+                                )}
+                              </div>
+                            </td>
+                            <td className="py-3 px-4 text-muted-foreground truncate max-w-[160px]">
+                              {item.club_name}
+                            </td>
+                            <td className="py-3 px-4 text-center font-mono font-bold">
+                              {item.overall || 75}
+                            </td>
+                            <td className="py-3 px-4 text-center font-mono">
+                              🏆 {item.trophies_count}
+                            </td>
+                            <td className="py-3 px-4 text-right font-black font-mono text-emerald-400 text-sm">
+                              {item.points.toLocaleString('pt-BR')} Pts
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ABA 3: PACOTES DA COMUNIDADE (DOWNLOAD COM 1 CLIQUE) */}
+          {activeTab === 'community_packs' && (
+            <div className="space-y-4">
+              <div>
+                <h3 className="font-display text-lg font-black text-foreground">
+                  Pacotes de Clubes & Elencos da Comunidade
+                </h3>
+                <p className="text-xs text-muted-foreground">
+                  Baixe e instale pacotes completos com 1 clique para atualizar nomes, cores e escudos no seu jogo.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {COMMUNITY_PACKS.map((pack) => (
+                  <div
+                    key={pack.id}
+                    className="p-5 rounded-2xl bg-card border border-border shadow-sm flex flex-col justify-between space-y-3 hover:border-emerald-500/40 transition-all"
+                  >
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">
+                          Por: {pack.author}
+                        </span>
+                        {pack.isOfficial && (
+                          <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                            ⭐ Oficial
+                          </span>
+                        )}
+                      </div>
+
+                      <h4 className="font-display font-black text-base text-foreground">
+                        {pack.title}
+                      </h4>
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        {pack.description}
+                      </p>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-2 border-t border-border/80">
+                      <span className="text-[10px] text-muted-foreground font-semibold flex items-center gap-1">
+                        <Download className="w-3 h-3" />
+                        {pack.downloads.toLocaleString('pt-BR')} downloads
+                      </span>
+
+                      <button
+                        type="button"
+                        onClick={() => handleInstallPack(pack)}
+                        className="py-1.5 px-3.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-black text-xs uppercase tracking-wider flex items-center gap-1.5 shadow-sm transition-transform active:scale-95 cursor-pointer"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                        Instalar no Jogo
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </main>
+      </div>
+
+      <MobileBottomNav />
+    </div>
+  );
+}
