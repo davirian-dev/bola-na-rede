@@ -319,7 +319,7 @@ export function OnlinePvPArena() {
       {arenaState === 'idle' && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Card 1: Duelo de Bolas Paradas & Pênaltis X1 */}
-          <div className="p-6 rounded-3xl bg-gradient-to-br from-card via-card to-emerald-950/20 border-2 border-emerald-500/40 shadow-xl flex flex-col justify-between space-y-4 hover:border-emerald-500 transition-all">
+          <div className="p-4 sm:p-6 rounded-3xl bg-gradient-to-br from-card via-card to-emerald-950/20 border-2 border-emerald-500/40 shadow-xl flex flex-col justify-between space-y-4 hover:border-emerald-500 transition-all">
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
@@ -353,7 +353,7 @@ export function OnlinePvPArena() {
           </div>
 
           {/* Card 2: Duelo Tático de Elencos (11x11) */}
-          <div className="p-6 rounded-3xl bg-gradient-to-br from-card via-card to-blue-950/20 border border-border shadow-xl flex flex-col justify-between space-y-4 hover:border-blue-500/40 transition-all">
+          <div className="p-4 sm:p-6 rounded-3xl bg-gradient-to-br from-card via-card to-blue-950/20 border border-border shadow-xl flex flex-col justify-between space-y-4 hover:border-blue-500/40 transition-all">
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full bg-blue-500/15 text-blue-400 border border-blue-500/30 flex items-center gap-1">

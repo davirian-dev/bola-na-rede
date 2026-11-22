@@ -4,6 +4,8 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useGameStore } from '@/store/gameStore';
+import { ProModal } from '@/components/game/ProModal';
+import { DonationModal } from '@/components/game/DonationModal';
 import { 
   LayoutDashboard, 
   Users, 
@@ -19,12 +21,15 @@ import {
   BarChart3,
   ArrowLeftRight,
   Swords,
-  Globe
+  Globe,
+  Heart
 } from 'lucide-react';
 
 export function DesktopSidebar() {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
+  const [isProModalOpen, setIsProModalOpen] = useState(false);
+  const [isDonationModalOpen, setIsDonationModalOpen] = useState(false);
   const mode = useGameStore((s) => s.mode);
   const planTier = useGameStore((s) => s.planTier);
 
@@ -154,16 +159,49 @@ export function DesktopSidebar() {
               ? 'Multiplayer, dinastias infinitas e ligas europeias liberadas!' 
               : 'Desbloqueie dinastia de gerações, torneios continentais e editor ilimitado.'}
           </p>
-          {planTier !== 'pro' && (
+          {planTier !== 'pro' ? (
             <button
-              onClick={() => alert('Assinatura Pro disponível em breve!')}
-              className="w-full py-1.5 px-3 rounded-lg bg-amber-500 hover:bg-amber-400 text-zinc-950 text-xs font-black transition-colors cursor-pointer"
+              type="button"
+              onClick={() => setIsProModalOpen(true)}
+              className="w-full py-1.5 px-3 rounded-lg bg-amber-500 hover:bg-amber-400 text-zinc-950 text-xs font-black transition-colors cursor-pointer shadow-sm active:scale-95"
             >
-              Virar Pro
+              Virar Pro (Pix R$ 9,90)
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setIsProModalOpen(true)}
+              className="w-full py-1 px-3 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-[11px] font-bold transition-colors cursor-pointer"
+            >
+              Gerenciar Assinatura
             </button>
           )}
+
+          <div className="pt-2 mt-2 border-t border-border/60 text-center">
+            <button
+              type="button"
+              onClick={() => setIsDonationModalOpen(true)}
+              className="text-[11px] text-rose-400 hover:text-rose-300 font-bold flex items-center justify-center gap-1 mx-auto transition-colors cursor-pointer"
+            >
+              <Heart className="w-3 h-3 fill-current" />
+              <span>Apoiar Projeto / Doar</span>
+            </button>
+          </div>
         </div>
       )}
+
+      {/* Modal PRO */}
+      <ProModal 
+        isOpen={isProModalOpen} 
+        onClose={() => setIsProModalOpen(false)} 
+        onOpenDonation={() => setIsDonationModalOpen(true)}
+      />
+
+      {/* Modal Doações */}
+      <DonationModal
+        isOpen={isDonationModalOpen}
+        onClose={() => setIsDonationModalOpen(false)}
+      />
     </aside>
   );
 }

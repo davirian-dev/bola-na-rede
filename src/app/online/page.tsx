@@ -25,7 +25,14 @@ import {
   CheckCircle2,
   AlertCircle,
   Zap,
-  ArrowRight
+  ArrowRight,
+  Heart,
+  Copy,
+  Check,
+  QrCode,
+  Server,
+  Gamepad2,
+  Send
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -35,6 +42,9 @@ export default function OnlineModePage() {
   const managerProfile = useGameStore((s) => s.managerProfile);
   const clubs = useGameStore((s) => s.clubs);
   const planTier = useGameStore((s) => s.planTier);
+  const setPlanTier = useGameStore((s) => s.setPlanTier);
+  const syncWithSupabase = useGameStore((s) => s.syncWithSupabase);
+  const isGuest = useGameStore((s) => s.isGuest);
   const onlineStats = useGameStore((s) => s.onlineStats) || {
     elo: 1200,
     division: 'Prata',
@@ -46,7 +56,7 @@ export default function OnlineModePage() {
   const fetchOnlineLeaderboard = useGameStore((s) => s.fetchOnlineLeaderboard);
   const applyCommunityPack = useGameStore((s) => s.applyCommunityPack);
 
-  type OnlineTab = 'arena' | 'ranking' | 'community_packs';
+  type OnlineTab = 'arena' | 'ranking' | 'community_packs' | 'donation';
   const [activeTab, setActiveTab] = useState<OnlineTab>('arena');
 
   // Estados de Leaderboard e Sincronização
@@ -55,6 +65,12 @@ export default function OnlineModePage() {
   const [syncToast, setSyncToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
   const [packFeedback, setPackFeedback] = useState<string | null>(null);
+
+  // Estados da Aba de Doação
+  const [copiedPixKey, setCopiedPixKey] = useState(false);
+  const [donationAmount, setDonationAmount] = useState<number>(10);
+  const [donationProSuccess, setDonationProSuccess] = useState(false);
+  const PIX_KEY = process.env.NEXT_PUBLIC_PIX_KEY || 'elisantos157h@gmail.com';
 
   const userActorName = mode === 'player' 
     ? (playerProfile?.name || 'Seu Atleta') 
@@ -157,6 +173,31 @@ export default function OnlineModePage() {
     setPackFeedback(`🎉 Pacote "${pack.title}" instalado com sucesso! ${updatedCount} clubes atualizados.`);
     confetti({ particleCount: 70, spread: 50, origin: { y: 0.6 } });
     setTimeout(() => setPackFeedback(null), 4000);
+  };
+
+  const handleCopyPixKey = () => {
+    if (navigator?.clipboard?.writeText) {
+      navigator.clipboard.writeText(PIX_KEY);
+      setCopiedPixKey(true);
+      setTimeout(() => setCopiedPixKey(false), 3000);
+    }
+  };
+
+  const handleClaimProFromDonationTab = async () => {
+    try {
+      setPlanTier('pro');
+      if (!isGuest) {
+        await syncWithSupabase();
+      }
+      setDonationProSuccess(true);
+      confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+      setTimeout(() => {
+        setDonationProSuccess(false);
+      }, 4000);
+    } catch (err) {
+      console.error('Erro ao sincronizar PRO via doação:', err);
+      setDonationProSuccess(true);
+    }
   };
 
   return (
@@ -280,45 +321,62 @@ export default function OnlineModePage() {
             </div>
           </div>
 
-          {/* Abas Principais do Modo Online */}
-          <div className="flex items-center gap-2 border-b border-border pb-2 overflow-x-auto no-scrollbar">
+          {/* Abas Principais do Modo Online (100% Responsivo no Celular & PC) */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 sm:gap-2 p-1 bg-secondary/30 rounded-2xl border border-border">
             <button
               type="button"
               onClick={() => setActiveTab('arena')}
-              className={`py-2 px-4 rounded-xl font-black text-xs uppercase tracking-wider flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap ${
+              className={`py-2 px-2 sm:px-3 rounded-xl font-black text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 sm:gap-2 transition-all cursor-pointer text-center ${
                 activeTab === 'arena'
                   ? 'bg-emerald-500 text-zinc-950 shadow-md shadow-emerald-500/20'
-                  : 'bg-secondary/60 text-muted-foreground hover:text-foreground'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-secondary/60'
               }`}
             >
-              <Swords className="w-4 h-4" />
-              Arena PvP X1 (Bolas Paradas)
+              <Swords className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+              <span className="hidden sm:inline">Arena PvP X1</span>
+              <span className="sm:hidden">Arena X1</span>
             </button>
 
             <button
               type="button"
               onClick={() => setActiveTab('ranking')}
-              className={`py-2 px-4 rounded-xl font-black text-xs uppercase tracking-wider flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap ${
+              className={`py-2 px-2 sm:px-3 rounded-xl font-black text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 sm:gap-2 transition-all cursor-pointer text-center ${
                 activeTab === 'ranking'
                   ? 'bg-emerald-500 text-zinc-950 shadow-md shadow-emerald-500/20'
-                  : 'bg-secondary/60 text-muted-foreground hover:text-foreground'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-secondary/60'
               }`}
             >
-              <Trophy className="w-4 h-4" />
-              Ranking Global (Leaderboard)
+              <Trophy className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+              <span className="hidden sm:inline">Ranking Global</span>
+              <span className="sm:hidden">Ranking</span>
             </button>
 
             <button
               type="button"
               onClick={() => setActiveTab('community_packs')}
-              className={`py-2 px-4 rounded-xl font-black text-xs uppercase tracking-wider flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap ${
+              className={`py-2 px-2 sm:px-3 rounded-xl font-black text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 sm:gap-2 transition-all cursor-pointer text-center ${
                 activeTab === 'community_packs'
                   ? 'bg-emerald-500 text-zinc-950 shadow-md shadow-emerald-500/20'
-                  : 'bg-secondary/60 text-muted-foreground hover:text-foreground'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-secondary/60'
               }`}
             >
-              <Download className="w-4 h-4" />
-              Pacotes da Comunidade (1 Clique)
+              <Download className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+              <span className="hidden sm:inline">Pacotes Clubes</span>
+              <span className="sm:hidden">Pacotes</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab('donation')}
+              className={`py-2 px-2 sm:px-3 rounded-xl font-black text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 sm:gap-2 transition-all cursor-pointer text-center ${
+                activeTab === 'donation'
+                  ? 'bg-rose-500 text-white shadow-md shadow-rose-500/25'
+                  : 'text-rose-400 hover:text-rose-300 hover:bg-rose-500/10'
+              }`}
+            >
+              <Heart className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0 fill-current animate-pulse" />
+              <span className="hidden sm:inline">Apoiar Projeto 💖</span>
+              <span className="sm:hidden">Apoiar 💖</span>
             </button>
           </div>
 
@@ -466,6 +524,237 @@ export default function OnlineModePage() {
                     </div>
                   </div>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {/* ABA 4: APOIE O PROJETO & DOAÇÕES (PIX) */}
+          {activeTab === 'donation' && (
+            <div className="space-y-6 animate-in fade-in duration-200">
+              {/* Topo da Aba de Doação */}
+              <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-card via-card to-rose-950/20 border-2 border-rose-500/40 shadow-xl space-y-3">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-500/15 border border-rose-500/30 text-rose-400 text-xs font-black uppercase tracking-wider">
+                  <Heart className="w-3.5 h-3.5 fill-current animate-pulse" />
+                  <span>Comunidade & Desenvolvimento Independente</span>
+                </div>
+
+                <h3 className="font-display text-2xl sm:text-3xl font-black text-foreground">
+                  Apoie a Criação Contínua do <span className="text-rose-400">Bola na Rede 💖</span>
+                </h3>
+
+                <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed max-w-2xl">
+                  Este jogo é 100% brasileiro, gratuito e mantido de forma independente. O seu apoio financeiro paga a infraestrutura de banco de dados do <strong>Supabase</strong>, servidores rápidos para o multiplayer sem lag e possibilita adicionar as novas ligas, minigames de faltas e escanteios que a comunidade pede!
+                </p>
+              </div>
+
+              {/* Metas Ativas de Desenvolvimento */}
+              <div className="p-5 sm:p-6 rounded-3xl bg-card border border-border shadow-sm space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-amber-400" />
+                    Metas Ativas de Expansão do Jogo:
+                  </span>
+                  <span className="text-xs font-bold text-emerald-400">Transparência Total</span>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {/* Meta 1 */}
+                  <div className="p-4 rounded-2xl bg-secondary/50 border border-border space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                        <Server className="w-4 h-4 text-emerald-400" />
+                        Servidores PvP 24/7
+                      </span>
+                      <span className="text-xs font-black text-emerald-400">85%</span>
+                    </div>
+                    <div className="w-full h-2 bg-secondary rounded-full overflow-hidden">
+                      <div className="h-full bg-emerald-500 rounded-full" style={{ width: '85%' }} />
+                    </div>
+                    <p className="text-[11px] text-muted-foreground">Matchmaking instantâneo sem fila de espera.</p>
+                  </div>
+
+                  {/* Meta 2 */}
+                  <div className="p-4 rounded-2xl bg-secondary/50 border border-border space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                        <Trophy className="w-4 h-4 text-amber-400" />
+                        Libertadores Oficial
+                      </span>
+                      <span className="text-xs font-black text-amber-400">60%</span>
+                    </div>
+                    <div className="w-full h-2 bg-secondary rounded-full overflow-hidden">
+                      <div className="h-full bg-amber-500 rounded-full" style={{ width: '60%' }} />
+                    </div>
+                    <p className="text-[11px] text-muted-foreground">Fase de grupos real e mata-mata continental.</p>
+                  </div>
+
+                  {/* Meta 3 */}
+                  <div className="p-4 rounded-2xl bg-secondary/50 border border-border space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                        <Gamepad2 className="w-4 h-4 text-rose-400" />
+                        Minigame de Faltas 3D
+                      </span>
+                      <span className="text-xs font-black text-rose-400">45%</span>
+                    </div>
+                    <div className="w-full h-2 bg-secondary rounded-full overflow-hidden">
+                      <div className="h-full bg-rose-500 rounded-full" style={{ width: '45%' }} />
+                    </div>
+                    <p className="text-[11px] text-muted-foreground">Curva na bola por cima da barreira e escanteios.</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Card de Doação Pix com Valores Sugeridos */}
+              <div className="p-6 sm:p-8 rounded-3xl bg-card border-2 border-emerald-500/40 shadow-xl space-y-5">
+                <div className="text-center space-y-1">
+                  <span className="text-[11px] font-black uppercase tracking-widest text-emerald-400 block">
+                    Faça sua Doação com Chave Pix
+                  </span>
+                  <h4 className="font-display text-xl sm:text-2xl font-black text-foreground">
+                    Qualquer valor faz uma diferença enorme!
+                  </h4>
+                </div>
+
+                {/* Botões de Valores Rápidos */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-xl mx-auto">
+                  {[
+                    { val: 5, label: 'R$ 5,00', desc: 'Cafezinho do Dev ☕' },
+                    { val: 10, label: 'R$ 10,00', desc: 'Bola Oficial ⚽' },
+                    { val: 25, label: 'R$ 25,00', desc: 'Manto do Clube 👕' },
+                    { val: 50, label: 'R$ 50,00', desc: 'Patrocinador Master 🏆' },
+                  ].map((item) => (
+                    <button
+                      key={item.val}
+                      type="button"
+                      onClick={() => setDonationAmount(item.val)}
+                      className={`p-3 rounded-2xl border text-center transition-all cursor-pointer ${
+                        donationAmount === item.val
+                          ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300 font-black shadow-md'
+                          : 'bg-secondary/40 border-border text-muted-foreground hover:border-emerald-500/40'
+                      }`}
+                    >
+                      <div className="text-sm sm:text-base font-black text-foreground">{item.label}</div>
+                      <div className="text-[10px] text-muted-foreground mt-0.5">{item.desc}</div>
+                    </button>
+                  ))}
+                </div>
+
+                {/* Box Chave Pix Copia e Cola */}
+                <div className="max-w-xl mx-auto p-4 rounded-2xl bg-secondary/60 border border-border space-y-3">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-bold text-foreground flex items-center gap-1.5">
+                      <QrCode className="w-4 h-4 text-emerald-400" />
+                      Chave Pix Oficial (E-mail):
+                    </span>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 font-black uppercase">
+                      PIX DIRETO
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between gap-2 p-3 rounded-xl bg-background border border-border font-mono text-xs sm:text-sm">
+                    <span className="text-emerald-400 font-bold truncate select-all">
+                      {PIX_KEY}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleCopyPixKey}
+                      className="py-1.5 px-3 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-black text-xs flex items-center gap-1 transition-all shrink-0 cursor-pointer active:scale-95 shadow-sm"
+                    >
+                      {copiedPixKey ? (
+                        <>
+                          <Check className="w-3.5 h-3.5" />
+                          <span>Copiado!</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-3.5 h-3.5" />
+                          <span>Copiar Chave</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+
+                  <p className="text-[11px] text-muted-foreground text-center">
+                    Abra o app do seu banco, selecione a opção Pix por e-mail e cole a chave acima.
+                  </p>
+                </div>
+
+                {/* Recompensa PRO aos Doadores */}
+                <div className="max-w-xl mx-auto p-4 rounded-2xl bg-gradient-to-r from-amber-500/15 via-amber-500/10 to-transparent border border-amber-500/40 flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
+                  <div className="flex items-center gap-3">
+                    <Crown className="w-7 h-7 text-amber-400 shrink-0" />
+                    <div>
+                      <h5 className="font-display font-black text-sm text-foreground">
+                        Doações a partir de R$ 9,90 = Modo PRO Vitalício!
+                      </h5>
+                      <p className="text-xs text-muted-foreground">
+                        Apoiou com R$ 10 ou mais? Libere instantaneamente o acesso PRO completo.
+                      </p>
+                    </div>
+                  </div>
+
+                  {planTier !== 'pro' ? (
+                    <button
+                      type="button"
+                      onClick={handleClaimProFromDonationTab}
+                      className="py-2 px-4 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 font-black text-xs uppercase tracking-wider transition-transform active:scale-95 cursor-pointer whitespace-nowrap shadow-md"
+                    >
+                      Já Fiz o Pix (Ativar PRO)
+                    </button>
+                  ) : (
+                    <span className="px-3 py-1 rounded-full bg-amber-500/20 text-amber-400 text-xs font-black uppercase">
+                      👑 PRO Ativo
+                    </span>
+                  )}
+                </div>
+
+                {donationProSuccess && (
+                  <div className="max-w-xl mx-auto p-3 rounded-xl bg-emerald-500 text-zinc-950 font-black text-xs text-center flex items-center justify-center gap-1.5 animate-in fade-in">
+                    <CheckCircle2 className="w-4 h-4" />
+                    Obrigado pela doação! Modo PRO ativado com sucesso na sua conta!
+                  </div>
+                )}
+
+                {/* Botão de Enviar Comprovante WhatsApp */}
+                <div className="max-w-xl mx-auto pt-2">
+                  <a
+                    href={`https://api.whatsapp.com/send?text=${encodeURIComponent(
+                      `Olá! Fiz um Pix de R$ ${donationAmount.toFixed(2).replace('.', ',')} para apoiar o Bola na Rede: Carreira!`
+                    )}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full py-3 px-6 rounded-2xl bg-[#25D366] hover:bg-[#20ba5a] text-zinc-950 font-black text-xs sm:text-sm flex items-center justify-center gap-2 shadow-lg shadow-[#25D366]/20 transition-transform active:scale-95 cursor-pointer text-center"
+                  >
+                    <Send className="w-4 h-4" />
+                    <span>Enviar Comprovante / Mensagem aos Desenvolvedores no WhatsApp</span>
+                  </a>
+                </div>
+              </div>
+
+              {/* Hall dos Apoiadores da Comunidade */}
+              <div className="p-5 sm:p-6 rounded-3xl bg-card border border-border shadow-sm space-y-3">
+                <span className="text-xs font-black uppercase tracking-widest text-muted-foreground flex items-center gap-1.5">
+                  <Heart className="w-4 h-4 text-rose-500 fill-current" />
+                  Hall dos Apoiadores Recentes da Comunidade:
+                </span>
+                
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                  {[
+                    { name: 'Lucas "Muralha"', club: 'Flamengo', val: 'R$ 25,00', icon: '⚡' },
+                    { name: 'Gabriel Santos', club: 'Palmeiras', val: 'R$ 50,00', icon: '👑' },
+                    { name: 'Matheus R.', club: 'Corinthians', val: 'R$ 10,00', icon: '⚽' },
+                    { name: 'Davi Gabriel', club: 'Real Madrid', val: 'R$ 50,00', icon: '🏆' },
+                  ].map((sup, idx) => (
+                    <div key={idx} className="p-3 rounded-2xl bg-secondary/40 border border-border flex items-center gap-2.5">
+                      <span className="text-xl">{sup.icon}</span>
+                      <div className="truncate">
+                        <span className="text-xs font-bold text-foreground block truncate">{sup.name}</span>
+                        <span className="text-[10px] text-emerald-400 font-mono font-bold">{sup.val}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           )}

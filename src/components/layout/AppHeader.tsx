@@ -7,6 +7,7 @@ import { useGameStore } from '@/store/gameStore';
 import { ThemeToggle } from './ThemeToggle';
 import { ClubBadge } from '@/components/game/ClubBadge';
 import { ProModal } from '@/components/game/ProModal';
+import { DonationModal } from '@/components/game/DonationModal';
 import { InstallAppModal } from './InstallAppModal';
 import { formatCurrency } from '@/lib/calculations';
 import { 
@@ -20,12 +21,14 @@ import {
   Crown,
   Volume2,
   VolumeX,
-  Smartphone
+  Smartphone,
+  Heart
 } from 'lucide-react';
 import { sound } from '@/lib/soundEffects';
 
 export function AppHeader() {
   const [isProModalOpen, setIsProModalOpen] = useState(false);
+  const [isDonationModalOpen, setIsDonationModalOpen] = useState(false);
   const [isInstallModalOpen, setIsInstallModalOpen] = useState(false);
   const [isMuted, setIsMuted] = useState(sound.isMuted());
 
@@ -136,11 +139,22 @@ export function AppHeader() {
           )}
         </Link>
 
+        {/* Botão Doação / Apoiar o Projeto */}
+        <button
+          type="button"
+          onClick={() => setIsDonationModalOpen(true)}
+          className="flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-lg bg-rose-500/15 border border-rose-500/30 text-rose-400 hover:bg-rose-500/25 text-[11px] sm:text-xs font-black transition-all cursor-pointer shadow-sm active:scale-95 shrink-0"
+          title="Apoiar o projeto do jogo com uma doação via Pix 💖"
+        >
+          <Heart className="w-3.5 h-3.5 text-rose-500 fill-current animate-pulse" />
+          <span className="hidden xs:inline sm:inline">Apoiar</span>
+        </button>
+
         {/* Botão Baixar para Celular / PC */}
         <button
           type="button"
           onClick={() => setIsInstallModalOpen(true)}
-          className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/25 text-xs font-black transition-all cursor-pointer shadow-sm active:scale-95"
+          className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/25 text-xs font-black transition-all cursor-pointer shadow-sm active:scale-95 shrink-0"
           title="Baixar aplicativo para Celular (Android/iOS) ou PC"
         >
           <Smartphone className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
@@ -151,7 +165,7 @@ export function AppHeader() {
         {/* Badge Free/Pro Clicável */}
         <button
           onClick={() => setIsProModalOpen(true)}
-          className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider transition-transform active:scale-95 cursor-pointer flex items-center gap-1 ${
+          className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider transition-transform active:scale-95 cursor-pointer flex items-center gap-1 shrink-0 ${
             planTier === 'pro'
               ? 'bg-amber-500 text-zinc-950 shadow-sm shadow-amber-500/20'
               : 'bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-border hover:border-amber-500/40'
@@ -175,18 +189,30 @@ export function AppHeader() {
         <button
           type="button"
           onClick={handleToggleSound}
-          className="p-1.5 rounded-lg bg-secondary text-muted-foreground hover:text-foreground border border-border transition-colors cursor-pointer"
+          className="p-1.5 rounded-lg bg-secondary text-muted-foreground hover:text-foreground border border-border transition-colors cursor-pointer shrink-0"
           title={isMuted ? 'Ativar Efeitos Sonoros 🔊' : 'Mutar Efeitos Sonoros 🔇'}
         >
           {isMuted ? <VolumeX className="w-4 h-4 text-rose-400" /> : <Volume2 className="w-4 h-4 text-emerald-400" />}
         </button>
 
         {/* Seletor de Tema Claro/Escuro */}
-        <ThemeToggle />
+        <div className="shrink-0">
+          <ThemeToggle />
+        </div>
       </div>
 
       {/* Modal VIP / PRO */}
-      <ProModal isOpen={isProModalOpen} onClose={() => setIsProModalOpen(false)} />
+      <ProModal 
+        isOpen={isProModalOpen} 
+        onClose={() => setIsProModalOpen(false)} 
+        onOpenDonation={() => setIsDonationModalOpen(true)}
+      />
+
+      {/* Modal de Doações e Apoio ao Projeto */}
+      <DonationModal
+        isOpen={isDonationModalOpen}
+        onClose={() => setIsDonationModalOpen(false)}
+      />
 
       {/* Modal Baixar App PWA */}
       <InstallAppModal isOpen={isInstallModalOpen} onClose={() => setIsInstallModalOpen(false)} />
