@@ -185,7 +185,7 @@ export interface Club {
 
 export type PreferredFoot = 'right' | 'left' | 'both';
 
-// 5 Habilidades de Ouro (PlayStyles) Oficiais
+// 5 Habilidades de Ouro (PlayStyles) Oficiais para Jogador
 export type PlayStyleGoldId = 
   | 'rapid_gold'       // ⚡ Arrancada Foguete (Velocidade & Drible)
   | 'finisher_gold'    // 🎯 Finalizador Letal (Chute & Frieza)
@@ -201,6 +201,33 @@ export interface PlayStyleGold {
   tagline: string;
   description: string;
   initialBoost: Partial<Record<keyof PlayerAttributes, number>>;
+}
+
+// 6 Habilidades de Ouro (MasterStyles) Oficiais para Treinador
+export type ManagerPlayStyleGoldId =
+  | 'mastermind_gold'   // 🧠 Nó Tático Genial (Mastermind+)
+  | 'inspire_gold'      // 🔥 Preleção de Fogo (Inspire+)
+  | 'scout_gold'        // 🦅 Olho Clínico da Base (Scout+)
+  | 'derby_king_gold'   // ⚔️ Mestre dos Clássicos (DerbyKing+)
+  | 'heavy_press_gold'  // ⚡ Gegenpressing Sufocante (HeavyPress+)
+  | 'iron_wall_gold';   // 🛡️ Retranca de Aço Invicto (IronWall+)
+
+export interface ManagerPlayStyleGold {
+  id: ManagerPlayStyleGoldId;
+  name: string;
+  icon: string;
+  value: number; // Valor financeiro de prestígio em R$
+  tagline: string;
+  description: string;
+  boosts: {
+    tacticalReading?: number;
+    squadMorale?: number;
+    youthEvolution?: number;
+    bigMatchBuff?: number;
+    pressingPower?: number;
+    defensiveSolid?: number;
+  };
+  badgeLabels: string[];
 }
 
 export type PlayerSpecialty = 
@@ -523,6 +550,9 @@ export interface ManagerCareerProfile {
   };
   managingNationalTeam?: string; // Ex: 'Brasil' ou 'Argentina' (treinador da Seleção)
   avatar?: CharacterAvatar;
+  goldPlayStyle?: ManagerPlayStyleGoldId; // Habilidade de Ouro ativa do Treinador (MasterStyle)
+  tacticalFamiliarity?: number;           // 0 a 100 de domínio das jogadas ensaiadas
+  tacticalPoints?: number;                // Pontos táticos para upgrades e minijogos
   entrosamento?: number; // 0 a 100% de entrosamento tático da equipe
   highPressure?: boolean; // Pressão alta tática ligada/desligada
   stadiumUpgrades?: {

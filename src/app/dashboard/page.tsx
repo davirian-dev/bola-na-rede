@@ -35,11 +35,14 @@ import { ManagerTrainingModal } from '@/components/manager/ManagerTrainingModal'
 import { ManagerTransferModal } from '@/components/manager/ManagerTransferModal';
 import { ManagerFinancesModal } from '@/components/manager/ManagerFinancesModal';
 import { ManagerCareerModal } from '@/components/manager/ManagerCareerModal';
+import { TacticalBoardMinigame } from '@/components/manager/TacticalBoardMinigame';
+import { ManagerSpeechMinigame } from '@/components/manager/ManagerSpeechMinigame';
 import { playWhistle, playKick, playGoal } from '@/lib/soundEffects';
 import { LIFESTYLE_CATALOG } from '@/data/lifestyleSeed';
 import { calculateCareerScore } from '@/engine/scoringEngine';
 import { formatCurrency } from '@/lib/calculations';
 import { getPlayStyleGoldById } from '@/data/playStylesSeed';
+import { getManagerPlayStyleGoldById } from '@/data/managerPlayStylesSeed';
 import { getBootById } from '@/data/boots';
 import { getBallById } from '@/data/balls';
 import { NRG_DRINKS_CATALOG } from '@/data/nssCatalogSeed';
@@ -142,6 +145,8 @@ export default function DashboardPage() {
   const [isManagerTransferMarketOpen, setIsManagerTransferMarketOpen] = useState(false);
   const [isManagerFinancesOpen, setIsManagerFinancesOpen] = useState(false);
   const [isManagerCareerOpen, setIsManagerCareerOpen] = useState(false);
+  const [isTacticalBoardOpen, setIsTacticalBoardOpen] = useState(false);
+  const [isManagerSpeechOpen, setIsManagerSpeechOpen] = useState(false);
 
   useEffect(() => {
     if (!playerProfile && !managerProfile) {
@@ -678,21 +683,78 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              {/* CENTRAL DE COMANDOS DO TREINADOR (6 TELAS OFICIAIS) */}
+              {/* CENTRAL DE COMANDOS DO TREINADOR (6 TELAS OFICIAIS + MINIJOGOS) */}
               {mode === 'manager' && managerProfile && (
-                <div className="p-4 sm:p-5 rounded-3xl bg-zinc-950/80 border-2 border-emerald-500/40 shadow-xl space-y-3">
+                <div className="p-4 sm:p-5 rounded-3xl bg-zinc-950/80 border-2 border-emerald-500/40 shadow-xl space-y-4">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-zinc-800 pb-3">
                     <div className="flex items-center gap-2">
                       <span className="text-emerald-400 font-black text-sm">📋 GESTÃO DO CLUBE</span>
                       <span className="text-[11px] text-zinc-400">· Painel Oficial do Treinador</span>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {/* MasterStyle de Ouro Ativo */}
+                      {(() => {
+                        const goldStyle = getManagerPlayStyleGoldById(managerProfile.goldPlayStyle || 'mastermind_gold');
+                        return goldStyle ? (
+                          <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/15 border border-amber-500/40 text-amber-300 font-black text-xs shadow-sm">
+                            <span>{goldStyle.icon}</span>
+                            <span>{goldStyle.name}</span>
+                          </div>
+                        ) : null;
+                      })()}
                       <span className="text-xs px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-bold">
                         Formação: {managerProfile.formation || '4-3-3'}
                       </span>
                       <span className="text-xs px-2.5 py-0.5 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 font-bold">
                         Entrosamento: {managerProfile.entrosamento ?? 65}%
                       </span>
+                    </div>
+                  </div>
+
+                  {/* 2 MINIJOGOS INTERATIVOS OFICIAIS DO TREINADOR */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 rounded-2xl bg-gradient-to-r from-emerald-950/40 via-zinc-900/60 to-amber-950/40 border border-emerald-500/30">
+                    <div className="flex items-center justify-between p-3 rounded-xl bg-zinc-900/80 border border-emerald-500/30">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-xl shrink-0">
+                          📋
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-1.5">
+                            <h4 className="text-xs font-black text-white">Prancheta Tática</h4>
+                            <span className="text-[9px] font-black uppercase px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-400">Minijogo</span>
+                          </div>
+                          <p className="text-[11px] text-zinc-400">Desenhe triangulações e ganhe +10% de entrosamento</p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setIsTacticalBoardOpen(true)}
+                        className="px-3.5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-black text-xs uppercase tracking-wider transition cursor-pointer shrink-0 ml-2 shadow-sm"
+                      >
+                        Treinar Jogada
+                      </button>
+                    </div>
+
+                    <div className="flex items-center justify-between p-3 rounded-xl bg-zinc-900/80 border border-amber-500/30">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-xl shrink-0">
+                          🎙️
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-1.5">
+                            <h4 className="text-xs font-black text-white">Preleção de Vestiário</h4>
+                            <span className="text-[9px] font-black uppercase px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-400">Minijogo</span>
+                          </div>
+                          <p className="text-[11px] text-zinc-400">Acerte o tom motivacional e ganhe +20 de moral</p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setIsManagerSpeechOpen(true)}
+                        className="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-black text-xs uppercase tracking-wider transition cursor-pointer shrink-0 ml-2 shadow-sm"
+                      >
+                        Fazer Preleção
+                      </button>
                     </div>
                   </div>
 
@@ -2608,6 +2670,19 @@ export default function DashboardPage() {
       <ManagerCareerModal
         isOpen={isManagerCareerOpen}
         onClose={() => setIsManagerCareerOpen(false)}
+      />
+
+      {/* ============================================================ */}
+      {/* MINIJOGOS OFICIAIS DO TREINADOR: PRANCHETA E PRELEÇÃO        */}
+      {/* ============================================================ */}
+      <TacticalBoardMinigame
+        isOpen={isTacticalBoardOpen}
+        onClose={() => setIsTacticalBoardOpen(false)}
+      />
+
+      <ManagerSpeechMinigame
+        isOpen={isManagerSpeechOpen}
+        onClose={() => setIsManagerSpeechOpen(false)}
       />
 
       {/* ============================================================ */}

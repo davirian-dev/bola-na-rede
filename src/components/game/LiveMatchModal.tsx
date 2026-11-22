@@ -8,6 +8,8 @@ import { ClubBadge } from '@/components/game/ClubBadge';
 import { NSSPenaltyMinigame } from '@/components/game/NSSPenaltyMinigame';
 import { NSSPassMinigame } from '@/components/game/NSSPassMinigame';
 import { DribbleMinigame } from '@/components/match/DribbleMinigame';
+import { TacticalBoardMinigame } from '@/components/manager/TacticalBoardMinigame';
+import { ManagerSpeechMinigame } from '@/components/manager/ManagerSpeechMinigame';
 import { 
   Play, 
   Pause, 
@@ -101,6 +103,11 @@ export function LiveMatchModal({
   const [effortLevel, setEffortLevel] = useState<1 | 2 | 3>(2);
   const [userInjuredInMatch, setUserInjuredInMatch] = useState(false);
   const [uniformKit, setUniformKit] = useState<'home' | 'away'>('home');
+
+  // Minijogos de Intervalo do Treinador
+  const [isHalfTimeSpeechOpen, setIsHalfTimeSpeechOpen] = useState(false);
+  const [isHalfTimeBoardOpen, setIsHalfTimeBoardOpen] = useState(false);
+  const [halfTimeActionDone, setHalfTimeActionDone] = useState(false);
 
   // Estatísticas Globais da Partida para o Pós-Jogo
   const [matchStats] = useState({
@@ -247,15 +254,18 @@ export function LiveMatchModal({
           generateRandomMatchEvent(nextMin);
         }
 
-        // Intervalo do Jogo aos 45' com liderança do Capitão
+        // Intervalo do Jogo aos 45' com liderança do Capitão ou Treinador
         if (nextMin === 45 && prev === 44) {
           const captainNote = playerProfile?.isCaptain 
             ? ` ©️ O Capitão ${userActorName} reúne os companheiros, inflama o vestiário e cobra reação!` 
             : '';
           setComments((c) => [
-            { minute: 45, text: `Fim do primeiro tempo! Equipes descem para os vestiários.${captainNote}`, type: 'normal' },
+            { minute: 45, text: `⏸️ Fim do primeiro tempo! Equipes descem para os vestiários.${captainNote}`, type: 'normal' },
             ...c
           ]);
+          if (mode === 'manager') {
+            setIsPlaying(false);
+          }
         }
 
         // Apito Final aos 90'
@@ -1240,6 +1250,53 @@ export function LiveMatchModal({
                     </button>
                   </div>
                 </div>
+
+                {/* AÇÕES DE INTERVALO DO TREINADOR (PRELEÇÃO & PRANCHETA) */}
+                {mode === 'manager' && minute === 45 && !isFinished && (
+                  <div className="p-3.5 rounded-2xl bg-amber-500/15 border-2 border-amber-500/40 space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xl">⏸️</span>
+                        <div>
+                          <h4 className="text-xs font-black text-amber-300">
+                            INTERVALO DE JOGO: Vestiário Aberto!
+                          </h4>
+                          <p className="text-[11px] text-zinc-300">
+                            {halfTimeActionDone 
+                              ? 'Ajuste tático aplicado! Seus atletas estão prontos para o 2º tempo.'
+                              : 'Realize uma preleção motivacional ou ajuste as jogadas na prancheta antes do recomeço!'}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setIsHalfTimeSpeechOpen(true)}
+                        className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-black text-xs uppercase flex items-center gap-1.5 transition cursor-pointer"
+                      >
+                        🎙️ Preleção de Intervalo
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setIsHalfTimeBoardOpen(true)}
+                        className="px-3 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-black text-xs uppercase flex items-center gap-1.5 transition cursor-pointer"
+                      >
+                        📋 Ajuste na Prancheta
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setIsPlaying(true)}
+                        className="px-3 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-xs uppercase flex items-center gap-1.5 transition cursor-pointer ml-auto"
+                      >
+                        ▶️ Iniciar 2º Tempo
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -1501,6 +1558,34 @@ export function LiveMatchModal({
             </div>
           </div>
         )}
+
+        {/* MINIJOGOS DE INTERVALO DO TREINADOR */}
+        <TacticalBoardMinigame
+          isOpen={isHalfTimeBoardOpen}
+          onClose={() => setIsHalfTimeBoardOpen(false)}
+          onCompleted={(res) => {
+            setIsHalfTimeBoardOpen(false);
+            setHalfTimeActionDone(true);
+            setComments((c) => [
+              { minute: 45, text: `📋 Ajuste na Prancheta executado com sucesso! O elenco volta para o 2º tempo com entrosamento refinado (+${res.entrosamentoBonus}% de entrosamento)!`, type: 'chance' },
+              ...c,
+            ]);
+          }}
+        />
+
+        <ManagerSpeechMinigame
+          isOpen={isHalfTimeSpeechOpen}
+          isHalfTime={true}
+          onClose={() => setIsHalfTimeSpeechOpen(false)}
+          onCompleted={(res) => {
+            setIsHalfTimeSpeechOpen(false);
+            setHalfTimeActionDone(true);
+            setComments((c) => [
+              { minute: 45, text: `🎙️ Discurso de Vestiário eletrizante! Os jogadores voltam com sangue nos olhos para a virada (+${res.moraleGain} de moral)!`, type: 'chance' },
+              ...c,
+            ]);
+          }}
+        />
 
       </div>
     </div>

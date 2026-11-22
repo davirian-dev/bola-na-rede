@@ -23,8 +23,9 @@ import { ProModal } from '@/components/game/ProModal';
 import { AvatarDisplay } from '@/components/game/AvatarDisplay';
 import { AvatarCreatorModal } from '@/components/game/AvatarCreatorModal';
 import { formatCurrency } from '@/lib/calculations';
-import { CharacterAvatar, PlayStyleGoldId } from '@/types/game';
+import { CharacterAvatar, PlayStyleGoldId, ManagerPlayStyleGoldId } from '@/types/game';
 import { PLAYSTYLES_GOLD } from '@/data/playStylesSeed';
+import { MANAGER_PLAYSTYLES_GOLD, getManagerPlayStyleGoldById } from '@/data/managerPlayStylesSeed';
 import { 
   User, 
   Briefcase, 
@@ -132,6 +133,7 @@ export default function NewCareerPage() {
   const [managerArchetype, setManagerArchetype] = useState<ManagerArchetype>('strategist');
   const [managerPhilosophy, setManagerPhilosophy] = useState<ManagerTacticsPhilosophy>('attacking');
   const [managerFormation, setManagerFormation] = useState<TacticalFormation>('4-3-3');
+  const [selectedManagerGoldPlayStyle, setSelectedManagerGoldPlayStyle] = useState<ManagerPlayStyleGoldId>('mastermind_gold');
   const [selectedDivisionTab, setSelectedDivisionTab] = useState<Division>('D');
 
   // Clubes agrupados por divisão (Brasil e Ligas Europeias Oficiais)
@@ -509,6 +511,7 @@ export default function NewCareerPage() {
         clubId: selectedClubId,
         careerLength,
         matchSimSystem,
+        goldPlayStyle: selectedManagerGoldPlayStyle,
         avatar: {
           ...avatar,
           clothingStyle: 'suit',
@@ -1715,6 +1718,77 @@ export default function NewCareerPage() {
                       })}
                     </div>
                   </div>
+
+                  {/* 6 Habilidades de Ouro do Treinador (Tactical MasterStyles) */}
+                  <div className="p-6 rounded-3xl bg-card border-2 border-amber-500/30 shadow-xl space-y-4 relative overflow-hidden">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border/80 pb-3">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-black uppercase tracking-widest text-amber-500 bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 rounded-full">
+                            ★ 6 Estilos Táticos Lendários
+                          </span>
+                        </div>
+                        <h3 className="font-display text-xl font-black text-foreground mt-0.5">
+                          Habilidades de Ouro do Treinador (MasterStyles)
+                        </h3>
+                        <p className="text-xs text-muted-foreground">
+                          Cada estilo define a identidade da sua equipe e confere bônus reais nas partidas e na evolução do elenco.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {MANAGER_PLAYSTYLES_GOLD.map((style) => {
+                        const isSelected = selectedManagerGoldPlayStyle === style.id;
+                        return (
+                          <div
+                            key={style.id}
+                            onClick={() => setSelectedManagerGoldPlayStyle(style.id)}
+                            className={`p-4 rounded-2xl border text-left transition-all relative overflow-hidden cursor-pointer flex flex-col justify-between ${
+                              isSelected
+                                ? 'border-amber-500 bg-amber-500/15 shadow-md shadow-amber-500/10 ring-1 ring-amber-500'
+                                : 'border-border bg-secondary/40 hover:bg-secondary/80'
+                            }`}
+                          >
+                            <div className="space-y-1.5">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-2xl">{style.icon}</span>
+                                  <h4 className="font-display text-sm font-black text-foreground">
+                                    {style.name}
+                                  </h4>
+                                </div>
+                                {isSelected && (
+                                  <span className="text-[10px] font-black bg-amber-500 text-zinc-950 px-2 py-0.5 rounded-full uppercase">
+                                    Ativo
+                                  </span>
+                                )}
+                              </div>
+
+                              <span className="text-[11px] font-bold text-amber-400 block">
+                                {style.tagline}
+                              </span>
+
+                              <p className="text-xs text-muted-foreground leading-relaxed">
+                                {style.description}
+                              </p>
+                            </div>
+
+                            <div className="pt-3 border-t border-border/50 mt-3 flex flex-wrap gap-1">
+                              {style.badgeLabels.map((badge, bIdx) => (
+                                <span
+                                  key={bIdx}
+                                  className="text-[10px] font-black px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-400 border border-emerald-500/20"
+                                >
+                                  {badge}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
                 </div>
 
                 {/* Coluna Direita: Seleção de Clube do Treinador */}
@@ -1805,12 +1879,32 @@ export default function NewCareerPage() {
                         shortName={selectedClub.shortName}
                         size="md"
                       />
-                      <div>
+                      <div className="flex-1">
                         <h4 className="text-sm font-black text-foreground">{selectedClub.name}</h4>
                         <span className="text-xs text-muted-foreground block">
                           Orçamento: {formatCurrency(selectedClub.budget)}
                         </span>
                       </div>
+                    </div>
+
+                    {/* Resumo do Estilo de Ouro Ativo do Treinador */}
+                    <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-2xl">
+                          {getManagerPlayStyleGoldById(selectedManagerGoldPlayStyle)?.icon || '🧠'}
+                        </span>
+                        <div>
+                          <span className="text-[10px] font-black uppercase tracking-wider text-amber-400 block">
+                            Estilo Tático MasterStyle
+                          </span>
+                          <span className="text-xs font-black text-white">
+                            {getManagerPlayStyleGoldById(selectedManagerGoldPlayStyle)?.name}
+                          </span>
+                        </div>
+                      </div>
+                      <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 shrink-0">
+                        {formatCurrency(getManagerPlayStyleGoldById(selectedManagerGoldPlayStyle)?.value || 4200000)}
+                      </span>
                     </div>
 
                     <div className="space-y-1.5 max-h-60 overflow-y-auto pr-1">

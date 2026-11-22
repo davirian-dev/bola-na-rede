@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react';
 import { useGameStore } from '@/store/gameStore';
-import { Award, Trophy, Calendar, Shield, X, Star, Users, Flame, Zap } from 'lucide-react';
+import { Award, Trophy, Calendar, Shield, X, Star, Users, Flame, Zap, Sparkles } from 'lucide-react';
+import { getManagerPlayStyleGoldById } from '@/data/managerPlayStylesSeed';
 
 interface ManagerCareerModalProps {
   isOpen: boolean;
@@ -120,6 +121,38 @@ export const ManagerCareerModal: React.FC<ManagerCareerModalProps> = ({ isOpen, 
                   </div>
                 </div>
               </div>
+
+              {/* Habilidade de Ouro Ativa do Treinador (MasterStyle) */}
+              {(() => {
+                const gold = getManagerPlayStyleGoldById(managerProfile.goldPlayStyle || 'mastermind_gold');
+                if (!gold) return null;
+                return (
+                  <div className="p-3.5 rounded-2xl bg-gradient-to-r from-amber-500/15 via-zinc-900 to-amber-500/5 border border-amber-500/40 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="text-2xl">{gold.icon}</span>
+                        <div>
+                          <div className="flex items-center gap-1.5">
+                            <h4 className="text-xs font-black text-white">{gold.name}</h4>
+                            <span className="text-[9px] font-black uppercase px-2 py-0.2 rounded-full bg-amber-500 text-black">
+                              MasterStyle
+                            </span>
+                          </div>
+                          <span className="text-[10px] text-amber-400 font-semibold">{gold.tagline}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <p className="text-[11px] text-zinc-300 leading-relaxed">{gold.description}</p>
+                    <div className="flex flex-wrap gap-1 pt-1">
+                      {gold.badgeLabels.map((b, idx) => (
+                        <span key={idx} className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-400 border border-emerald-500/25">
+                          {b}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
 
               {/* Badges de Bônus Ativos do Perfil (Conforme Imagem 7) */}
               <div className="space-y-2 pt-2 border-t border-zinc-800/60">

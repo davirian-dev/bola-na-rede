@@ -32,6 +32,7 @@ import {
   TransferOffer,
   CharacterAvatar,
   PlayStyleGoldId,
+  ManagerPlayStyleGoldId,
   PlayerAttributes,
   NRGType,
   NRGInventory,
@@ -97,7 +98,11 @@ interface GameStoreActions {
     careerLength?: CareerLength;
     matchSimSystem?: MatchSimSystem;
     avatar?: CharacterAvatar;
+    goldPlayStyle?: ManagerPlayStyleGoldId;
   }) => void;
+  updateManagerTacticalFamiliarity: (delta: number) => void;
+  updateManagerMorale: (delta: number) => void;
+  setManagerGoldPlayStyle: (styleId: ManagerPlayStyleGoldId) => void;
 
   // Planos e Configurações de Partida
   setPlanTier: (tier: 'free' | 'pro') => void;
@@ -1259,7 +1264,8 @@ export const useGameStore = create<GameStore>()(
         clubId,
         careerLength = 12,
         matchSimSystem = 'instant',
-        avatar
+        avatar,
+        goldPlayStyle = 'mastermind_gold'
       }) => {
         const state = get();
         const availableClubs = (state.clubs && Object.keys(state.clubs).length > 0)
@@ -1277,6 +1283,24 @@ export const useGameStore = create<GameStore>()(
           initialReputation += 5;
         }
 
+        // Bônus da Habilidade de Ouro do Treinador
+        let initialMorale = 70;
+        let initialFans = 75;
+        let initialEntrosamento = 65;
+        if (goldPlayStyle === 'inspire_gold') {
+          initialMorale = 85;
+          initialFans = 80;
+        } else if (goldPlayStyle === 'mastermind_gold') {
+          initialReputation += 6;
+          initialBoard += 6;
+        } else if (goldPlayStyle === 'derby_king_gold') {
+          initialFans = 85;
+        } else if (goldPlayStyle === 'heavy_press_gold') {
+          initialEntrosamento = 75;
+        } else if (goldPlayStyle === 'iron_wall_gold') {
+          initialBoard += 8;
+        }
+
         const managerProfile: ManagerCareerProfile = {
           id: `mgr-user-${Date.now()}`,
           name,
@@ -1289,8 +1313,17 @@ export const useGameStore = create<GameStore>()(
           matchSimSystem,
           reputation: initialReputation,
           boardConfidence: initialBoard,
-          fansConfidence: 75,
-          scoutingLevel: archetype === 'talent_developer' ? 2 : 1,
+          fansConfidence: initialFans,
+          boardTrust: initialBoard,
+          fanApproval: initialFans,
+          squadMorale: initialMorale,
+          mediaReputation: initialReputation,
+          goldPlayStyle,
+          tacticalFamiliarity: 60,
+          tacticalPoints: 100,
+          entrosamento: initialEntrosamento,
+          highPressure: goldPlayStyle === 'heavy_press_gold',
+          scoutingLevel: (archetype === 'talent_developer' || goldPlayStyle === 'scout_gold') ? 2 : 1,
           medicalLevel: 1,
           stats: {
             matchesPlayed: 0,
@@ -1341,6 +1374,48 @@ export const useGameStore = create<GameStore>()(
           allFixtures: cal.allFixtures,
           topScorers: defaultTopScorers,
           newsFeed: [initialNews, ...state.newsFeed],
+          lastSavedAt: new Date().toISOString(),
+        });
+      },
+
+      updateManagerTacticalFamiliarity: (delta: number) => {
+        const state = get();
+        if (!state.managerProfile) return;
+        const currentFam = state.managerProfile.tacticalFamiliarity ?? 50;
+        const currentEntro = state.managerProfile.entrosamento ?? 65;
+        set({
+          managerProfile: {
+            ...state.managerProfile,
+            tacticalFamiliarity: Math.min(100, Math.max(0, currentFam + delta)),
+            entrosamento: Math.min(100, Math.max(0, currentEntro + delta)),
+          },
+          lastSavedAt: new Date().toISOString(),
+        });
+      },
+
+      updateManagerMorale: (delta: number) => {
+        const state = get();
+        if (!state.managerProfile) return;
+        const currentMorale = state.managerProfile.squadMorale ?? 65;
+        const currentFans = state.managerProfile.fanApproval ?? 75;
+        set({
+          managerProfile: {
+            ...state.managerProfile,
+            squadMorale: Math.min(100, Math.max(0, currentMorale + delta)),
+            fanApproval: Math.min(100, Math.max(0, currentFans + Math.round(delta * 0.3))),
+          },
+          lastSavedAt: new Date().toISOString(),
+        });
+      },
+
+      setManagerGoldPlayStyle: (styleId: ManagerPlayStyleGoldId) => {
+        const state = get();
+        if (!state.managerProfile) return;
+        set({
+          managerProfile: {
+            ...state.managerProfile,
+            goldPlayStyle: styleId,
+          },
           lastSavedAt: new Date().toISOString(),
         });
       },
