@@ -5,6 +5,7 @@
 import { Club, Division, Player, Position, League, LeagueStanding, Fixture, CompetitionType } from '@/types/game';
 import { calculateOverall, calculateMarketValue, calculateWeeklyWage } from '@/lib/calculations';
 import { injectFamousStars } from './famousStarRosters';
+import { applyRosterPatch2026 } from './rosterPatch2026';
 
 // Nomes e Sobrenomes para geração brasileira autêntica
 const FIRST_NAMES = [
@@ -299,12 +300,15 @@ export function generateBrazilDatabase(): {
     };
   });
 
+  // Aplica o Patch Oficial 2026 (Neymar no Santos, transferências reais, sem duplicatas)
+  const patchedClubs = applyRosterPatch2026(clubs);
+
   // Criar estrutura das Ligas (Séries A, B, C, D e Champions League / Europa)
   const divisions: Division[] = ['A', 'B', 'C', 'D', 'EUROPA'];
   const leagues = {} as Record<Division, League>;
 
   divisions.forEach((div) => {
-    const divClubs = Object.values(clubs).filter((c) => c.division === div);
+    const divClubs = Object.values(patchedClubs).filter((c) => c.division === div);
     
     const standings: LeagueStanding[] = divClubs.map((club) => ({
       clubId: club.id,
@@ -348,5 +352,5 @@ export function generateBrazilDatabase(): {
     };
   });
 
-  return { clubs, leagues };
+  return { clubs: patchedClubs, leagues };
 }

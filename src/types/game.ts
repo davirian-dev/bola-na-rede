@@ -70,6 +70,7 @@ export interface Player {
   wage: number;          // Salário semanal em R$
   contractWeeks: number; // Semanas restantes de contrato
   isYouth: boolean;      // Pertence à base Sub-20
+  jerseyNumber?: number; // Número oficial da camisa
   isInjured?: boolean;   // Atleta no departamento médico
   isSuspended?: boolean; // Suspenso por cartões
   suspensionMatches?: number; // Jogos restantes de suspensão
@@ -902,6 +903,7 @@ export interface GameState {
   };
   roundResultModalOpen?: boolean;
   onlineStats?: OnlineStats;
+  rosterPatchVersion?: string; // Versão do Patch de Elencos aplicado (ex: '2026.11')
   lastSeasonSummary?: {
     year: number;
     champions: {

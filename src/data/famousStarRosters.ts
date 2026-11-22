@@ -191,13 +191,13 @@ export const FAMOUS_STAR_ROSTERS: Record<string, FamousStarDef[]> = {
 
   hil: [
     {
-      name: 'Neymar da Silva Santos Jr',
-      nickname: 'Neymar Jr 👑🇧🇷',
-      age: 32,
-      position: 'PE',
-      overall: 88,
-      potential: 88,
-      attrs: { pace: 83, dribbling: 94, tackling: 37, defending: 36, attacking: 92, finishing: 84, passing: 89, positioning: 88, heading: 64, crossing: 85, shooting: 83, jumping: 69, playmaker: 92, elasticity: 55 },
+      name: 'Marcos Leonardo Santos Almeida',
+      nickname: 'Marcos Leonardo 🎯🇸🇦',
+      age: 21,
+      position: 'ATA',
+      overall: 80,
+      potential: 87,
+      attrs: { pace: 82, dribbling: 80, tackling: 35, defending: 34, attacking: 83, finishing: 83, passing: 72, positioning: 84, heading: 78, crossing: 68, shooting: 82, jumping: 78, playmaker: 75, elasticity: 44 },
     },
     {
       name: 'Aleksandar Mitrovic',
@@ -575,13 +575,13 @@ export const FAMOUS_STAR_ROSTERS: Record<string, FamousStarDef[]> = {
       attrs: { pace: 82, dribbling: 82, tackling: 72, defending: 70, attacking: 80, finishing: 78, passing: 82, positioning: 80, heading: 64, crossing: 80, shooting: 81, jumping: 74, playmaker: 82, elasticity: 48 },
     },
     {
-      name: 'Gabriel Barbosa',
-      nickname: 'Gabigol 🔴⚫',
+      name: 'Michael Richard Delgado de Oliveira',
+      nickname: 'Michael ⚡🔴⚫',
       age: 28,
-      position: 'ATA',
+      position: 'PE',
       overall: 80,
       potential: 80,
-      attrs: { pace: 80, dribbling: 80, tackling: 35, defending: 34, attacking: 82, finishing: 83, passing: 74, positioning: 84, heading: 74, crossing: 71, shooting: 82, jumping: 77, playmaker: 76, elasticity: 45 },
+      attrs: { pace: 87, dribbling: 84, tackling: 38, defending: 36, attacking: 80, finishing: 78, passing: 74, positioning: 80, heading: 60, crossing: 76, shooting: 78, jumping: 72, playmaker: 76, elasticity: 45 },
     },
   ],
 
@@ -682,6 +682,321 @@ export const FAMOUS_STAR_ROSTERS: Record<string, FamousStarDef[]> = {
       potential: 85,
       attrs: { pace: 84, dribbling: 78, tackling: 38, defending: 36, attacking: 81, finishing: 81, passing: 70, positioning: 82, heading: 78, crossing: 66, shooting: 80, jumping: 80, playmaker: 72, elasticity: 44 },
     },
+    {
+      name: 'Hugo de Souza Nogueira',
+      nickname: 'Hugo Souza 🧤⚫⚪',
+      age: 26,
+      position: 'GOL',
+      overall: 79,
+      potential: 84,
+      attrs: { pace: 62, dribbling: 45, tackling: 40, defending: 81, attacking: 40, finishing: 30, passing: 72, positioning: 81, heading: 45, crossing: 40, shooting: 30, jumping: 84, playmaker: 58, elasticity: 84 },
+    },
+  ],
+
+  san: [
+    {
+      name: 'Neymar da Silva Santos Jr',
+      nickname: 'Neymar Jr 👑⚪⚫',
+      age: 33,
+      position: 'MEI',
+      overall: 83,
+      potential: 83,
+      attrs: { pace: 74, dribbling: 90, tackling: 36, defending: 36, attacking: 88, finishing: 82, passing: 88, positioning: 86, heading: 62, crossing: 85, shooting: 82, jumping: 68, playmaker: 90, elasticity: 50 },
+    },
+    {
+      name: 'Guilherme Augusto',
+      nickname: 'Guilherme ⚡⚪⚫',
+      age: 29,
+      position: 'PE',
+      overall: 78,
+      potential: 78,
+      attrs: { pace: 84, dribbling: 80, tackling: 42, defending: 40, attacking: 79, finishing: 78, passing: 75, positioning: 79, heading: 68, crossing: 78, shooting: 79, jumping: 74, playmaker: 76, elasticity: 45 },
+    },
+    {
+      name: 'Giuliano Victor de Paula',
+      nickname: 'Giuliano 🎯⚪⚫',
+      age: 34,
+      position: 'MEI',
+      overall: 77,
+      potential: 77,
+      attrs: { pace: 68, dribbling: 78, tackling: 58, defending: 56, attacking: 78, finishing: 76, passing: 82, positioning: 80, heading: 66, crossing: 79, shooting: 78, jumping: 66, playmaker: 82, elasticity: 44 },
+    },
+    {
+      name: 'Carlos Gilberto Silva (Gil)',
+      nickname: 'Gil 🛡️⚪⚫',
+      age: 37,
+      position: 'ZAG',
+      overall: 77,
+      potential: 77,
+      attrs: { pace: 62, dribbling: 55, tackling: 82, defending: 82, attacking: 48, finishing: 42, passing: 68, positioning: 83, heading: 85, crossing: 45, shooting: 52, jumping: 80, playmaker: 62, elasticity: 48 },
+    },
+    {
+      name: 'Gabriel Brazão',
+      nickname: 'Brazão 🧤⚪⚫',
+      age: 24,
+      position: 'GOL',
+      overall: 76,
+      potential: 82,
+      attrs: { pace: 60, dribbling: 45, tackling: 40, defending: 78, attacking: 40, finishing: 30, passing: 70, positioning: 78, heading: 45, crossing: 40, shooting: 30, jumping: 80, playmaker: 55, elasticity: 80 },
+    },
+  ],
+
+  cru: [
+    {
+      name: 'Gabriel Barbosa',
+      nickname: 'Gabigol 🏹🔵',
+      age: 29,
+      position: 'ATA',
+      overall: 80,
+      potential: 81,
+      attrs: { pace: 80, dribbling: 80, tackling: 35, defending: 34, attacking: 82, finishing: 83, passing: 74, positioning: 84, heading: 74, crossing: 71, shooting: 82, jumping: 77, playmaker: 76, elasticity: 45 },
+    },
+    {
+      name: 'Matheus Pereira',
+      nickname: 'Matheus Pereira 🪄🔵',
+      age: 28,
+      position: 'MEI',
+      overall: 81,
+      potential: 82,
+      attrs: { pace: 78, dribbling: 83, tackling: 52, defending: 50, attacking: 82, finishing: 78, passing: 84, positioning: 82, heading: 64, crossing: 83, shooting: 80, jumping: 70, playmaker: 85, elasticity: 46 },
+    },
+    {
+      name: 'Cássio Ramos',
+      nickname: 'Cássio 🧤🔵',
+      age: 37,
+      position: 'GOL',
+      overall: 80,
+      potential: 80,
+      attrs: { pace: 55, dribbling: 40, tackling: 45, defending: 83, attacking: 35, finishing: 25, passing: 68, positioning: 84, heading: 50, crossing: 35, shooting: 25, jumping: 81, playmaker: 55, elasticity: 83 },
+    },
+    {
+      name: 'Kaio Jorge',
+      nickname: 'Kaio Jorge 🎯🔵',
+      age: 23,
+      position: 'ATA',
+      overall: 78,
+      potential: 84,
+      attrs: { pace: 81, dribbling: 77, tackling: 36, defending: 35, attacking: 80, finishing: 80, passing: 72, positioning: 81, heading: 76, crossing: 68, shooting: 79, jumping: 78, playmaker: 73, elasticity: 44 },
+    },
+  ],
+
+  sao: [
+    {
+      name: 'Lucas Rodrigues Moura da Silva',
+      nickname: 'Lucas Moura ⚡🔴⚪⚫',
+      age: 32,
+      position: 'PD',
+      overall: 81,
+      potential: 81,
+      attrs: { pace: 85, dribbling: 84, tackling: 48, defending: 46, attacking: 82, finishing: 79, passing: 79, positioning: 82, heading: 68, crossing: 80, shooting: 81, jumping: 76, playmaker: 81, elasticity: 48 },
+    },
+    {
+      name: 'Jonathan Calleri',
+      nickname: 'Calleri 🇦🇷🏹',
+      age: 31,
+      position: 'ATA',
+      overall: 80,
+      potential: 80,
+      attrs: { pace: 75, dribbling: 76, tackling: 44, defending: 46, attacking: 83, finishing: 83, passing: 72, positioning: 84, heading: 85, crossing: 64, shooting: 82, jumping: 82, playmaker: 73, elasticity: 45 },
+    },
+    {
+      name: 'Luciano da Rocha Neves',
+      nickname: 'Luciano ⚽🔴⚪⚫',
+      age: 31,
+      position: 'ATA',
+      overall: 79,
+      potential: 79,
+      attrs: { pace: 76, dribbling: 79, tackling: 45, defending: 44, attacking: 81, finishing: 80, passing: 76, positioning: 82, heading: 74, crossing: 72, shooting: 80, jumping: 75, playmaker: 77, elasticity: 45 },
+    },
+    {
+      name: 'Robert Arboleda',
+      nickname: 'Arboleda 🛡️🇪🇨',
+      age: 33,
+      position: 'ZAG',
+      overall: 80,
+      potential: 80,
+      attrs: { pace: 72, dribbling: 58, tackling: 83, defending: 83, attacking: 50, finishing: 44, passing: 66, positioning: 83, heading: 86, crossing: 50, shooting: 52, jumping: 86, playmaker: 60, elasticity: 50 },
+    },
+  ],
+
+  cam: [
+    {
+      name: 'Givanildo Vieira de Sousa (Hulk)',
+      nickname: 'Hulk 💪🏿⚫⚪',
+      age: 38,
+      position: 'ATA',
+      overall: 82,
+      potential: 82,
+      attrs: { pace: 76, dribbling: 81, tackling: 48, defending: 46, attacking: 85, finishing: 85, passing: 79, positioning: 84, heading: 78, crossing: 80, shooting: 88, jumping: 80, playmaker: 81, elasticity: 46 },
+    },
+    {
+      name: 'Paulinho',
+      nickname: 'Paulinho 🏹⚫⚪',
+      age: 24,
+      position: 'ATA',
+      overall: 81,
+      potential: 86,
+      attrs: { pace: 84, dribbling: 82, tackling: 42, defending: 40, attacking: 83, finishing: 82, passing: 76, positioning: 84, heading: 74, crossing: 76, shooting: 81, jumping: 79, playmaker: 78, elasticity: 46 },
+    },
+    {
+      name: 'Gustavo Scarpa',
+      nickname: 'Scarpa 🛹🎯',
+      age: 31,
+      position: 'MEI',
+      overall: 80,
+      potential: 80,
+      attrs: { pace: 75, dribbling: 79, tackling: 54, defending: 52, attacking: 81, finishing: 78, passing: 83, positioning: 80, heading: 64, crossing: 86, shooting: 84, jumping: 68, playmaker: 84, elasticity: 46 },
+    },
+    {
+      name: 'Guilherme Arana',
+      nickname: 'Arana 🌪️⚫⚪',
+      age: 27,
+      position: 'LE',
+      overall: 80,
+      potential: 82,
+      attrs: { pace: 82, dribbling: 80, tackling: 76, defending: 76, attacking: 80, finishing: 70, passing: 79, positioning: 78, heading: 66, crossing: 82, shooting: 74, jumping: 74, playmaker: 78, elasticity: 48 },
+    },
+  ],
+
+  vas: [
+    {
+      name: 'Philippe Coutinho',
+      nickname: 'Coutinho 🪄💢',
+      age: 32,
+      position: 'MEI',
+      overall: 80,
+      potential: 80,
+      attrs: { pace: 76, dribbling: 84, tackling: 42, defending: 40, attacking: 82, finishing: 80, passing: 84, positioning: 82, heading: 58, crossing: 82, shooting: 84, jumping: 66, playmaker: 86, elasticity: 46 },
+    },
+    {
+      name: 'Pablo Vegetti',
+      nickname: 'Vegetti 🏴‍☠️💢',
+      age: 36,
+      position: 'ATA',
+      overall: 80,
+      potential: 80,
+      attrs: { pace: 68, dribbling: 72, tackling: 40, defending: 42, attacking: 83, finishing: 84, passing: 68, positioning: 86, heading: 89, crossing: 58, shooting: 83, jumping: 86, playmaker: 68, elasticity: 44 },
+    },
+    {
+      name: 'Dimitri Payet',
+      nickname: 'Payet 🇫🇷🪄',
+      age: 37,
+      position: 'MEI',
+      overall: 79,
+      potential: 79,
+      attrs: { pace: 66, dribbling: 82, tackling: 42, defending: 40, attacking: 80, finishing: 77, passing: 85, positioning: 80, heading: 56, crossing: 85, shooting: 82, jumping: 64, playmaker: 86, elasticity: 44 },
+    },
+  ],
+
+  flu: [
+    {
+      name: 'Thiago Silva',
+      nickname: 'Monstro 🛡️🇭🇺',
+      age: 40,
+      position: 'ZAG',
+      overall: 81,
+      potential: 81,
+      attrs: { pace: 64, dribbling: 65, tackling: 85, defending: 86, attacking: 50, finishing: 45, passing: 76, positioning: 88, heading: 84, crossing: 60, shooting: 54, jumping: 82, playmaker: 72, elasticity: 50 },
+    },
+    {
+      name: 'Jhon Arias',
+      nickname: 'Arias 🇨🇴⚡',
+      age: 27,
+      position: 'PD',
+      overall: 81,
+      potential: 82,
+      attrs: { pace: 85, dribbling: 84, tackling: 54, defending: 52, attacking: 82, finishing: 79, passing: 81, positioning: 82, heading: 64, crossing: 82, shooting: 80, jumping: 72, playmaker: 82, elasticity: 48 },
+    },
+    {
+      name: 'Paulo Henrique Ganso',
+      nickname: 'Ganso 🪄🇭🇺',
+      age: 35,
+      position: 'MEI',
+      overall: 79,
+      potential: 79,
+      attrs: { pace: 58, dribbling: 82, tackling: 48, defending: 46, attacking: 80, finishing: 74, passing: 88, positioning: 81, heading: 65, crossing: 84, shooting: 76, jumping: 65, playmaker: 89, elasticity: 45 },
+    },
+  ],
+
+  gre: [
+    {
+      name: 'Martin Braithwaite',
+      nickname: 'Braithwaite 🇩🇰🔵',
+      age: 33,
+      position: 'ATA',
+      overall: 80,
+      potential: 80,
+      attrs: { pace: 80, dribbling: 79, tackling: 42, defending: 40, attacking: 82, finishing: 82, passing: 74, positioning: 83, heading: 78, crossing: 72, shooting: 81, jumping: 79, playmaker: 75, elasticity: 45 },
+    },
+    {
+      name: 'Franco Cristaldo',
+      nickname: 'Cristaldo 🇦🇷🎯',
+      age: 28,
+      position: 'MEI',
+      overall: 80,
+      potential: 81,
+      attrs: { pace: 75, dribbling: 80, tackling: 52, defending: 50, attacking: 81, finishing: 78, passing: 83, positioning: 81, heading: 64, crossing: 82, shooting: 80, jumping: 68, playmaker: 84, elasticity: 46 },
+    },
+    {
+      name: 'Mathías Villasanti',
+      nickname: 'Villasanti 🇵🇾🛡️',
+      age: 27,
+      position: 'VOL',
+      overall: 80,
+      potential: 82,
+      attrs: { pace: 77, dribbling: 76, tackling: 81, defending: 81, attacking: 74, finishing: 68, passing: 80, positioning: 81, heading: 72, crossing: 72, shooting: 74, jumping: 78, playmaker: 78, elasticity: 48 },
+    },
+  ],
+
+  int: [
+    {
+      name: 'Rafael Santos Borré',
+      nickname: 'Borré 🇨🇴🏹',
+      age: 29,
+      position: 'ATA',
+      overall: 80,
+      potential: 81,
+      attrs: { pace: 81, dribbling: 79, tackling: 44, defending: 42, attacking: 82, finishing: 81, passing: 74, positioning: 83, heading: 76, crossing: 70, shooting: 80, jumping: 78, playmaker: 76, elasticity: 46 },
+    },
+    {
+      name: 'Alan Patrick',
+      nickname: 'Alan Patrick 🪄🇦🇹',
+      age: 33,
+      position: 'MEI',
+      overall: 81,
+      potential: 81,
+      attrs: { pace: 72, dribbling: 82, tackling: 50, defending: 48, attacking: 82, finishing: 79, passing: 86, positioning: 82, heading: 62, crossing: 84, shooting: 81, jumping: 66, playmaker: 87, elasticity: 45 },
+    },
+    {
+      name: 'Sergio Rochet',
+      nickname: 'Rochet 🇺🇾🧤',
+      age: 31,
+      position: 'GOL',
+      overall: 80,
+      potential: 80,
+      attrs: { pace: 58, dribbling: 42, tackling: 40, defending: 82, attacking: 35, finishing: 25, passing: 72, positioning: 83, heading: 45, crossing: 35, shooting: 25, jumping: 82, playmaker: 56, elasticity: 83 },
+    },
+  ],
+
+  bah: [
+    {
+      name: 'Everton Ribeiro',
+      nickname: 'E. Ribeiro 🪄🔵🔴',
+      age: 35,
+      position: 'MEI',
+      overall: 79,
+      potential: 79,
+      attrs: { pace: 72, dribbling: 82, tackling: 54, defending: 52, attacking: 80, finishing: 75, passing: 84, positioning: 81, heading: 62, crossing: 83, shooting: 78, jumping: 66, playmaker: 85, elasticity: 45 },
+    },
+    {
+      name: 'Cauly Oliveira Souza',
+      nickname: 'Cauly 🎯🔵🔴',
+      age: 29,
+      position: 'MEI',
+      overall: 79,
+      potential: 80,
+      attrs: { pace: 78, dribbling: 82, tackling: 50, defending: 48, attacking: 80, finishing: 76, passing: 81, positioning: 80, heading: 60, crossing: 80, shooting: 79, jumping: 68, playmaker: 82, elasticity: 46 },
+    },
   ],
 };
 
@@ -693,16 +1008,23 @@ export function injectFamousStars(clubId: string, currentRoster: Player[]): Play
   if (!famousStars || famousStars.length === 0) return currentRoster;
 
   const updatedRoster = [...currentRoster];
+  const injectedIndices = new Set<number>();
 
   famousStars.forEach((star, index) => {
-    // Procura o jogador da mesma posição ou substitui no topo
+    // Procura o jogador da mesma posição que ainda não foi ocupado por outro craque
     let targetIndex = updatedRoster.findIndex(
-      (p, i) => i >= index && p.position === star.position
+      (p, i) => i >= index && p.position === star.position && !injectedIndices.has(i)
     );
+
+    if (targetIndex === -1) {
+      targetIndex = updatedRoster.findIndex((p, i) => !injectedIndices.has(i));
+    }
 
     if (targetIndex === -1) {
       targetIndex = index;
     }
+
+    injectedIndices.add(targetIndex);
 
     if (targetIndex >= 0 && targetIndex < updatedRoster.length) {
       const attrs = star.attrs as PlayerAttributes;

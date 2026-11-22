@@ -59,6 +59,7 @@ import { OFFICIAL_BOOTS_CATALOG, getBootById } from '@/data/boots';
 import { OFFICIAL_BALLS_CATALOG, getBallById } from '@/data/balls';
 import { evaluateDilemmaTrigger, applyDilemmaResolution, DilemmaEvaluationContext } from '@/engine/dilemmaEngine';
 import { DILEMMAS_DATABASE } from '@/data/dilemmas';
+import { applyRosterPatch2026, ROSTER_PATCH_2026 } from '@/data/rosterPatch2026';
 
 interface GameStoreActions {
   // Inicialização
@@ -283,12 +284,16 @@ export const useGameStore = create<GameStore>()(
 
         const needsEuropeanUpgrade = !state.clubs?.['mci'] || !state.leagues?.['PL'];
         const needsGlobalUpgrade = !state.clubs?.['mia'] || !state.clubs?.['aln'] || !state.leagues?.['MLS'];
+        const needsRosterPatch = state.rosterPatchVersion !== ROSTER_PATCH_2026.version ||
+          !state.clubs?.['san']?.roster?.some((p) => p.name.includes('Neymar')) ||
+          state.clubs?.['hil']?.roster?.some((p) => p.name.includes('Neymar'));
 
         if (!state.clubs || Object.keys(state.clubs).length === 0 || !state.allFixtures || state.allFixtures.length === 0 || hasLegacyClubs || needsEuropeanUpgrade || needsGlobalUpgrade) {
           const freshDb = generateBrazilDatabase();
           const freshEuropean = generateEuropeanClubs();
           const freshGlobal = generateGlobalClubs();
-          const combinedClubs = { ...freshDb.clubs, ...freshEuropean, ...freshGlobal };
+          const rawCombined = { ...freshDb.clubs, ...freshEuropean, ...freshGlobal };
+          const combinedClubs = applyRosterPatch2026(rawCombined);
           const freshCal = generateAnnualCalendar(combinedClubs, state.seasonYear || 2026);
           
           let updatedPlayerProfile = state.playerProfile;
@@ -317,6 +322,7 @@ export const useGameStore = create<GameStore>()(
 
           set({
             clubs: combinedClubs,
+            rosterPatchVersion: ROSTER_PATCH_2026.version,
             leagues: freshCal.leagues,
             copaDoBrasil: freshCal.copaDoBrasil,
             sub20Tournament: freshCal.sub20Tournament,
@@ -324,6 +330,15 @@ export const useGameStore = create<GameStore>()(
             topScorers: defaultTopScorers,
             playerProfile: updatedPlayerProfile,
             managerProfile: updatedManagerProfile,
+            lastSavedAt: new Date().toISOString(),
+          });
+        } else if (needsRosterPatch) {
+          // Migração automática e transparente do Patch 2026 para saves já em andamento
+          const patchedClubs = applyRosterPatch2026(state.clubs);
+          set({
+            clubs: patchedClubs,
+            rosterPatchVersion: ROSTER_PATCH_2026.version,
+            lastSavedAt: new Date().toISOString(),
           });
         }
       },
@@ -332,7 +347,13 @@ export const useGameStore = create<GameStore>()(
         const freshDb = generateBrazilDatabase();
         const freshEuropean = generateEuropeanClubs();
         const freshGlobal = generateGlobalClubs();
-        set({ clubs: { ...freshDb.clubs, ...freshEuropean, ...freshGlobal } });
+        const rawCombined = { ...freshDb.clubs, ...freshEuropean, ...freshGlobal };
+        const patchedClubs = applyRosterPatch2026(rawCombined);
+        set({ 
+          clubs: patchedClubs,
+          rosterPatchVersion: ROSTER_PATCH_2026.version,
+          lastSavedAt: new Date().toISOString(),
+        });
       },
 
       setRoundResultModalOpen: (open: boolean) => {
@@ -343,7 +364,8 @@ export const useGameStore = create<GameStore>()(
         const freshDb = generateBrazilDatabase();
         const freshEuropean = generateEuropeanClubs();
         const freshGlobal = generateGlobalClubs();
-        const combinedClubs = { ...freshDb.clubs, ...freshEuropean, ...freshGlobal };
+        const rawCombined = { ...freshDb.clubs, ...freshEuropean, ...freshGlobal };
+        const combinedClubs = applyRosterPatch2026(rawCombined);
         const freshCal = generateAnnualCalendar(combinedClubs, 2026);
         set({
           mode: 'player',
@@ -354,6 +376,7 @@ export const useGameStore = create<GameStore>()(
           playerProfile: undefined,
           managerProfile: undefined,
           clubs: combinedClubs,
+          rosterPatchVersion: ROSTER_PATCH_2026.version,
           leagues: freshCal.leagues,
           copaDoBrasil: freshCal.copaDoBrasil,
           sub20Tournament: freshCal.sub20Tournament,
@@ -1245,6 +1268,7 @@ export const useGameStore = create<GameStore>()(
           playerProfile,
           managerProfile: undefined,
           currentWeek: 1,
+          rosterPatchVersion: ROSTER_PATCH_2026.version,
           leagues: cal.leagues,
           copaDoBrasil: cal.copaDoBrasil,
           sub20Tournament: cal.sub20Tournament,
@@ -1368,6 +1392,7 @@ export const useGameStore = create<GameStore>()(
           managerProfile,
           playerProfile: undefined,
           currentWeek: 1,
+          rosterPatchVersion: ROSTER_PATCH_2026.version,
           leagues: cal.leagues,
           copaDoBrasil: cal.copaDoBrasil,
           sub20Tournament: cal.sub20Tournament,
