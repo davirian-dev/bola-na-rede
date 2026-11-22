@@ -9,6 +9,8 @@ export const OFFICIAL_BOOTS_CATALOG: BootItem[] = [
   {
     id: 'classic_black',
     name: 'Raiz Clássica Preta',
+    brand: 'Umbro',
+    image: '/images/boots/speciali-classica.webp',
     rarity: 'Base',
     price: 0,
     durabilityMatches: 999,
@@ -31,6 +33,8 @@ export const OFFICIAL_BOOTS_CATALOG: BootItem[] = [
   {
     id: 'relampago_speed',
     name: 'Relâmpago Speed',
+    brand: 'Nike',
+    image: '/images/boots/relampago-speed.webp',
     rarity: 'Pro',
     price: 2500,
     durabilityMatches: 30,
@@ -53,6 +57,8 @@ export const OFFICIAL_BOOTS_CATALOG: BootItem[] = [
   {
     id: 'canhao_powerstrike',
     name: 'Canhão PowerStrike',
+    brand: 'Nike',
+    image: '/images/boots/canhao-powerstrike.webp',
     rarity: 'Pro',
     price: 4000,
     durabilityMatches: 25,
@@ -75,6 +81,8 @@ export const OFFICIAL_BOOTS_CATALOG: BootItem[] = [
   {
     id: 'maestro_control_x',
     name: 'Maestro Control X',
+    brand: 'Mizuno',
+    image: '/images/boots/morelia-neo.webp',
     rarity: 'Pro',
     price: 4500,
     durabilityMatches: 28,
@@ -98,6 +106,8 @@ export const OFFICIAL_BOOTS_CATALOG: BootItem[] = [
   {
     id: 'muralha_trava_alta',
     name: 'Muralha Trava Alta',
+    brand: 'Under Armour',
+    image: '/images/boots/paredao-gk.webp',
     rarity: 'Pro',
     price: 3500,
     durabilityMatches: 35,
@@ -121,6 +131,8 @@ export const OFFICIAL_BOOTS_CATALOG: BootItem[] = [
   {
     id: 'ginga_street',
     name: 'Ginga Street',
+    brand: 'Puma',
+    image: '/images/boots/ginga-street.webp',
     rarity: 'Pro',
     price: 6000,
     durabilityMatches: 26,
@@ -143,6 +155,8 @@ export const OFFICIAL_BOOTS_CATALOG: BootItem[] = [
   {
     id: 'paredao_gk',
     name: 'Luva & Chuteira Paredão',
+    brand: 'Adidas',
+    image: '/images/boots/paredao-gk.webp',
     rarity: 'Pro',
     price: 4000,
     durabilityMatches: 30,
@@ -167,6 +181,8 @@ export const OFFICIAL_BOOTS_CATALOG: BootItem[] = [
   {
     id: 'fenix_carbono',
     name: 'Fênix Carbono',
+    brand: 'Special Elite',
+    image: '/images/boots/fenix-carbono.webp',
     rarity: 'Elite',
     price: 18000,
     durabilityMatches: 45,
@@ -191,6 +207,8 @@ export const OFFICIAL_BOOTS_CATALOG: BootItem[] = [
   {
     id: 'coroa_imperial',
     name: 'Coroa Imperial Dourada',
+    brand: 'Lendária VIP',
+    image: '/images/boots/coroa-imperial.webp',
     rarity: 'Lendária',
     price: 60000,
     durabilityMatches: 99,
@@ -217,6 +235,8 @@ export const OFFICIAL_BOOTS_CATALOG: BootItem[] = [
   {
     id: 'nike_mercurial_vapor',
     name: 'Nike Mercurial Vapor Pro',
+    brand: 'Nike',
+    image: '/images/boots/mercurial-pro.webp',
     rarity: 'Elite',
     price: 8500,
     durabilityMatches: 40,
@@ -239,6 +259,8 @@ export const OFFICIAL_BOOTS_CATALOG: BootItem[] = [
   {
     id: 'adidas_predator_acc',
     name: 'Adidas Predator Accuracy',
+    brand: 'Adidas',
+    image: '/images/boots/predator-accuracy.webp',
     rarity: 'Elite',
     price: 9000,
     durabilityMatches: 40,
@@ -262,6 +284,8 @@ export const OFFICIAL_BOOTS_CATALOG: BootItem[] = [
   {
     id: 'puma_future_ultimate',
     name: 'Puma Future Ultimate',
+    brand: 'Puma',
+    image: '/images/boots/future-ultimate.webp',
     rarity: 'Elite',
     price: 7800,
     durabilityMatches: 38,
@@ -284,6 +308,8 @@ export const OFFICIAL_BOOTS_CATALOG: BootItem[] = [
   {
     id: 'mizuno_morelia_neo',
     name: 'Mizuno Morelia Neo IV',
+    brand: 'Mizuno',
+    image: '/images/boots/morelia-neo.webp',
     rarity: 'Elite',
     price: 8200,
     durabilityMatches: 50,
@@ -307,6 +333,8 @@ export const OFFICIAL_BOOTS_CATALOG: BootItem[] = [
   {
     id: 'umbro_speciali_pro',
     name: 'Umbro Speciali Clássica',
+    brand: 'Umbro',
+    image: '/images/boots/speciali-classica.webp',
     rarity: 'Pro',
     price: 5500,
     durabilityMatches: 45,

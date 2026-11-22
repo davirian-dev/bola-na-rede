@@ -261,7 +261,17 @@ export function NSSPlayerShopModal({ isOpen, onClose }: NSSPlayerShopModalProps)
                       <div>
                         <div className="flex items-center justify-between mb-2">
                           <div className="flex items-center gap-2">
-                            <span className="text-2xl">{boot.icon}</span>
+                            {boot.image ? (
+                              <img
+                                src={boot.image}
+                                alt={boot.name}
+                                loading="lazy"
+                                decoding="async"
+                                className="w-14 h-9 object-contain drop-shadow-md shrink-0"
+                              />
+                            ) : (
+                              <span className="text-2xl">{boot.icon}</span>
+                            )}
                             <span 
                               className="w-3.5 h-3.5 rounded-full border border-white/30 shadow-inner" 
                               style={{ backgroundColor: boot.color }}
@@ -351,7 +361,17 @@ export function NSSPlayerShopModal({ isOpen, onClose }: NSSPlayerShopModalProps)
               {/* Bola Atual em Uso */}
               <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
-                  <span className="text-3xl">{activeBall.icon}</span>
+                  {activeBall.image ? (
+                    <img
+                      src={activeBall.image}
+                      alt={activeBall.name}
+                      loading="lazy"
+                      decoding="async"
+                      className="w-12 h-12 object-contain drop-shadow-[0_0_10px_rgba(16,185,129,0.3)] shrink-0"
+                    />
+                  ) : (
+                    <span className="text-3xl">{activeBall.icon}</span>
+                  )}
                   <div>
                     <div className="flex items-center gap-2">
                       <span className="text-[10px] font-black uppercase text-emerald-500 tracking-wider">

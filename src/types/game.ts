@@ -198,6 +198,8 @@ export interface BootItem {
   durabilityMatches: number;
   matchesRemaining: number;
   description?: string;
+  image?: string;
+  brand?: string;
   bonus: {
     shooting?: number;
     pace?: number;
@@ -224,6 +226,7 @@ export interface BallItem {
   price: number;
   description: string;
   icon: string;
+  image?: string;
   primaryColor: string;
   secondaryColor: string;
   accentColor?: string;
@@ -313,6 +316,7 @@ export interface SponsorContract {
   goalBonus: number;
   weeksRemaining: number;
   logo: string;
+  image?: string;
   category?: 'boots' | 'energy' | 'apparel' | 'lifestyle';
   targetDescription?: string; // Ex: "Marcar 10 gols na temporada"
   targetGoal?: number;

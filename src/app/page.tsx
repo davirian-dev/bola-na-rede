@@ -590,9 +590,13 @@ export default function LandingAuthPage() {
             Hall da Fama
           </Link>
           <span>•</span>
-          <span className="text-muted-foreground">Privacidade & LGPD</span>
+          <a href="/privacidade.html" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors">
+            Privacidade & LGPD
+          </a>
           <span>•</span>
-          <span className="text-muted-foreground">Termos de Uso</span>
+          <a href="/termos.html" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors">
+            Termos de Uso
+          </a>
         </div>
         <p className="text-[11px] text-muted-foreground">
           Bola na Rede: Carreira © 2026 • Inspirado no clássico futebol brasileiro (Brasfoot, Elifoot & New Star Soccer).

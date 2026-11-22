@@ -10,7 +10,10 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://bolanarede.app'),
+  metadataBase: new URL('https://bola-na-rede-psi.vercel.app'),
+  alternates: {
+    canonical: 'https://bola-na-rede-psi.vercel.app',
+  },
   title: 'Bola na Rede: Carreira | Simulador de Futebol Brasileiro',
   description: 'Modo Jogador (Sub-20 ao estrelato) e Modo Treinador com base brasileira, editor comunitário e suporte a PWA.',
   applicationName: 'Bola na Rede: Carreira',
@@ -23,7 +26,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'Bola na Rede: Carreira | Simulador de Futebol',
     description: 'Comece na base Sub-20 ou comande um clube da Série D até a glória nacional!',
-    url: 'https://bolanarede.app',
+    url: 'https://bola-na-rede-psi.vercel.app',
     siteName: 'Bola na Rede: Carreira',
     images: [
       {
@@ -54,8 +57,30 @@ export default function RootLayout({
   return (
     <html lang="pt-BR" suppressHydrationWarning className="dark">
       <head>
-        <meta name="color-scheme" content="dark light" />
+        <meta name="color-scheme" content="dark" />
+        <meta name="darkreader-lock" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              '@context': 'https://schema.org',
+              '@type': 'VideoGame',
+              name: 'Bola na Rede: Carreira',
+              url: 'https://bola-na-rede-psi.vercel.app',
+              description: 'Modo Jogador (Sub-20 ao estrelato) e Modo Treinador com base brasileira, editor comunitário e suporte a PWA.',
+              genre: ['Sports', 'Simulation', 'Management'],
+              gamePlatform: 'Web Browser',
+              applicationCategory: 'Game',
+              operatingSystem: 'All',
+              offers: {
+                '@type': 'Offer',
+                price: '0',
+                priceCurrency: 'BRL',
+              },
+            }),
+          }}
+        />
       </head>
       <body
         className={`${inter.variable} font-sans antialiased bg-background text-foreground min-h-screen overflow-x-hidden selection:bg-emerald-500 selection:text-white`}

@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://bola-na-rede-psi.vercel.app/sitemap.xml

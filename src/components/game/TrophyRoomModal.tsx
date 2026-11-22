@@ -15,6 +15,7 @@ interface TrophyDef {
   tier: 'world' | 'continental' | 'national' | 'cup' | 'individual' | 'youth';
   gloryPoints: number;
   icon: string;
+  image?: string;
   gradient: string;
   badgeColor: string;
   description: string;
@@ -27,6 +28,7 @@ const OFFICIAL_TROPHIES: TrophyDef[] = [
     tier: 'world',
     gloryPoints: 1000,
     icon: '🌍',
+    image: '/images/trophies/copa-do-mundo.webp',
     gradient: 'from-amber-400 via-yellow-500 to-amber-700',
     badgeColor: 'border-yellow-400 text-yellow-300',
     description: 'O ápice absoluto do futebol mundial com a Seleção Brasileira ou Internacional.',
@@ -37,6 +39,7 @@ const OFFICIAL_TROPHIES: TrophyDef[] = [
     tier: 'continental',
     gloryPoints: 500,
     icon: '⭐',
+    image: '/images/trophies/champions-league.webp',
     gradient: 'from-blue-400 via-indigo-600 to-slate-900',
     badgeColor: 'border-blue-400 text-blue-300',
     description: 'A taça das orelhudas: o maior torneio de clubes do planeta terra.',
@@ -47,6 +50,7 @@ const OFFICIAL_TROPHIES: TrophyDef[] = [
     tier: 'continental',
     gloryPoints: 450,
     icon: '🏆',
+    image: '/images/trophies/libertadores.webp',
     gradient: 'from-amber-500 via-amber-600 to-zinc-900',
     badgeColor: 'border-amber-400 text-amber-300',
     description: 'A glória eterna sul-americana: raça, caldeirão e tradição pesada.',
@@ -57,6 +61,7 @@ const OFFICIAL_TROPHIES: TrophyDef[] = [
     tier: 'individual',
     gloryPoints: 400,
     icon: '⚽',
+    image: '/images/trophies/bola-de-ouro.webp',
     gradient: 'from-yellow-300 via-amber-400 to-yellow-600',
     badgeColor: 'border-yellow-300 text-yellow-200',
     description: 'Consagração individual como o melhor jogador do planeta na temporada.',
@@ -67,6 +72,7 @@ const OFFICIAL_TROPHIES: TrophyDef[] = [
     tier: 'national',
     gloryPoints: 300,
     icon: '🇧🇷',
+    image: '/images/trophies/brasileirao-serie-a.webp',
     gradient: 'from-emerald-400 via-teal-600 to-emerald-950',
     badgeColor: 'border-emerald-400 text-emerald-300',
     description: '38 rodadas de pontos corridos da liga mais disputada das Américas.',
@@ -77,6 +83,7 @@ const OFFICIAL_TROPHIES: TrophyDef[] = [
     tier: 'cup',
     gloryPoints: 200,
     icon: '🥇',
+    image: '/images/trophies/copa-do-brasil.webp',
     gradient: 'from-cyan-400 via-blue-600 to-zinc-950',
     badgeColor: 'border-cyan-400 text-cyan-300',
     description: 'Mata-mata milionário com vaga direta na Copa Libertadores.',
@@ -87,6 +94,7 @@ const OFFICIAL_TROPHIES: TrophyDef[] = [
     tier: 'youth',
     gloryPoints: 100,
     icon: '🌱',
+    image: '/images/trophies/copinha-sub20.webp',
     gradient: 'from-emerald-500 via-green-600 to-zinc-950',
     badgeColor: 'border-green-400 text-green-300',
     description: 'O maior celeiro de jovens talentos da base nacional.',
@@ -235,10 +243,22 @@ export const TrophyRoomModal: React.FC<TrophyRoomModalProps> = ({ isOpen, onClos
                     }`}
                   >
                     <div className="flex items-start justify-between gap-2 mb-3">
-                      <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-2xl shadow-inner ${
-                        isUnlocked ? 'bg-amber-500/20 border border-amber-500/40' : 'bg-zinc-900 border border-zinc-800'
+                      <div className={`w-14 h-14 rounded-2xl flex items-center justify-center p-1.5 relative shadow-inner shrink-0 ${
+                        isUnlocked ? 'bg-amber-500/20 border border-amber-500/40' : 'bg-zinc-900/60 border border-zinc-800'
                       }`}>
-                        <span>{trophy.icon}</span>
+                        {trophy.image ? (
+                          <img
+                            src={trophy.image}
+                            alt={trophy.name}
+                            loading="lazy"
+                            decoding="async"
+                            className={`w-11 h-11 object-contain transition-all duration-300 ${
+                              isUnlocked ? 'drop-shadow-[0_0_12px_rgba(245,158,11,0.6)] scale-105' : 'grayscale opacity-40'
+                            }`}
+                          />
+                        ) : (
+                          <span className="text-2xl">{trophy.icon}</span>
+                        )}
                       </div>
 
                       <div className="text-right">

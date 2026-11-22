@@ -1,562 +1,537 @@
 #!/usr/bin/env python3
 """
-Gerador de Assets Oficiais do Bola na Rede: Carreira
-Cria imagens .webp otimizadas (qualidade 85, 512x512) com transparência e alta fidelidade visual:
-- Marcas Esportivas Oficiais (Nike, Adidas, Puma, Mizuno, Umbro, Under Armour)
-- Patrocinadores Oficiais (Betano, Pixbet, Emirates, Red Bull, Mastercard, Heineken, Spotify, Guaraná, Itaú, Brahma)
-- Chuteiras com design real e lendário (11 modelos)
-- Bolas com texturas e efeitos 3D (8 modelos)
-- Troféus Oficiais de Competições (7 taças)
+Gerador de Assets de Alta Fidelidade Visual (Vetor SVG -> PNG -> WebP Otimizado)
+Gera todos os 42 assets oficiais do jogo Bola na Rede: Carreira
 """
 
 import os
 import math
-from PIL import Image, ImageDraw, ImageFilter, ImageFont
+from PIL import Image
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 IMG_DIR = os.path.join(BASE_DIR, 'public', 'images')
+TMP_DIR = '/tmp/game_assets_gen'
 
-def ensure_dirs():
-    for sub in ['brands', 'sponsors', 'boots', 'balls', 'trophies']:
-        os.makedirs(os.path.join(IMG_DIR, sub), exist_ok=True)
+os.makedirs(TMP_DIR, exist_ok=True)
+for sub in ['brands', 'sponsors', 'boots', 'balls', 'trophies']:
+    os.makedirs(os.path.join(IMG_DIR, sub), exist_ok=True)
 
-def save_webp(image: Image.Image, rel_path: str):
-    full_path = os.path.join(IMG_DIR, rel_path)
-    image.save(full_path, 'WEBP', quality=85, method=6)
-    print(f"Salvo: {rel_path} ({os.path.getsize(full_path)} bytes)")
+def render_svg_to_webp(svg_content: str, rel_path: str):
+    svg_file = os.path.join(TMP_DIR, 'temp.svg')
+    png_file = os.path.join(TMP_DIR, 'temp.png')
+    webp_path = os.path.join(IMG_DIR, rel_path)
 
-# ==============================================================================
-# 1. MARCAS ESPORTIVAS (BRANDS)
-# ==============================================================================
-def create_brand_nike():
-    img = Image.new('RGBA', (512, 512), (0, 0, 0, 0))
-    draw = ImageDraw.Draw(img)
-    # Swoosh da Nike em curva suave e elegante
-    points = [
-        (90, 290), (140, 340), (220, 370), (320, 350), 
-        (450, 200), (460, 185), (445, 195), (315, 305), 
-        (220, 320), (145, 290), (90, 290)
-    ]
-    # Sombra
-    shadow_pts = [(x, y + 8) for x, y in points]
-    draw.polygon(shadow_pts, fill=(0, 0, 0, 120))
-    # Swoosh branco sólido com leve degradê
-    draw.polygon(points, fill=(255, 255, 255, 255))
-    save_webp(img, 'brands/nike.webp')
-
-def create_brand_adidas():
-    img = Image.new('RGBA', (512, 512), (0, 0, 0, 0))
-    draw = ImageDraw.Draw(img)
-    # 3 barras diagonais clássicas
-    bars = [
-        # (x, y, w, h)
-        [(140, 330), (185, 330), (245, 220), (200, 220)], # Barra 1 (baixa)
-        [(210, 330), (255, 330), (330, 160), (285, 160)], # Barra 2 (média)
-        [(280, 330), (325, 330), (415, 100), (370, 100)], # Barra 3 (alta)
-    ]
-    for bar in bars:
-        s_bar = [(x, y + 8) for x, y in bar]
-        draw.polygon(s_bar, fill=(0, 0, 0, 120))
-        draw.polygon(bar, fill=(255, 255, 255, 255))
-    save_webp(img, 'brands/adidas.webp')
-
-def create_brand_puma():
-    img = Image.new('RGBA', (512, 512), (0, 0, 0, 0))
-    draw = ImageDraw.Draw(img)
-    # Felino Puma saltando para a esquerda
-    pts = [
-        (380, 350), (360, 300), (320, 270), (250, 250), (190, 230),
-        (130, 210), (110, 180), (135, 175), (170, 195), (220, 205),
-        (280, 215), (340, 210), (390, 225), (410, 270), (420, 340), (380, 350)
-    ]
-    draw.polygon([(x, y + 6) for x, y in pts], fill=(0, 0, 0, 100))
-    draw.polygon(pts, fill=(255, 255, 255, 255))
-    # Pata dianteira estendida
-    draw.polygon([(110, 180), (70, 220), (85, 230), (125, 195)], fill=(255, 255, 255, 255))
-    save_webp(img, 'brands/puma.webp')
-
-def create_brand_mizuno():
-    img = Image.new('RGBA', (512, 512), (0, 0, 0, 0))
-    draw = ImageDraw.Draw(img)
-    # Runbird da Mizuno (asas dinâmicas cruzadas)
-    wing1 = [(120, 260), (260, 210), (400, 260), (260, 230)]
-    wing2 = [(160, 290), (260, 240), (360, 290), (260, 255)]
-    body = [(250, 170), (270, 170), (265, 340), (255, 340)]
-    draw.polygon(wing1, fill=(255, 255, 255, 255))
-    draw.polygon(wing2, fill=(255, 255, 255, 255))
-    draw.polygon(body, fill=(255, 255, 255, 255))
-    save_webp(img, 'brands/mizuno.webp')
-
-def create_brand_umbro():
-    img = Image.new('RGBA', (512, 512), (0, 0, 0, 0))
-    draw = ImageDraw.Draw(img)
-    # Duplo diamante clássico
-    # Diamante externo
-    ext = [(256, 120), (430, 256), (256, 392), (82, 256)]
-    # Furo do diamante externo
-    hole1 = [(256, 170), (370, 256), (256, 342), (142, 256)]
-    # Diamante interno
-    inte = [(256, 200), (330, 256), (256, 312), (182, 256)]
-    # Furo interno
-    hole2 = [(256, 230), (290, 256), (256, 282), (222, 256)]
+    with open(svg_file, 'w') as f:
+        f.write(svg_content)
     
-    draw.polygon(ext, fill=(255, 255, 255, 255))
-    draw.polygon(hole1, fill=(0, 0, 0, 0))
-    draw.polygon(inte, fill=(255, 255, 255, 255))
-    draw.polygon(hole2, fill=(0, 0, 0, 0))
-    save_webp(img, 'brands/umbro.webp')
-
-def create_brand_under_armour():
-    img = Image.new('RGBA', (512, 512), (0, 0, 0, 0))
-    draw = ImageDraw.Draw(img)
-    # Monograma UA entrelaçado
-    draw.arc([160, 140, 352, 332], start=180, end=0, fill=(255, 255, 255, 255), width=28)
-    draw.arc([160, 180, 352, 372], start=0, end=180, fill=(255, 255, 255, 255), width=28)
-    save_webp(img, 'brands/under-armour.webp')
-
-# ==============================================================================
-# 2. PATROCINADORES OFICIAIS (SPONSORS)
-# ==============================================================================
-def create_sponsor_betano():
-    img = Image.new('RGBA', (512, 512), (0, 0, 0, 0))
-    draw = ImageDraw.Draw(img)
-    # Círculo laranja característico com o 'B' vazado
-    draw.ellipse([80, 80, 432, 432], fill=(249, 115, 22, 255))
-    # 'b' moderno estilizado
-    draw.rectangle([180, 160, 220, 360], fill=(255, 255, 255, 255))
-    draw.ellipse([180, 220, 330, 360], outline=(255, 255, 255, 255), width=36)
-    save_webp(img, 'sponsors/betano.webp')
-
-def create_sponsor_pixbet():
-    img = Image.new('RGBA', (512, 512), (0, 0, 0, 0))
-    draw = ImageDraw.Draw(img)
-    # Fundo estilizado com losango e tipografia
-    draw.rounded_rectangle([60, 140, 452, 372], radius=40, fill=(15, 23, 42, 255), outline=(16, 185, 129, 255), width=8)
-    # Losango PIX verde
-    pts = [(160, 256), (220, 196), (280, 256), (220, 316)]
-    draw.polygon(pts, fill=(16, 185, 129, 255))
-    pts_inner = [(185, 256), (220, 221), (255, 256), (220, 291)]
-    draw.polygon(pts_inner, fill=(15, 23, 42, 255))
-    # Barras 'BET' azul celeste
-    draw.rectangle([310, 210, 410, 240], fill=(56, 189, 248, 255))
-    draw.rectangle([310, 250, 380, 275], fill=(56, 189, 248, 255))
-    draw.rectangle([310, 285, 410, 310], fill=(56, 189, 248, 255))
-    save_webp(img, 'sponsors/pixbet.webp')
-
-def create_sponsor_emirates():
-    img = Image.new('RGBA', (512, 512), (0, 0, 0, 0))
-    draw = ImageDraw.Draw(img)
-    # Fundo vermelho Fly Emirates
-    draw.rounded_rectangle([50, 120, 462, 392], radius=32, fill=(220, 38, 38, 255))
-    # Tipografia branca representativa
-    # 'Fly'
-    draw.rectangle([100, 170, 130, 240], fill=(255, 255, 255, 255))
-    draw.rectangle([130, 170, 180, 195], fill=(255, 255, 255, 255))
-    draw.rectangle([130, 205, 165, 225], fill=(255, 255, 255, 255))
-    # 'Emirates'
-    draw.rectangle([100, 270, 412, 295], fill=(255, 255, 255, 255))
-    draw.rectangle([100, 320, 412, 345], fill=(255, 255, 255, 255))
-    save_webp(img, 'sponsors/emirates.webp')
-
-def create_sponsor_redbull():
-    img = Image.new('RGBA', (512, 512), (0, 0, 0, 0))
-    draw = ImageDraw.Draw(img)
-    # Sol dourado
-    draw.ellipse([156, 156, 356, 356], fill=(250, 204, 21, 255))
-    # Touro Esquerdo (vermelho)
-    t1 = [(80, 320), (140, 270), (220, 250), (250, 230), (210, 290), (140, 340)]
-    draw.polygon(t1, fill=(225, 29, 72, 255))
-    # Chifre
-    draw.line([(220, 250), (240, 200)], fill=(255, 255, 255, 255), width=6)
-    # Touro Direito (vermelho)
-    t2 = [(432, 320), (372, 270), (292, 250), (262, 230), (302, 290), (372, 340)]
-    draw.polygon(t2, fill=(225, 29, 72, 255))
-    # Chifre
-    draw.line([(292, 250), (272, 200)], fill=(255, 255, 255, 255), width=6)
-    save_webp(img, 'sponsors/redbull.webp')
-
-def create_sponsor_mastercard():
-    img = Image.new('RGBA', (512, 512), (0, 0, 0, 0))
-    draw = ImageDraw.Draw(img)
-    # Círculo Esquerdo Vermelho
-    draw.ellipse([90, 136, 330, 376], fill=(235, 0, 27, 230))
-    # Círculo Direito Amarelo / Dourado com blend
-    overlay = Image.new('RGBA', (512, 512), (0, 0, 0, 0))
-    d_over = ImageDraw.Draw(overlay)
-    d_over.ellipse([182, 136, 422, 376], fill=(247, 158, 27, 230))
-    img = Image.alpha_composite(img, overlay)
-    save_webp(img, 'sponsors/mastercard.webp')
-
-def create_sponsor_heineken():
-    img = Image.new('RGBA', (512, 512), (0, 0, 0, 0))
-    draw = ImageDraw.Draw(img)
-    # Fundo verde icônico
-    draw.rounded_rectangle([60, 130, 452, 382], radius=40, fill=(2, 114, 53, 255))
-    # Estrela vermelha de cinco pontas
-    cx, cy = 256, 256
-    r_out, r_in = 75, 32
-    pts = []
-    for i in range(10):
-        angle = i * (math.pi / 5) - math.pi / 2
-        r = r_out if i % 2 == 0 else r_in
-        pts.append((cx + r * math.cos(angle), cy + r * math.sin(angle)))
-    draw.polygon(pts, fill=(220, 38, 38, 255), outline=(255, 255, 255, 255), width=4)
-    save_webp(img, 'sponsors/heineken.webp')
-
-def create_sponsor_spotify():
-    img = Image.new('RGBA', (512, 512), (0, 0, 0, 0))
-    draw = ImageDraw.Draw(img)
-    # Círculo verde Spotify
-    draw.ellipse([80, 80, 432, 432], fill=(30, 215, 96, 255))
-    # 3 ondas sonoras pretas
-    draw.arc([130, 140, 390, 380], start=195, end=335, fill=(18, 18, 18, 255), width=32)
-    draw.arc([150, 180, 370, 390], start=195, end=335, fill=(18, 18, 18, 255), width=28)
-    draw.arc([170, 220, 350, 400], start=195, end=335, fill=(18, 18, 18, 255), width=24)
-    save_webp(img, 'sponsors/spotify.webp')
-
-def create_sponsor_guarana():
-    img = Image.new('RGBA', (512, 512), (0, 0, 0, 0))
-    draw = ImageDraw.Draw(img)
-    # Folha verde
-    draw.ellipse([120, 120, 392, 392], fill=(22, 101, 52, 255))
-    # Baga do Guaraná (fruto vermelho)
-    draw.ellipse([180, 180, 332, 332], fill=(220, 38, 38, 255))
-    # Pupila/semente negra com branco (olho do guaraná)
-    draw.ellipse([216, 216, 296, 296], fill=(255, 255, 255, 255))
-    draw.ellipse([236, 236, 276, 276], fill=(15, 23, 42, 255))
-    save_webp(img, 'sponsors/guarana.webp')
-
-def create_sponsor_itau():
-    img = Image.new('RGBA', (512, 512), (0, 0, 0, 0))
-    draw = ImageDraw.Draw(img)
-    # Cubo Itaú laranja com contorno azul
-    draw.rounded_rectangle([70, 70, 442, 442], radius=60, fill=(236, 112, 20, 255), outline=(14, 53, 145, 255), width=18)
-    # Faixa azul central
-    draw.rounded_rectangle([130, 210, 382, 302], radius=20, fill=(14, 53, 145, 255))
-    save_webp(img, 'sponsors/itau.webp')
-
-def create_sponsor_brahma():
-    img = Image.new('RGBA', (512, 512), (0, 0, 0, 0))
-    draw = ImageDraw.Draw(img)
-    # Faixa vermelha e dourada
-    draw.polygon([(60, 200), (452, 160), (452, 312), (60, 352)], fill=(185, 28, 28, 255))
-    draw.polygon([(80, 215), (432, 175), (432, 297), (80, 337)], outline=(245, 158, 11, 255), width=6)
-    save_webp(img, 'sponsors/brahma.webp')
-
-# ==============================================================================
-# 3. CHUTEIRAS (BOOTS - 11 MODELOS)
-# ==============================================================================
-def draw_base_cleat(draw, upper_color, sole_color, accent_color, brand_style='nike'):
-    # Sola e travas
-    draw.polygon([(80, 350), (430, 350), (440, 365), (70, 365)], fill=sole_color)
-    # 4 travas na frente, 2 atrás
-    cleat_pts = [
-        [(90, 365), (105, 365), (100, 395), (85, 395)],
-        [(130, 365), (145, 365), (140, 395), (125, 395)],
-        [(360, 365), (375, 365), (370, 395), (355, 395)],
-        [(400, 365), (415, 365), (410, 395), (395, 395)],
-    ]
-    for cp in cleat_pts:
-        draw.polygon(cp, fill=accent_color)
+    # Renderizar com inkscape em 512x512
+    os.system(f"inkscape {svg_file} -o {png_file} -w 512 -h 512 >/dev/null 2>&1")
     
-    # Cabedal aerodinâmico da chuteira
-    cabedal = [
-        (80, 350), (70, 300), (95, 240), (150, 230), (220, 220), 
-        (300, 260), (380, 280), (440, 320), (430, 350)
-    ]
-    draw.polygon(cabedal, fill=upper_color)
-
-    # Detalhe de calcanhar
-    draw.polygon([(70, 300), (95, 240), (130, 250), (80, 350)], fill=accent_color)
-
-    # Cadarço e língua
-    draw.line([(150, 230), (240, 260)], fill=(255, 255, 255, 200), width=4)
-    draw.line([(170, 235), (250, 270)], fill=(255, 255, 255, 200), width=4)
-    draw.line([(190, 240), (260, 280)], fill=(255, 255, 255, 200), width=4)
-
-    # Símbolo da marca estilizado na lateral
-    if brand_style == 'nike':
-        swoosh = [(180, 290), (260, 290), (340, 250), (280, 310), (180, 290)]
-        draw.polygon(swoosh, fill=accent_color)
-    elif brand_style == 'adidas':
-        draw.line([(220, 260), (200, 330)], fill=accent_color, width=12)
-        draw.line([(250, 260), (230, 330)], fill=accent_color, width=12)
-        draw.line([(280, 260), (260, 330)], fill=accent_color, width=12)
-    elif brand_style == 'puma':
-        puma_line = [(150, 280), (230, 300), (330, 270), (280, 320)]
-        draw.polygon(puma_line, fill=accent_color)
-    elif brand_style == 'mizuno':
-        draw.polygon([(200, 300), (260, 270), (310, 300), (260, 285)], fill=accent_color)
-    elif brand_style == 'umbro':
-        draw.polygon([(240, 285), (275, 265), (310, 285), (275, 305)], fill=accent_color)
-    elif brand_style == 'fenix':
-        draw.polygon([(180, 310), (270, 250), (330, 300), (270, 270)], fill=(245, 158, 11, 255))
-    elif brand_style == 'gold':
-        draw.polygon([(180, 290), (240, 240), (280, 270), (320, 240), (300, 320)], fill=(255, 255, 255, 255))
-
-def create_all_boots():
-    boots_data = [
-        ('boots/mercurial-pro.webp', (2, 132, 199, 255), (15, 23, 42, 255), (250, 204, 21, 255), 'nike'),
-        ('boots/predator-accuracy.webp', (24, 24, 27, 255), (225, 29, 72, 255), (255, 255, 255, 255), 'adidas'),
-        ('boots/future-ultimate.webp', (79, 70, 229, 255), (249, 115, 22, 255), (249, 115, 22, 255), 'puma'),
-        ('boots/morelia-neo.webp', (244, 244, 245, 255), (220, 38, 38, 255), (220, 38, 38, 255), 'mizuno'),
-        ('boots/speciali-classica.webp', (18, 18, 18, 255), (244, 244, 245, 255), (244, 244, 245, 255), 'umbro'),
-        ('boots/fenix-carbono.webp', (39, 39, 42, 255), (217, 119, 6, 255), (245, 158, 11, 255), 'fenix'),
-        ('boots/coroa-imperial.webp', (234, 179, 8, 255), (202, 138, 4, 255), (254, 240, 138, 255), 'gold'),
-        ('boots/canhao-powerstrike.webp', (185, 28, 28, 255), (15, 23, 42, 255), (254, 202, 202, 255), 'nike'),
-        ('boots/relampago-speed.webp', (234, 179, 8, 255), (126, 34, 206, 255), (168, 85, 247, 255), 'nike'),
-        ('boots/ginga-street.webp', (30, 41, 59, 255), (16, 185, 129, 255), (244, 63, 94, 255), 'puma'),
-        ('boots/paredao-gk.webp', (5, 150, 105, 255), (71, 85, 105, 255), (203, 213, 225, 255), 'adidas'),
-    ]
-    for rel_path, upper, sole, accent, style in boots_data:
-        img = Image.new('RGBA', (512, 512), (0, 0, 0, 0))
-        draw = ImageDraw.Draw(img)
-        draw_base_cleat(draw, upper, sole, accent, style)
-        save_webp(img, rel_path)
+    # Otimizar com Pillow para WebP qualidade 85
+    if os.path.exists(png_file):
+        img = Image.open(png_file)
+        img.save(webp_path, 'WEBP', quality=85, method=6)
+        print(f"✓ Gerado: {rel_path} ({os.path.getsize(webp_path)} bytes)")
+    else:
+        print(f"✗ Falha ao renderizar {rel_path}")
 
 # ==============================================================================
-# 4. BOLAS COM TEXTURAS E FÍSICA (BALLS - 8 MODELOS)
+# MARCAS ESPORTIVAS (BRANDS)
 # ==============================================================================
-def create_ball_capotao():
-    img = Image.new('RGBA', (512, 512), (0, 0, 0, 0))
-    draw = ImageDraw.Draw(img)
-    # Esfera base
-    draw.ellipse([56, 56, 456, 456], fill=(244, 244, 245, 255), outline=(24, 24, 27, 255), width=6)
-    # Pentágono preto central
-    cx, cy = 256, 256
-    pts = []
-    for i in range(5):
-        ang = i * (2 * math.pi / 5) - math.pi / 2
-        pts.append((cx + 70 * math.cos(ang), cy + 70 * math.sin(ang)))
-    draw.polygon(pts, fill=(24, 24, 27, 255))
-    # Linhas de gomos radiais
-    for p in pts:
-        dx = (p[0] - cx) * 1.8 + cx
-        dy = (p[1] - cy) * 1.8 + cy
-        draw.line([p, (dx, dy)], fill=(24, 24, 27, 255), width=5)
-    save_webp(img, 'balls/capotao-classica.webp')
+def gen_brands():
+    # 1. Nike
+    render_svg_to_webp('''<svg viewBox="0 0 512 512" width="512" height="512" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <filter id="glow"><feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#38bdf8" flood-opacity="0.3"/></filter>
+      </defs>
+      <path d="M70,300 C130,370 230,400 340,360 C460,310 475,200 480,180 C440,240 340,330 230,335 C150,335 100,285 70,300 Z" fill="#ffffff" filter="url(#glow)"/>
+    </svg>''', 'brands/nike.webp')
 
-def create_ball_jabulani():
-    img = Image.new('RGBA', (512, 512), (0, 0, 0, 0))
-    draw = ImageDraw.Draw(img)
-    draw.ellipse([56, 56, 456, 456], fill=(255, 255, 255, 255), outline=(39, 39, 42, 255), width=5)
-    # Painéis triangulares coloridos da África do Sul 2010
-    colors = [(234, 179, 8), (220, 38, 38), (37, 99, 235), (22, 163, 74)]
-    for i, col in enumerate(colors):
-        ang = i * (math.pi / 2)
-        x = 256 + 110 * math.cos(ang)
-        y = 256 + 110 * math.sin(ang)
-        draw.ellipse([x - 50, y - 50, x + 50, y + 50], outline=col, width=14)
-    save_webp(img, 'balls/jabulani.webp')
+    # 2. Adidas
+    render_svg_to_webp('''<svg viewBox="0 0 512 512" width="512" height="512" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <filter id="glow"><feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#ffffff" flood-opacity="0.2"/></filter>
+      </defs>
+      <g fill="#ffffff" filter="url(#glow)">
+        <polygon points="120,380 180,380 250,260 190,260"/>
+        <polygon points="210,380 270,380 350,200 290,200"/>
+        <polygon points="300,380 360,380 450,140 390,140"/>
+      </g>
+    </svg>''', 'brands/adidas.webp')
 
-def create_ball_brazuca():
-    img = Image.new('RGBA', (512, 512), (0, 0, 0, 0))
-    draw = ImageDraw.Draw(img)
-    draw.ellipse([56, 56, 456, 456], fill=(255, 255, 255, 255), outline=(30, 41, 59, 255), width=5)
-    # Ondas curvas da Brazuca 2014 (verde, azul e ouro)
-    draw.arc([80, 80, 432, 432], start=45, end=225, fill=(37, 99, 235, 255), width=24)
-    draw.arc([100, 100, 412, 412], start=225, end=405, fill=(22, 163, 74, 255), width=24)
-    draw.arc([130, 130, 382, 382], start=0, end=180, fill=(234, 179, 8, 255), width=18)
-    save_webp(img, 'balls/brazuca.webp')
+    # 3. Puma
+    render_svg_to_webp('''<svg viewBox="0 0 512 512" width="512" height="512" xmlns="http://www.w3.org/2000/svg">
+      <path d="M410,330 C380,280 330,240 250,230 C180,220 120,200 90,170 C120,165 170,185 220,195 C290,205 360,200 400,220 C420,260 430,320 410,330 Z" fill="#ffffff"/>
+      <polygon points="90,170 50,210 70,225 110,185" fill="#ffffff"/>
+      <polygon points="410,330 380,370 360,350 390,320" fill="#ffffff"/>
+    </svg>''', 'brands/puma.webp')
 
-def create_ball_laranja():
-    img = Image.new('RGBA', (512, 512), (0, 0, 0, 0))
-    draw = ImageDraw.Draw(img)
-    draw.ellipse([56, 56, 456, 456], fill=(249, 115, 22, 255), outline=(194, 65, 12, 255), width=6)
-    # Gomos em preto e amarelo neon para jogo na chuva
-    draw.arc([80, 80, 432, 432], start=30, end=150, fill=(24, 24, 27, 255), width=16)
-    draw.arc([80, 80, 432, 432], start=210, end=330, fill=(250, 204, 21, 255), width=16)
-    save_webp(img, 'balls/laranja-neve.webp')
+    # 4. Mizuno
+    render_svg_to_webp('''<svg viewBox="0 0 512 512" width="512" height="512" xmlns="http://www.w3.org/2000/svg">
+      <g fill="#ffffff">
+        <path d="M100,280 C200,230 320,230 412,280 C320,250 200,250 100,280 Z"/>
+        <path d="M140,310 C220,270 300,270 372,310 C300,285 220,285 140,310 Z"/>
+        <polygon points="246,160 266,160 260,360 252,360"/>
+      </g>
+    </svg>''', 'brands/mizuno.webp')
 
-def create_ball_meteoro():
-    img = Image.new('RGBA', (512, 512), (0, 0, 0, 0))
-    draw = ImageDraw.Draw(img)
-    # Esfera de magma vulcânico
-    draw.ellipse([56, 56, 456, 456], fill=(153, 27, 27, 255), outline=(245, 158, 11, 255), width=8)
-    # Fissuras de fogo incandescente
-    draw.line([(100, 160), (220, 240), (200, 350)], fill=(250, 204, 21, 255), width=10)
-    draw.line([(220, 240), (380, 200), (420, 310)], fill=(251, 146, 60, 255), width=8)
-    draw.line([(160, 380), (320, 340), (370, 410)], fill=(254, 240, 138, 255), width=6)
-    save_webp(img, 'balls/meteoro-fogo.webp')
+    # 5. Umbro
+    render_svg_to_webp('''<svg viewBox="0 0 512 512" width="512" height="512" xmlns="http://www.w3.org/2000/svg">
+      <polygon points="256,100 440,256 256,412 72,256" fill="#ffffff"/>
+      <polygon points="256,160 370,256 256,352 142,256" fill="#09090b"/>
+      <polygon points="256,190 330,256 256,322 182,256" fill="#ffffff"/>
+      <polygon points="256,220 286,256 256,292 226,256" fill="#09090b"/>
+    </svg>''', 'brands/umbro.webp')
 
-def create_ball_cyber():
-    img = Image.new('RGBA', (512, 512), (0, 0, 0, 0))
-    draw = ImageDraw.Draw(img)
-    # Esfera preta cyber
-    draw.ellipse([56, 56, 456, 456], fill=(9, 9, 11, 255), outline=(6, 182, 212, 255), width=8)
-    # Circuitos neon ciano e magenta
-    draw.ellipse([120, 120, 392, 392], outline=(6, 182, 212, 255), width=6)
-    draw.ellipse([180, 180, 332, 332], outline=(236, 72, 153, 255), width=6)
-    draw.line([(256, 56), (256, 456)], fill=(6, 182, 212, 255), width=4)
-    draw.line([(56, 256), (456, 256)], fill=(236, 72, 153, 255), width=4)
-    save_webp(img, 'balls/cyber-neon.webp')
-
-def create_ball_ouro():
-    img = Image.new('RGBA', (512, 512), (0, 0, 0, 0))
-    draw = ImageDraw.Draw(img)
-    # Esfera dourada metálica
-    draw.ellipse([56, 56, 456, 456], fill=(234, 179, 8, 255), outline=(202, 138, 4, 255), width=8)
-    # Gomos geométricos cinzelados em ouro reluzente
-    cx, cy = 256, 256
-    pts = []
-    for i in range(5):
-        ang = i * (2 * math.pi / 5) - math.pi / 2
-        pts.append((cx + 80 * math.cos(ang), cy + 80 * math.sin(ang)))
-    draw.polygon(pts, outline=(254, 240, 138, 255), width=6)
-    # Brilho estelar
-    draw.ellipse([140, 120, 200, 180], fill=(255, 255, 255, 220))
-    save_webp(img, 'balls/bola-de-ouro.webp')
-
-def create_ball_varzea():
-    img = Image.new('RGBA', (512, 512), (0, 0, 0, 0))
-    draw = ImageDraw.Draw(img)
-    # Couro marrom rústico envelhecido
-    draw.ellipse([56, 56, 456, 456], fill=(120, 53, 15, 255), outline=(69, 26, 3, 255), width=8)
-    # Costuras grossas em X
-    for y in [180, 256, 330]:
-        for x in [160, 230, 300]:
-            draw.line([(x - 12, y - 12), (x + 12, y + 12)], fill=(217, 119, 6, 255), width=5)
-            draw.line([(x + 12, y - 12), (x - 12, y + 12)], fill=(217, 119, 6, 255), width=5)
-    save_webp(img, 'balls/bola-de-varzea.webp')
+    # 6. Under Armour
+    render_svg_to_webp('''<svg viewBox="0 0 512 512" width="512" height="512" xmlns="http://www.w3.org/2000/svg">
+      <path d="M160,200 C160,130 352,130 352,200 L300,200 C300,165 212,165 212,200 Z" fill="#ffffff"/>
+      <path d="M160,312 C160,382 352,382 352,312 L300,312 C300,347 212,347 212,312 Z" fill="#ffffff"/>
+      <rect x="236" y="180" width="40" height="152" fill="#ffffff"/>
+    </svg>''', 'brands/under-armour.webp')
 
 # ==============================================================================
-# 5. TROFÉUS OFICIAIS (TROPHIES - 7 TAÇAS)
+# PATROCINADORES OFICIAIS (SPONSORS)
 # ==============================================================================
-def create_trophy_copa_mundo():
-    img = Image.new('RGBA', (512, 512), (0, 0, 0, 0))
-    draw = ImageDraw.Draw(img)
-    # Base circular dourada com faixas verdes de malaquita
-    draw.rectangle([170, 420, 342, 470], fill=(202, 138, 4, 255))
-    draw.rectangle([170, 435, 342, 445], fill=(22, 101, 52, 255))
-    draw.rectangle([170, 455, 342, 465], fill=(22, 101, 52, 255))
-    # Corpo espiralado de ouro
-    draw.polygon([(200, 420), (220, 220), (292, 220), (312, 420)], fill=(234, 179, 8, 255))
-    # Globo terrestre sustentado no topo
-    draw.ellipse([186, 90, 326, 230], fill=(250, 204, 21, 255), outline=(202, 138, 4, 255), width=6)
-    draw.arc([196, 100, 316, 220], start=30, end=150, fill=(202, 138, 4, 255), width=8)
-    save_webp(img, 'trophies/copa-do-mundo.webp')
+def gen_sponsors():
+    # 1. Betano
+    render_svg_to_webp('''<svg viewBox="0 0 512 512" width="512" height="512" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <radialGradient id="bg"><stop offset="0%" stop-color="#ff6b00"/><stop offset="100%" stop-color="#ea580c"/></radialGradient>
+      </defs>
+      <circle cx="256" cy="256" r="220" fill="url(#bg)"/>
+      <rect x="180" y="140" width="40" height="232" rx="10" fill="#ffffff"/>
+      <circle cx="280" cy="285" r="70" fill="none" stroke="#ffffff" stroke-width="40"/>
+    </svg>''', 'sponsors/betano.webp')
 
-def create_trophy_champions():
-    img = Image.new('RGBA', (512, 512), (0, 0, 0, 0))
-    draw = ImageDraw.Draw(img)
-    # A "Orelhuda" prateada
-    # Base
-    draw.rectangle([180, 430, 332, 470], fill=(161, 161, 170, 255))
-    # Haste
-    draw.rectangle([236, 370, 276, 430], fill=(212, 212, 216, 255))
-    # Bojo da taça
-    draw.polygon([(160, 160), (352, 160), (320, 370), (192, 370)], fill=(244, 244, 245, 255), outline=(161, 161, 170, 255), width=6)
-    # As grandes alças laterais ("orelhas")
-    draw.arc([80, 150, 220, 320], start=90, end=270, fill=(212, 212, 216, 255), width=18)
-    draw.arc([292, 150, 432, 320], start=270, end=90, fill=(212, 212, 216, 255), width=18)
-    save_webp(img, 'trophies/champions-league.webp')
+    # 2. Pixbet
+    render_svg_to_webp('''<svg viewBox="0 0 512 512" width="512" height="512" xmlns="http://www.w3.org/2000/svg">
+      <rect x="40" y="130" width="432" height="252" rx="40" fill="#090d16" stroke="#10b981" stroke-width="6"/>
+      <polygon points="150,256 210,196 270,256 210,316" fill="#10b981"/>
+      <polygon points="175,256 210,221 245,256 210,291" fill="#090d16"/>
+      <path d="M310,200 L400,200 M310,256 L370,256 M310,312 L400,312" stroke="#38bdf8" stroke-width="26" stroke-linecap="round"/>
+    </svg>''', 'sponsors/pixbet.webp')
 
-def create_trophy_libertadores():
-    img = Image.new('RGBA', (512, 512), (0, 0, 0, 0))
-    draw = ImageDraw.Draw(img)
-    # Pedestal de madeira com plaquinhas dos campeões
-    draw.rectangle([170, 260, 342, 470], fill=(120, 53, 15, 255), outline=(69, 26, 3, 255), width=6)
-    # Placas douradas
-    for y in [290, 340, 390, 440]:
-        for x in [185, 240, 295]:
-            draw.rectangle([x, y - 15, x + 35, y + 10], fill=(245, 158, 11, 255))
-    # Bojo prateado
-    draw.ellipse([196, 120, 316, 260], fill=(244, 244, 245, 255), outline=(161, 161, 170, 255), width=5)
-    # Estatueta dourada no topo
-    draw.ellipse([240, 60, 272, 92], fill=(245, 158, 11, 255))
-    draw.line([(256, 92), (256, 120)], fill=(245, 158, 11, 255), width=8)
-    save_webp(img, 'trophies/libertadores.webp')
+    # 3. Emirates
+    render_svg_to_webp('''<svg viewBox="0 0 512 512" width="512" height="512" xmlns="http://www.w3.org/2000/svg">
+      <rect x="40" y="110" width="432" height="292" rx="36" fill="#dc2626"/>
+      <text x="256" y="220" font-family="sans-serif" font-size="64" font-weight="900" fill="#ffffff" text-anchor="middle">Fly</text>
+      <text x="256" y="320" font-family="sans-serif" font-size="76" font-weight="900" fill="#ffffff" text-anchor="middle" letter-spacing="4">Emirates</text>
+    </svg>''', 'sponsors/emirates.webp')
 
-def create_trophy_brasileirao():
-    img = Image.new('RGBA', (512, 512), (0, 0, 0, 0))
-    draw = ImageDraw.Draw(img)
-    # Base
-    draw.rectangle([170, 420, 342, 470], fill=(39, 39, 42, 255))
-    # Arco dourado moderno
-    draw.arc([130, 80, 382, 420], start=180, end=0, fill=(234, 179, 8, 255), width=28)
-    # Esfera central verde/amarela
-    draw.ellipse([206, 180, 306, 280], fill=(22, 163, 74, 255), outline=(234, 179, 8, 255), width=8)
-    draw.ellipse([236, 210, 276, 250], fill=(234, 179, 8, 255))
-    save_webp(img, 'trophies/brasileirao-serie-a.webp')
+    # 4. Red Bull
+    render_svg_to_webp('''<svg viewBox="0 0 512 512" width="512" height="512" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="256" cy="256" r="120" fill="#facc15"/>
+      <path d="M80,310 C140,260 220,240 250,220 C220,270 160,330 80,310 Z" fill="#e11d48"/>
+      <line x1="220" y1="240" x2="245" y2="190" stroke="#ffffff" stroke-width="8" stroke-linecap="round"/>
+      <path d="M432,310 C372,260 292,240 262,220 C292,270 352,330 432,310 Z" fill="#e11d48"/>
+      <line x1="292" y1="240" x2="267" y2="190" stroke="#ffffff" stroke-width="8" stroke-linecap="round"/>
+    </svg>''', 'sponsors/redbull.webp')
 
-def create_trophy_copa_brasil():
-    img = Image.new('RGBA', (512, 512), (0, 0, 0, 0))
-    draw = ImageDraw.Draw(img)
-    # Base prateada
-    draw.rectangle([180, 420, 332, 470], fill=(161, 161, 170, 255))
-    # Corpo taça com laço estilizado
-    draw.polygon([(170, 160), (342, 160), (290, 420), (222, 420)], fill=(244, 244, 245, 255), outline=(234, 179, 8, 255), width=6)
-    # Faixa verde e amarela
-    draw.line([(180, 260), (332, 260)], fill=(22, 163, 74, 255), width=14)
-    draw.line([(180, 280), (332, 280)], fill=(234, 179, 8, 255), width=10)
-    save_webp(img, 'trophies/copa-do-brasil.webp')
+    # 5. Mastercard
+    render_svg_to_webp('''<svg viewBox="0 0 512 512" width="512" height="512" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="190" cy="256" r="130" fill="#eb001b"/>
+      <circle cx="322" cy="256" r="130" fill="#f79e1b" fill-opacity="0.85"/>
+    </svg>''', 'sponsors/mastercard.webp')
 
-def create_trophy_ballon_dor():
-    img = Image.new('RGBA', (512, 512), (0, 0, 0, 0))
-    draw = ImageDraw.Draw(img)
-    # Base de pirita rochosa preta/dourada
-    draw.polygon([(150, 470), (180, 340), (332, 340), (362, 470)], fill=(24, 24, 27, 255), outline=(202, 138, 4, 255), width=4)
-    # A grande bola de ouro cinzelada
-    draw.ellipse([146, 80, 366, 300], fill=(234, 179, 8, 255), outline=(202, 138, 4, 255), width=8)
-    draw.ellipse([190, 110, 250, 170], fill=(254, 240, 138, 220))
-    save_webp(img, 'trophies/bola-de-ouro.webp')
+    # 6. Heineken
+    render_svg_to_webp('''<svg viewBox="0 0 512 512" width="512" height="512" xmlns="http://www.w3.org/2000/svg">
+      <rect x="40" y="120" width="432" height="272" rx="40" fill="#007236"/>
+      <polygon points="256,160 278,228 350,228 292,270 314,338 256,296 198,338 220,270 162,228 234,228" fill="#e11d48" stroke="#ffffff" stroke-width="4"/>
+    </svg>''', 'sponsors/heineken.webp')
 
-def create_trophy_copinha():
-    img = Image.new('RGBA', (512, 512), (0, 0, 0, 0))
-    draw = ImageDraw.Draw(img)
-    # Base de mármore
-    draw.rectangle([180, 420, 332, 470], fill=(212, 212, 216, 255))
-    # Taça clássica dourada
-    draw.polygon([(160, 180), (352, 180), (300, 380), (212, 380)], fill=(245, 158, 11, 255), outline=(180, 83, 9, 255), width=6)
-    # Estrela no centro
-    draw.ellipse([236, 240, 276, 280], fill=(255, 255, 255, 255))
-    save_webp(img, 'trophies/copinha-sub20.webp')
+    # 7. Spotify
+    render_svg_to_webp('''<svg viewBox="0 0 512 512" width="512" height="512" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="256" cy="256" r="220" fill="#1ed760"/>
+      <path d="M120,200 C200,160 320,160 400,200" stroke="#121212" stroke-width="36" stroke-linecap="round" fill="none"/>
+      <path d="M140,250 C210,215 310,215 380,250" stroke="#121212" stroke-width="30" stroke-linecap="round" fill="none"/>
+      <path d="M165,300 C220,275 300,275 355,300" stroke="#121212" stroke-width="24" stroke-linecap="round" fill="none"/>
+    </svg>''', 'sponsors/spotify.webp')
+
+    # 8. Guaraná Antarctica
+    render_svg_to_webp('''<svg viewBox="0 0 512 512" width="512" height="512" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="256" cy="256" r="210" fill="#166534" stroke="#eab308" stroke-width="8"/>
+      <circle cx="256" cy="256" r="90" fill="#dc2626"/>
+      <circle cx="256" cy="256" r="50" fill="#ffffff"/>
+      <circle cx="256" cy="256" r="26" fill="#0f172a"/>
+    </svg>''', 'sponsors/guarana.webp')
+
+    # 9. Itaú
+    render_svg_to_webp('''<svg viewBox="0 0 512 512" width="512" height="512" xmlns="http://www.w3.org/2000/svg">
+      <rect x="60" y="60" width="392" height="392" rx="70" fill="#ec7014" stroke="#0e3591" stroke-width="18"/>
+      <rect x="130" y="210" width="252" height="92" rx="20" fill="#0e3591"/>
+      <text x="256" y="278" font-family="sans-serif" font-size="56" font-weight="900" fill="#ec7014" text-anchor="middle">Itaú</text>
+    </svg>''', 'sponsors/itau.webp')
+
+    # 10. Brahma
+    render_svg_to_webp('''<svg viewBox="0 0 512 512" width="512" height="512" xmlns="http://www.w3.org/2000/svg">
+      <polygon points="40,210 472,170 472,302 40,342" fill="#b91c1c" stroke="#f59e0b" stroke-width="8"/>
+      <text x="256" y="275" font-family="sans-serif" font-size="64" font-weight="900" fill="#ffffff" text-anchor="middle" letter-spacing="4">BRAHMA</text>
+    </svg>''', 'sponsors/brahma.webp')
+
+# ==============================================================================
+# CHUTEIRAS (BOOTS)
+# ==============================================================================
+def gen_boot(rel_path, primary_grad, brand_type, accent_color, extra_elements=''):
+    svg = f'''<svg viewBox="0 0 512 512" width="512" height="512" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        {primary_grad}
+        <radialGradient id="soleGlow" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="{accent_color}" stop-opacity="0.3" />
+          <stop offset="100%" stop-color="{accent_color}" stop-opacity="0" />
+        </radialGradient>
+        <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+          <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="{accent_color}" flood-opacity="0.5"/>
+        </filter>
+      </defs>
+
+      <!-- Brilho de Apoio -->
+      <ellipse cx="256" cy="350" rx="210" ry="50" fill="url(#soleGlow)" />
+
+      <!-- Travas Profissionais -->
+      <polygon points="120,350 145,350 138,400 115,400" fill="{accent_color}" />
+      <polygon points="170,350 195,350 188,400 165,400" fill="{accent_color}" />
+      <polygon points="320,350 345,350 338,400 315,400" fill="{accent_color}" />
+      <polygon points="370,350 395,350 388,400 365,400" fill="{accent_color}" />
+      <polygon points="415,340 435,340 430,385 412,385" fill="{accent_color}" />
+
+      <!-- Placa de Solado -->
+      <path d="M85,340 C140,355 240,355 310,345 C380,335 430,330 455,335 C458,345 440,360 400,362 C300,368 180,368 95,358 C75,355 78,342 85,340 Z" fill="#0f172a" stroke="#334155" stroke-width="2" />
+      <path d="M110,356 L440,352" stroke="{accent_color}" stroke-width="4" stroke-linecap="round" />
+
+      <!-- Cabedal Anatômico -->
+      <path d="M90,340 C80,300 82,230 115,200 C140,175 185,185 220,195 C260,205 320,240 375,270 C420,295 460,318 455,335 C420,330 350,335 310,345 C230,355 140,355 90,340 Z" fill="url(#bootGrad)" stroke="rgba(255,255,255,0.4)" stroke-width="2" />
+
+      <!-- Calcanhar -->
+      <path d="M90,340 C80,300 82,230 115,200 C125,225 130,280 135,348 Z" fill="#0f172a" opacity="0.4" />
+      <path d="M100,230 C120,250 125,300 120,345" stroke="{accent_color}" stroke-width="4" fill="none" />
+
+      <!-- Cadarço -->
+      <line x1="185" y1="195" x2="210" y2="220" stroke="#f8fafc" stroke-width="3" stroke-linecap="round" />
+      <line x1="205" y1="205" x2="230" y2="230" stroke="#f8fafc" stroke-width="3" stroke-linecap="round" />
+      <line x1="225" y1="215" x2="250" y2="240" stroke="#f8fafc" stroke-width="3" stroke-linecap="round" />
+
+      <!-- Marca Estilizada -->
+      {brand_type}
+
+      <!-- Detalhes Extras Específicos -->
+      {extra_elements}
+    </svg>'''
+    render_svg_to_webp(svg, rel_path)
+
+def gen_all_boots():
+    # 1. Nike Mercurial Pro
+    gen_boot('boots/mercurial-pro.webp',
+             '<linearGradient id="bootGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#38bdf8"/><stop offset="100%" stop-color="#0284c7"/></linearGradient>',
+             '<path d="M190,270 C240,285 300,280 380,240 C350,270 280,305 220,300 C195,298 185,285 190,270 Z" fill="#fde047" filter="url(#glow)"/>',
+             '#fde047')
+
+    # 2. Adidas Predator Accuracy
+    gen_boot('boots/predator-accuracy.webp',
+             '<linearGradient id="bootGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#18181b"/><stop offset="100%" stop-color="#09090b"/></linearGradient>',
+             '''<g fill="#ffffff" filter="url(#glow)">
+                  <polygon points="220,220 240,225 210,310 190,305"/>
+                  <polygon points="250,230 270,235 240,315 220,310"/>
+                  <polygon points="280,240 300,245 270,320 250,315"/>
+                </g>''',
+             '#e11d48',
+             '''<g fill="#e11d48">
+                  <polygon points="340,265 350,260 355,275"/>
+                  <polygon points="360,275 370,270 375,285"/>
+                  <polygon points="380,285 390,280 395,295"/>
+                  <polygon points="400,295 410,290 415,305"/>
+                </g>''')
+
+    # 3. Puma Future Ultimate
+    gen_boot('boots/future-ultimate.webp',
+             '<linearGradient id="bootGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#4f46e5"/><stop offset="100%" stop-color="#3730a3"/></linearGradient>',
+             '<path d="M210,290 C260,310 330,270 360,250 C320,290 260,320 210,290 Z" fill="#f97316" filter="url(#glow)"/>',
+             '#f97316',
+             '<path d="M260,205 C290,235 300,295 300,345" stroke="#f97316" stroke-width="8" fill="none"/>')
+
+    # 4. Mizuno Morelia Neo IV
+    gen_boot('boots/morelia-neo.webp',
+             '<linearGradient id="bootGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#ffffff"/><stop offset="100%" stop-color="#e4e4e7"/></linearGradient>',
+             '<polygon points="230,280 280,250 330,280 280,265" fill="#dc2626" filter="url(#glow)"/>',
+             '#dc2626',
+             '<path d="M140,250 C240,240 340,270 420,310" stroke="#d4d4d8" stroke-width="2" fill="none"/>')
+
+    # 5. Umbro Speciali Clássica
+    gen_boot('boots/speciali-classica.webp',
+             '<linearGradient id="bootGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#27272a"/><stop offset="100%" stop-color="#09090b"/></linearGradient>',
+             '<polygon points="250,275 285,255 320,275 285,295" fill="#ffffff" filter="url(#glow)"/>',
+             '#ffffff',
+             '<path d="M120,230 L160,200 L180,240 Z" fill="#ffffff"/>')
+
+    # 6. Fênix Carbono Elite
+    gen_boot('boots/fenix-carbono.webp',
+             '<linearGradient id="bootGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#27272a"/><stop offset="50%" stop-color="#18181b"/><stop offset="100%" stop-color="#09090b"/></linearGradient>',
+             '<path d="M180,310 Q250,240 330,270 Q260,280 200,320 Z" fill="#f59e0b" filter="url(#glow)"/>',
+             '#f59e0b',
+             '''<g stroke="#f59e0b" stroke-width="2" opacity="0.6">
+                  <line x1="200" y1="230" x2="350" y2="300"/>
+                  <line x1="220" y1="210" x2="370" y2="280"/>
+                </g>''')
+
+    # 7. Coroa Imperial Dourada (Lendária)
+    gen_boot('boots/coroa-imperial.webp',
+             '<linearGradient id="bootGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#fef08a"/><stop offset="50%" stop-color="#eab308"/><stop offset="100%" stop-color="#ca8a04"/></linearGradient>',
+             '<polygon points="220,290 250,250 270,270 290,250 320,290" fill="#ffffff" filter="url(#glow)"/>',
+             '#fef08a',
+             '<circle cx="270" cy="240" r="12" fill="#ffffff" filter="url(#glow)"/>')
+
+    # 8. Canhão PowerStrike
+    gen_boot('boots/canhao-powerstrike.webp',
+             '<linearGradient id="bootGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#ef4444"/><stop offset="100%" stop-color="#991b1b"/></linearGradient>',
+             '<path d="M190,270 C240,285 300,280 380,240 C350,270 280,305 220,300 Z" fill="#ffffff"/>',
+             '#f87171',
+             '<rect x="360" y="270" width="70" height="40" rx="10" fill="#7f1d1d" opacity="0.8"/>')
+
+    # 9. Relâmpago Speed
+    gen_boot('boots/relampago-speed.webp',
+             '<linearGradient id="bootGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#facc15"/><stop offset="100%" stop-color="#eab308"/></linearGradient>',
+             '<polygon points="260,220 230,270 270,270 240,320 310,260 270,260" fill="#a855f7" filter="url(#glow)"/>',
+             '#a855f7')
+
+    # 10. Ginga Street
+    gen_boot('boots/ginga-street.webp',
+             '<linearGradient id="bootGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#1e293b"/><stop offset="100%" stop-color="#0f172a"/></linearGradient>',
+             '<path d="M190,270 Q280,240 370,280 Q280,300 200,290 Z" fill="#10b981" filter="url(#glow)"/>',
+             '#f43f5e',
+             '<circle cx="340" cy="270" r="16" fill="#f43f5e"/>')
+
+    # 11. Paredão GK
+    gen_boot('boots/paredao-gk.webp',
+             '<linearGradient id="bootGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#059669"/><stop offset="100%" stop-color="#065f46"/></linearGradient>',
+             '<polygon points="210,260 260,240 310,270 270,290" fill="#cbd5e1" filter="url(#glow)"/>',
+             '#10b981',
+             '<rect x="320" y="260" width="80" height="50" rx="8" fill="#334155" opacity="0.7"/>')
+
+# ==============================================================================
+# BOLAS COM FÍSICA E TEXTURAS (BALLS)
+# ==============================================================================
+def gen_all_balls():
+    # 1. Capotão Clássica
+    render_svg_to_webp('''<svg viewBox="0 0 512 512" width="512" height="512" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <radialGradient id="sphere" cx="35%" cy="30%" r="65%">
+          <stop offset="0%" stop-color="#ffffff"/>
+          <stop offset="70%" stop-color="#e4e4e7"/>
+          <stop offset="100%" stop-color="#71717a"/>
+        </radialGradient>
+      </defs>
+      <circle cx="256" cy="256" r="200" fill="url(#sphere)" stroke="#27272a" stroke-width="4"/>
+      <!-- Pentágono Preto Central -->
+      <polygon points="256,180 320,230 295,305 217,305 192,230" fill="#18181b"/>
+      <!-- Gomos conectados -->
+      <line x1="256" y1="180" x2="256" y2="80" stroke="#18181b" stroke-width="6"/>
+      <line x1="320" y1="230" x2="410" y2="190" stroke="#18181b" stroke-width="6"/>
+      <line x1="295" y1="305" x2="360" y2="390" stroke="#18181b" stroke-width="6"/>
+      <line x1="217" y1="305" x2="152" y2="390" stroke="#18181b" stroke-width="6"/>
+      <line x1="192" y1="230" x2="102" y2="190" stroke="#18181b" stroke-width="6"/>
+    </svg>''', 'balls/capotao-classica.webp')
+
+    # 2. Jabulani (Caos 2010)
+    render_svg_to_webp('''<svg viewBox="0 0 512 512" width="512" height="512" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <radialGradient id="sphere" cx="35%" cy="30%" r="65%">
+          <stop offset="0%" stop-color="#ffffff"/><stop offset="80%" stop-color="#f4f4f5"/><stop offset="100%" stop-color="#a1a1aa"/>
+        </radialGradient>
+      </defs>
+      <circle cx="256" cy="256" r="200" fill="url(#sphere)" stroke="#3f3f46" stroke-width="4"/>
+      <!-- Painéis Triangulares Aerodinâmicos da Jabulani -->
+      <path d="M256,100 C320,160 320,250 256,310 C192,250 192,160 256,100 Z" fill="#eab308"/>
+      <circle cx="256" cy="205" r="30" fill="#dc2626"/>
+      <path d="M120,256 C180,320 270,320 330,256 C270,192 180,192 120,256 Z" fill="#2563eb" opacity="0.8"/>
+      <path d="M256,200 C350,250 350,350 256,410 C162,350 162,250 256,200 Z" fill="#16a34a" opacity="0.8"/>
+    </svg>''', 'balls/jabulani.webp')
+
+    # 3. Brazuca (Brasilidade Pro)
+    render_svg_to_webp('''<svg viewBox="0 0 512 512" width="512" height="512" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <radialGradient id="sphere" cx="35%" cy="30%" r="65%">
+          <stop offset="0%" stop-color="#ffffff"/><stop offset="80%" stop-color="#f4f4f5"/><stop offset="100%" stop-color="#a1a1aa"/>
+        </radialGradient>
+      </defs>
+      <circle cx="256" cy="256" r="200" fill="url(#sphere)" stroke="#1e293b" stroke-width="4"/>
+      <path d="M100,200 C150,120 300,120 380,220 C320,320 200,320 120,400" stroke="#2563eb" stroke-width="26" fill="none" stroke-linecap="round"/>
+      <path d="M140,160 C220,100 350,150 410,260 C360,350 250,380 180,430" stroke="#16a34a" stroke-width="22" fill="none" stroke-linecap="round"/>
+      <path d="M170,130 C250,80 380,130 430,240" stroke="#eab308" stroke-width="16" fill="none" stroke-linecap="round"/>
+    </svg>''', 'balls/brazuca.webp')
+
+    # 4. Bola Laranja Neve
+    render_svg_to_webp('''<svg viewBox="0 0 512 512" width="512" height="512" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <radialGradient id="orangeSphere" cx="35%" cy="30%" r="65%">
+          <stop offset="0%" stop-color="#fb923c"/><stop offset="70%" stop-color="#ea580c"/><stop offset="100%" stop-color="#9a3412"/>
+        </radialGradient>
+      </defs>
+      <circle cx="256" cy="256" r="200" fill="url(#orangeSphere)" stroke="#7c2d12" stroke-width="4"/>
+      <polygon points="256,180 320,230 295,305 217,305 192,230" fill="#18181b"/>
+      <circle cx="256" cy="256" r="40" fill="#fde047"/>
+    </svg>''', 'balls/laranja-neve.webp')
+
+    # 5. Meteoro de Fogo
+    render_svg_to_webp('''<svg viewBox="0 0 512 512" width="512" height="512" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <radialGradient id="magma" cx="35%" cy="30%" r="65%">
+          <stop offset="0%" stop-color="#fef08a"/><stop offset="40%" stop-color="#f97316"/><stop offset="80%" stop-color="#dc2626"/><stop offset="100%" stop-color="#450a0a"/>
+        </radialGradient>
+        <filter id="fireGlow"><feGaussianBlur stdDeviation="8" result="blur"/><feComposite in="SourceGraphic" in2="blur" operator="over"/></filter>
+      </defs>
+      <circle cx="256" cy="256" r="200" fill="url(#magma)" filter="url(#fireGlow)"/>
+      <path d="M120,200 Q220,180 256,256 Q300,320 400,280" stroke="#fef08a" stroke-width="12" fill="none"/>
+      <path d="M180,340 Q256,300 320,380" stroke="#fdba74" stroke-width="8" fill="none"/>
+    </svg>''', 'balls/meteoro-fogo.webp')
+
+    # 6. Cyber Neon
+    render_svg_to_webp('''<svg viewBox="0 0 512 512" width="512" height="512" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <radialGradient id="cyber" cx="35%" cy="30%" r="65%">
+          <stop offset="0%" stop-color="#18181b"/><stop offset="100%" stop-color="#09090b"/>
+        </radialGradient>
+      </defs>
+      <circle cx="256" cy="256" r="200" fill="url(#cyber)" stroke="#06b6d4" stroke-width="6"/>
+      <circle cx="256" cy="256" r="140" fill="none" stroke="#ec4899" stroke-width="6" stroke-dasharray="16,8"/>
+      <polygon points="256,180 320,230 295,305 217,305 192,230" fill="none" stroke="#06b6d4" stroke-width="8"/>
+      <line x1="256" y1="56" x2="256" y2="456" stroke="#06b6d4" stroke-width="4"/>
+      <line x1="56" y1="256" x2="456" y2="256" stroke="#ec4899" stroke-width="4"/>
+    </svg>''', 'balls/cyber-neon.webp')
+
+    # 7. Bola de Ouro (Ballon d'Or)
+    render_svg_to_webp('''<svg viewBox="0 0 512 512" width="512" height="512" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <radialGradient id="goldSphere" cx="35%" cy="25%" r="70%">
+          <stop offset="0%" stop-color="#ffffff"/><stop offset="30%" stop-color="#fde047"/><stop offset="70%" stop-color="#ca8a04"/><stop offset="100%" stop-color="#713f12"/>
+        </radialGradient>
+      </defs>
+      <circle cx="256" cy="256" r="200" fill="url(#goldSphere)" stroke="#ca8a04" stroke-width="4"/>
+      <polygon points="256,170 325,220 300,305 212,305 187,220" fill="none" stroke="#fef08a" stroke-width="6"/>
+      <circle cx="200" cy="180" r="30" fill="#ffffff" opacity="0.6"/>
+    </svg>''', 'balls/bola-de-ouro.webp')
+
+    # 8. Bola de Várzea
+    render_svg_to_webp('''<svg viewBox="0 0 512 512" width="512" height="512" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <radialGradient id="leather" cx="35%" cy="30%" r="65%">
+          <stop offset="0%" stop-color="#92400e"/><stop offset="80%" stop-color="#78350f"/><stop offset="100%" stop-color="#451a03"/>
+        </radialGradient>
+      </defs>
+      <circle cx="256" cy="256" r="200" fill="url(#leather)" stroke="#451a03" stroke-width="6"/>
+      <!-- Costuras cruzadas clássicas -->
+      <path d="M160,180 L352,180 M140,256 L372,256 M160,332 L352,332" stroke="#b45309" stroke-width="8" stroke-dasharray="14,10"/>
+      <line x1="256" y1="120" x2="256" y2="392" stroke="#451a03" stroke-width="6"/>
+    </svg>''', 'balls/bola-de-varzea.webp')
+
+# ==============================================================================
+# TROFÉUS OFICIAIS (TROPHIES)
+# ==============================================================================
+def gen_all_trophies():
+    # 1. Copa do Mundo
+    render_svg_to_webp('''<svg viewBox="0 0 512 512" width="512" height="512" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="gold" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#fef08a"/><stop offset="50%" stop-color="#eab308"/><stop offset="100%" stop-color="#a16207"/>
+        </linearGradient>
+      </defs>
+      <!-- Base com malaquita -->
+      <rect x="170" y="420" width="172" height="50" rx="8" fill="#ca8a04"/>
+      <rect x="170" y="435" width="172" height="10" fill="#15803d"/>
+      <rect x="170" y="455" width="172" height="10" fill="#15803d"/>
+      <!-- Corpo espiralado -->
+      <polygon points="200,420 220,210 292,210 312,420" fill="url(#gold)"/>
+      <!-- Globo terrestre -->
+      <circle cx="256" cy="150" r="70" fill="url(#gold)" stroke="#ca8a04" stroke-width="4"/>
+      <path d="M200,150 Q256,110 312,150 Q256,190 200,150" fill="none" stroke="#ca8a04" stroke-width="6"/>
+    </svg>''', 'trophies/copa-do-mundo.webp')
+
+    # 2. Champions League
+    render_svg_to_webp('''<svg viewBox="0 0 512 512" width="512" height="512" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="silver" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#ffffff"/><stop offset="50%" stop-color="#e4e4e7"/><stop offset="100%" stop-color="#a1a1aa"/>
+        </linearGradient>
+      </defs>
+      <rect x="180" y="430" width="152" height="40" rx="6" fill="#71717a"/>
+      <rect x="236" y="370" width="40" height="60" fill="url(#silver)"/>
+      <polygon points="160,150 352,150 320,370 192,370" fill="url(#silver)" stroke="#71717a" stroke-width="4"/>
+      <!-- Orelhas grandes -->
+      <path d="M160,170 C80,180 80,310 192,330" fill="none" stroke="url(#silver)" stroke-width="20" stroke-linecap="round"/>
+      <path d="M352,170 C432,180 432,310 320,330" fill="none" stroke="url(#silver)" stroke-width="20" stroke-linecap="round"/>
+    </svg>''', 'trophies/champions-league.webp')
+
+    # 3. Libertadores
+    render_svg_to_webp('''<svg viewBox="0 0 512 512" width="512" height="512" xmlns="http://www.w3.org/2000/svg">
+      <rect x="170" y="250" width="172" height="220" rx="10" fill="#78350f" stroke="#451a03" stroke-width="4"/>
+      <!-- Placas douradas dos campeões -->
+      <g fill="#facc15">
+        <rect x="185" y="270" width="35" height="25" rx="3"/>
+        <rect x="238" y="270" width="35" height="25" rx="3"/>
+        <rect x="291" y="270" width="35" height="25" rx="3"/>
+        <rect x="185" y="320" width="35" height="25" rx="3"/>
+        <rect x="238" y="320" width="35" height="25" rx="3"/>
+        <rect x="291" y="320" width="35" height="25" rx="3"/>
+        <rect x="185" y="370" width="35" height="25" rx="3"/>
+        <rect x="238" y="370" width="35" height="25" rx="3"/>
+        <rect x="291" y="370" width="35" height="25" rx="3"/>
+      </g>
+      <!-- Bojo prateado e estatueta -->
+      <circle cx="256" cy="180" r="70" fill="#e4e4e7" stroke="#a1a1aa" stroke-width="4"/>
+      <circle cx="256" cy="70" r="16" fill="#facc15"/>
+      <line x1="256" y1="86" x2="256" y2="110" stroke="#facc15" stroke-width="8"/>
+    </svg>''', 'trophies/libertadores.webp')
+
+    # 4. Brasileirão Série A
+    render_svg_to_webp('''<svg viewBox="0 0 512 512" width="512" height="512" xmlns="http://www.w3.org/2000/svg">
+      <rect x="170" y="420" width="172" height="50" rx="8" fill="#27272a"/>
+      <!-- Arco dourado -->
+      <path d="M150,420 C150,120 362,120 362,420" fill="none" stroke="#eab308" stroke-width="32" stroke-linecap="round"/>
+      <!-- Esfera verde e amarela -->
+      <circle cx="256" cy="230" r="50" fill="#16a34a" stroke="#eab308" stroke-width="8"/>
+      <circle cx="256" cy="230" r="24" fill="#eab308"/>
+    </svg>''', 'trophies/brasileirao-serie-a.webp')
+
+    # 5. Copa do Brasil
+    render_svg_to_webp('''<svg viewBox="0 0 512 512" width="512" height="512" xmlns="http://www.w3.org/2000/svg">
+      <rect x="180" y="420" width="152" height="50" rx="6" fill="#71717a"/>
+      <polygon points="170,150 342,150 290,420 222,420" fill="#e4e4e7" stroke="#ca8a04" stroke-width="4"/>
+      <path d="M185,250 L327,250" stroke="#16a34a" stroke-width="18"/>
+      <path d="M185,275 L327,275" stroke="#eab308" stroke-width="12"/>
+    </svg>''', 'trophies/copa-do-brasil.webp')
+
+    # 6. Ballon d'Or / The Best
+    render_svg_to_webp('''<svg viewBox="0 0 512 512" width="512" height="512" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <radialGradient id="gold" cx="35%" cy="30%" r="65%">
+          <stop offset="0%" stop-color="#ffffff"/><stop offset="40%" stop-color="#fde047"/><stop offset="80%" stop-color="#ca8a04"/><stop offset="100%" stop-color="#713f12"/>
+        </radialGradient>
+      </defs>
+      <!-- Base de rocha escura -->
+      <polygon points="140,470 170,330 342,330 372,470" fill="#18181b" stroke="#ca8a04" stroke-width="4"/>
+      <!-- Grande esfera de ouro -->
+      <circle cx="256" cy="190" r="110" fill="url(#gold)" stroke="#ca8a04" stroke-width="4"/>
+      <circle cx="220" cy="150" r="26" fill="#ffffff" opacity="0.6"/>
+    </svg>''', 'trophies/bola-de-ouro.webp')
+
+    # 7. Copinha Sub-20
+    render_svg_to_webp('''<svg viewBox="0 0 512 512" width="512" height="512" xmlns="http://www.w3.org/2000/svg">
+      <rect x="180" y="420" width="152" height="50" rx="6" fill="#d4d4d8"/>
+      <polygon points="160,160 352,160 300,380 212,380" fill="#f59e0b" stroke="#b45309" stroke-width="4"/>
+      <polygon points="256,220 268,255 305,255 275,277 286,312 256,290 226,312 237,277 207,255 244,255" fill="#ffffff"/>
+    </svg>''', 'trophies/copinha-sub20.webp')
 
 def main():
-    ensure_dirs()
     print("Gerando Marcas Esportivas...")
-    create_brand_nike()
-    create_brand_adidas()
-    create_brand_puma()
-    create_brand_mizuno()
-    create_brand_umbro()
-    create_brand_under_armour()
-
-    print("Gerando Patrocinadores Oficiais...")
-    create_sponsor_betano()
-    create_sponsor_pixbet()
-    create_sponsor_emirates()
-    create_sponsor_redbull()
-    create_sponsor_mastercard()
-    create_sponsor_heineken()
-    create_sponsor_spotify()
-    create_sponsor_guarana()
-    create_sponsor_itau()
-    create_sponsor_brahma()
-
-    print("Gerando Chuteiras com Design Real...")
-    create_all_boots()
-
-    print("Gerando Bolas com Física e Efeitos...")
-    create_ball_capotao()
-    create_ball_jabulani()
-    create_ball_brazuca()
-    create_ball_laranja()
-    create_ball_meteoro()
-    create_ball_cyber()
-    create_ball_ouro()
-    create_ball_varzea()
-
+    gen_brands()
+    print("Gerando Patrocinadores...")
+    gen_sponsors()
+    print("Gerando Chuteiras de Alta Performance...")
+    gen_all_boots()
+    print("Gerando Bolas com Texturas Realistas...")
+    gen_all_balls()
     print("Gerando Troféus Oficiais...")
-    create_trophy_copa_mundo()
-    create_trophy_champions()
-    create_trophy_libertadores()
-    create_trophy_brasileirao()
-    create_trophy_copa_brasil()
-    create_trophy_ballon_dor()
-    create_trophy_copinha()
-
-    print("TODOS OS ASSETS GERADOS COM SUCESSO!")
+    gen_all_trophies()
+    print("CONCLUÍDO COM SUCESSO!")
 
 if __name__ == '__main__':
     main()
