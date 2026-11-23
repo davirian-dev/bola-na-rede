@@ -510,6 +510,11 @@ export interface PlayerCareerProfile {
   tacticalStance?: TacticalStance; // Postura tática individual (atacar, defender, segurar o jogo)
   legendArchetype?: LegendArchetypeId; // Arquétipo de personalidade/lenda inspirada (Messi, CR7, Neymar, Ibra, Vini Jr.)
   signatureTraits?: string[];    // Habilidades únicas de estrelas mundiais
+  happiness?: number;            // 0 a 100 (Medidor de Felicidade)
+  family?: FamilyMember[];       // Membros da família (namorada, esposa, filhos)
+  familyEvents?: FamilyEvent[];
+  contractOffer?: ContractOffer; // Oferta de renovação pendente
+  customChallenges?: CustomChallenge[];
 }
 
 // ============================================================================
@@ -615,6 +620,10 @@ export interface ManagerCareerProfile {
   };
   selectedReservesIds?: string[]; // IDs dos 7 reservas escalados para o banco
   titles?: Record<string, number>; // Títulos oficiais conquistados na carreira de treinador
+  happiness?: number;              // 0 a 100 (Medidor de Felicidade)
+  family?: FamilyMember[];         // Membros da família (esposa, filhos)
+  familyEvents?: FamilyEvent[];
+  customChallenges?: CustomChallenge[];
 }
 
 export interface LeagueStanding {
@@ -977,6 +986,8 @@ export interface GameState {
     promoted: Record<string, string[]>;
     relegated: Record<string, string[]>;
   };
+  transferWindowStatus?: TransferWindowStatus; // Status da janela de transferências ('open' | 'closed')
+  familyNameInput?: string;   // Para o modal de escolher nome do filho
   lastSavedAt?: string;
 }
 
@@ -1154,5 +1165,93 @@ export interface TieredAchievement {
   rewardValue: number;
   rewardLabel: string;
 }
+
+// ============================================================================
+// MEGA ATUALIZAÇÃO PARTE 2: FELICIDADE, FAMÍLIA, CONTRATOS, JANELA & PIX
+// ============================================================================
+
+export interface FamilyMember {
+  id: string;
+  name: string;
+  relationship: 'namorada' | 'esposa' | 'filho' | 'filha';
+  age: number;
+  affinity: number; // 0 a 100
+  profession?: string;
+  bornWeek?: number;
+  bornYear?: number;
+  marriedWeek?: number;
+  marriedYear?: number;
+}
+
+export type FamilyEventType = 
+  | 'meet_partner'
+  | 'first_date'
+  | 'propose'
+  | 'wedding'
+  | 'baby_born'
+  | 'family_trip'
+  | 'anniversary'
+  | 'breakup';
+
+export interface FamilyEvent {
+  type: FamilyEventType;
+  week: number;
+  year: number;
+  description: string;
+  happinessImpact: number;
+  familyMemberId?: string;
+  childName?: string; // nome escolhido pelo jogador
+}
+
+export type TransferWindowStatus = 'open' | 'closed';
+
+export interface ContractOffer {
+  clubId: string;
+  clubName: string;
+  weeklyWage: number;
+  contractWeeks: number;
+  signingBonus: number;
+  squadRole: SquadRoleStatus;
+}
+
+export interface PixOrder {
+  id: string;
+  userId: string;
+  packageId: string;
+  packageName: string;
+  amountCents: number;
+  status: 'pending' | 'approved' | 'expired' | 'refunded';
+  pixCopiaECola?: string;
+  qrCodeBase64?: string;
+  externalId?: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface SupportTicket {
+  id: string;
+  userId: string;
+  category: 'pix_vip' | 'bug' | 'sugestao';
+  message: string;
+  orderId?: string;
+  status: 'aberto' | 'respondido' | 'resolvido';
+  createdAt: string;
+}
+
+export interface CustomChallenge {
+  id: string;
+  title: string;
+  description: string;
+  type: 'goals' | 'assists' | 'matches' | 'rating' | 'clean_sheets' | 'wins' | 'saves' | 'tackles';
+  target: number;
+  current: number;
+  deadlineWeek: number;
+  deadlineYear: number;
+  rewardMoney: number;
+  rewardReputation: number;
+  status: 'active' | 'completed' | 'failed';
+  createdAtWeek: number;
+}
+
 
 

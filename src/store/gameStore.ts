@@ -2159,10 +2159,33 @@ export const useGameStore = create<GameStore>()(
             }
           }
 
+          // === MEDIDOR DE FELICIDADE (HAPPINESS SYSTEM) ===
+          let currentHappiness = updatedPlayerProfile.happiness ?? 65;
+          if (currentSquadStatus === 'reserve') currentHappiness -= 3;
+          if (currentSquadStatus === 'key_player') currentHappiness += 2;
+          if (userClubMatch) {
+            const isHome = userClubMatch.homeClubId === updatedPlayerProfile.clubId;
+            const myGoals = isHome ? (userClubMatch.homeGoals || 0) : (userClubMatch.awayGoals || 0);
+            const oppGoals = isHome ? (userClubMatch.awayGoals || 0) : (userClubMatch.homeGoals || 0);
+            if (myGoals > oppGoals) currentHappiness += 4;
+            else if (myGoals < oppGoals) currentHappiness -= 3;
+          }
+          if (effectiveWeeklyWage > 100000) currentHappiness += 1;
+          if ((updatedPlayerProfile.family || []).length > 0) currentHappiness += 1;
+          currentHappiness = Math.max(0, Math.min(100, currentHappiness));
+
+          // Impacto de Felicidade na Recuperação de Energia
+          if (currentHappiness >= 80) {
+            updatedEnergy = Math.min(100, updatedEnergy + 3);
+          } else if (currentHappiness <= 30) {
+            updatedEnergy = Math.max(10, updatedEnergy - 5);
+          }
+
           updatedPlayerProfile = {
             ...prog.updatedProfile,
             squadStatus: currentSquadStatus,
             starterContention: currentContention,
+            happiness: currentHappiness,
             energy: updatedEnergy,
             activeBoot: updatedBoot,
             sponsors: updatedSponsors,
@@ -2189,6 +2212,11 @@ export const useGameStore = create<GameStore>()(
             const isWin = myGoals > oppGoals;
             const isDraw = myGoals === oppGoals;
 
+            let mgrHappiness = updatedManagerProfile.happiness ?? 65;
+            if (isWin) mgrHappiness += 5;
+            else if (!isDraw) mgrHappiness -= 4;
+            mgrHappiness = Math.max(0, Math.min(100, mgrHappiness));
+
             updatedManagerProfile = {
               ...updatedManagerProfile,
               stats: {
@@ -2198,6 +2226,7 @@ export const useGameStore = create<GameStore>()(
                 draws: updatedManagerProfile.stats.draws + (isDraw ? 1 : 0),
                 losses: updatedManagerProfile.stats.losses + (!isWin && !isDraw ? 1 : 0),
               },
+              happiness: mgrHappiness,
               boardConfidence: isWin 
                 ? Math.min(100, updatedManagerProfile.boardConfidence + 3)
                 : isDraw ? updatedManagerProfile.boardConfidence : Math.max(10, updatedManagerProfile.boardConfidence - 4),
@@ -2276,6 +2305,7 @@ export const useGameStore = create<GameStore>()(
         }
 
         const nextWeek = state.currentWeek + 1;
+        const isTransferWindowOpen = (nextWeek >= 1 && nextWeek <= 6) || (nextWeek >= 22 && nextWeek <= 26);
         const nextFlashMissions = generateFlashMissions(
           state.mode,
           updatedPlayerProfile?.position || 'ATA',
@@ -2419,6 +2449,7 @@ export const useGameStore = create<GameStore>()(
 
         set({
           currentWeek: nextWeek,
+          transferWindowStatus: isTransferWindowOpen ? 'open' : 'closed',
           clubs: healedClubs,
           allFixtures: updatedFixtures,
           leagues: updatedLeagues,

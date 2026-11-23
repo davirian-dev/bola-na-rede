@@ -19,7 +19,17 @@ export type CommentaryCategory =
   | 'pass_assist'
   | 'pass_intercepted'
   | 'offside'
-  | 'offside_goal_disallowed';
+  | 'offside_goal_disallowed'
+  | 'defense_tackle_success'
+  | 'defense_tackle_fail'
+  | 'defense_interception'
+  | 'defense_aerial_won'
+  | 'defense_aerial_lost'
+  | 'goalkeeper_save_easy'
+  | 'goalkeeper_save_spectacular'
+  | 'goalkeeper_save_penalty'
+  | 'goalkeeper_rush_success'
+  | 'goalkeeper_rush_fail';
 
 export interface CommentaryPhrase {
   id?: string;
@@ -140,6 +150,72 @@ export const COMMENTARY_BANK: Record<CommentaryCategory, CommentaryPhrase[]> = {
     { id: 'off_var_2', text: 'FESTA INTERROMPIDA! O estádio explodiu em festa, mas o VAR revisou e confirmou impedimento no início da jogada! Gol anulado!', tone: 'disappointed' },
     { id: 'off_var_3', text: 'NÃO VALEU NADA! A bola estufou a rede do {opp}, mas o bandeira já apontava impedimento de {player}! Gol anulado!', tone: 'disappointed' },
     { id: 'off_var_4', text: 'REVISÃO DO VAR: IMPEDIMENTO! O ombro de {player} estava à frente do penúltimo defensor! O árbitro anula o tento!', tone: 'disappointed' },
+  ],
+
+  // 17. Desarme com Sucesso (Defesa)
+  defense_tackle_success: [
+    { id: 'def_t_1', text: 'DESARME CIRÚRGICO! {player} roubou a bola do atacante do {opp} sem fazer falta! Limpeza total!', tone: 'epic' },
+    { id: 'def_t_2', text: 'Carrinho impecável de {player}! Tirou a bola do adversário e já saiu jogando!', tone: 'exciting' },
+    { id: 'def_t_3', text: 'QUE DIVIDIDA! {player} meteu o pé firme e ganhou a bola na disputa contra o atacante do {opp}!', tone: 'exciting' },
+    { id: 'def_t_4', text: 'MONSTRO NA MARCAÇÃO! {player} antecipou o drible e desarmou com precisão clínica!', tone: 'epic' },
+  ],
+
+  // 18. Falha no Desarme (Defesa)
+  defense_tackle_fail: [
+    { id: 'def_tf_1', text: 'Errou o bote! {player} se jogou no carrinho e o atacante do {opp} passou por cima!', tone: 'disappointed' },
+    { id: 'def_tf_2', text: 'Dividida perigosa! {player} não conseguiu alcançar a bola e deixou o caminho livre!', tone: 'disappointed' },
+    { id: 'def_tf_3', text: 'FALTA! {player} perdeu no lance e foi obrigado a derrubar! Pode ser cartão!', tone: 'exciting' },
+  ],
+
+  // 19. Interceptação de Passe
+  defense_interception: [
+    { id: 'def_i_1', text: 'LEITURA PERFEITA! {player} interceptou o passe e cortou o contra-ataque perigoso do {opp}!', tone: 'epic' },
+    { id: 'def_i_2', text: 'Olho clínico de {player}! Antecipou a linha de passe e recuperou a posse com categoria!', tone: 'exciting' },
+    { id: 'def_i_3', text: 'INTERCEPTAÇÃO SALVADORA! {player} se esticou todo e evitou que a bola chegasse livre ao atacante!', tone: 'epic' },
+  ],
+
+  // 20. Disputa Aérea Vencida (Cabeceio Defensivo)
+  defense_aerial_won: [
+    { id: 'def_a_1', text: 'SUBIU MAIS ALTO! {player} venceu a disputa aérea com autoridade contra o ataque do {opp}!', tone: 'epic' },
+    { id: 'def_a_2', text: 'Cabeceio defensivo perfeito! {player} testou firme e afastou o perigo para longe da área!', tone: 'exciting' },
+    { id: 'def_a_3', text: 'ZAGUEIRÃO DE RESPEITO! {player} ganhou no terceiro andar e cortou o cruzamento!', tone: 'epic' },
+  ],
+
+  // 21. Disputa Aérea Perdida
+  defense_aerial_lost: [
+    { id: 'def_al_1', text: '{player} perdeu a disputa aérea! O atacante do {opp} subiu mais alto e cabeceou com perigo!', tone: 'disappointed' },
+    { id: 'def_al_2', text: 'Saltou, mas não alcançou! {player} ficou na saudade enquanto o rival testava firme!', tone: 'disappointed' },
+  ],
+
+  // 22. Goleiro: Defesa Segura / Fácil
+  goalkeeper_save_easy: [
+    { id: 'gk_e_1', text: 'Defesa segura! {player} encaixou no peito sem rebote! Rotina tranquila para o goleirão!', tone: 'exciting' },
+    { id: 'gk_e_2', text: 'Bola firme nas mãos! {player} segurou com firmeza e esfriou o ataque do {opp}!', tone: 'exciting' },
+  ],
+
+  // 23. Goleiro: Defesa Espetacular / Milagre
+  goalkeeper_save_spectacular: [
+    { id: 'gk_s_1', text: 'DEFESAÇA DE {player}! Voou no ângulo e operou um milagre inacreditável! O estádio veio abaixo!', tone: 'epic' },
+    { id: 'gk_s_2', text: 'QUE REFLEXO ABSURDO! {player} espalmou com as pontas dos dedos um tiro que parecia indefensável!', tone: 'epic' },
+    { id: 'gk_s_3', text: 'PAREDÃO MONUMENTAL! {player} fechou o gol com uma defesa histórica contra o {opp}!', tone: 'epic' },
+  ],
+
+  // 24. Goleiro: Pênalti Defendido
+  goalkeeper_save_penalty: [
+    { id: 'gk_p_1', text: 'PEGOU O PÊNALTI! {player} adivinhou o canto e voou como um felino para espalmar a cobrança!', tone: 'epic' },
+    { id: 'gk_p_2', text: 'HERÓI! {player} esperou até o último milissegundo e buscou a cobrança no canto direito!', tone: 'epic' },
+  ],
+
+  // 25. Goleiro: Saída do Gol 1x1 Bem-Sucedida
+  goalkeeper_rush_success: [
+    { id: 'gk_r_1', text: 'SAIU COM CORAGEM! {player} abafou a finalização cara a cara com o atacante do {opp}!', tone: 'exciting' },
+    { id: 'gk_r_2', text: 'Fechou o ângulo! {player} avançou no momento exato e fez o bloqueio providencial!', tone: 'epic' },
+  ],
+
+  // 26. Goleiro: Saída em Falso / Falha
+  goalkeeper_rush_fail: [
+    { id: 'gk_rf_1', text: 'SAIU MAL! {player} se aventurou fora da área e foi driblado com facilidade pelo rival!', tone: 'disappointed' },
+    { id: 'gk_rf_2', text: 'Falha do arqueiro! {player} hesitou na saída e o atacante do {opp} tocou por cima!', tone: 'disappointed' },
   ],
 };
 

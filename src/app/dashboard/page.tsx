@@ -29,6 +29,8 @@ import { AvatarCreatorModal } from '@/components/game/AvatarCreatorModal';
 import { DilemmaModal } from '@/components/game/DilemmaModal';
 import { TrophyRoomModal } from '@/components/game/TrophyRoomModal';
 import { VIPStadiumWeatherModal } from '@/components/game/VIPStadiumWeatherModal';
+import { QuickTutorial } from '@/components/onboarding/QuickTutorial';
+import { CareerCardGenerator } from '@/components/share/CareerCardGenerator';
 import { TacticsBoard } from '@/components/game/TacticsBoard';
 import { ManagerRosterModal } from '@/components/manager/ManagerRosterModal';
 import { ManagerTacticsModal } from '@/components/manager/ManagerTacticsModal';
@@ -157,6 +159,8 @@ export default function DashboardPage() {
   const [isTacticalBoardOpen, setIsTacticalBoardOpen] = useState(false);
   const [isManagerSpeechOpen, setIsManagerSpeechOpen] = useState(false);
   const [isStadiumModalOpen, setIsStadiumModalOpen] = useState(false);
+  const [isCardGeneratorOpen, setIsCardGeneratorOpen] = useState(false);
+  const [isTutorialOpen, setIsTutorialOpen] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -1667,14 +1671,26 @@ export default function DashboardPage() {
                   <div className="space-y-2">
                     {/* 1. Cartinha PNG para Viralizar */}
                     <button
-                      onClick={() => setIsShareCardOpen(true)}
-                      className="w-full p-2.5 rounded-xl bg-gradient-to-r from-amber-500/15 to-amber-400/10 hover:from-amber-500/25 hover:to-amber-400/20 text-amber-400 text-xs font-black flex items-center justify-between transition-colors border border-amber-500/30 cursor-pointer"
+                      onClick={() => setIsCardGeneratorOpen(true)}
+                      className="w-full p-2.5 rounded-xl bg-gradient-to-r from-emerald-500/15 to-emerald-400/10 hover:from-emerald-500/25 hover:to-emerald-400/20 text-emerald-400 text-xs font-black flex items-center justify-between transition-colors border border-emerald-500/30 cursor-pointer"
                     >
                       <span className="flex items-center gap-2">
-                        <Sparkles className="w-4 h-4 text-amber-400" />
-                        Cartinha Oficial (PNG Viral)
+                        <Sparkles className="w-4 h-4 text-emerald-400" />
+                        Card de Carreira (Stories & Feed)
                       </span>
-                      <ChevronRight className="w-3.5 h-3.5 text-amber-400" />
+                      <ChevronRight className="w-3.5 h-3.5 text-emerald-400" />
+                    </button>
+
+                    {/* Tutorial Rápido */}
+                    <button
+                      onClick={() => setIsTutorialOpen(true)}
+                      className="w-full p-2.5 rounded-xl bg-zinc-800/60 hover:bg-zinc-800 text-zinc-300 text-xs font-bold flex items-center justify-between transition-colors border border-zinc-700/60 cursor-pointer"
+                    >
+                      <span className="flex items-center gap-2">
+                        <span>📖</span>
+                        Como Jogar (Guia Rápido)
+                      </span>
+                      <ChevronRight className="w-3.5 h-3.5 text-zinc-400" />
                     </button>
 
                     {/* 2. Rede Social da Torcida */}
@@ -3123,6 +3139,30 @@ export default function DashboardPage() {
         isOpen={isStadiumModalOpen}
         onClose={() => setIsStadiumModalOpen(false)}
       />
+
+      {/* Tutorial Inicial Rápido de 60 Segundos */}
+      <QuickTutorial
+        forceOpen={isTutorialOpen}
+        onClose={() => setIsTutorialOpen(false)}
+      />
+
+      {/* Gerador de Card Viral de Carreira */}
+      {isCardGeneratorOpen && (
+        <CareerCardGenerator
+          playerName={playerProfile?.name || managerProfile?.name || 'Craque'}
+          clubName={clubs[activeClubId || '']?.name || 'Clube'}
+          position={playerProfile?.position || 'TEC'}
+          overall={playerProfile?.overall || 75}
+          seasonYear={seasonYear}
+          stats={{
+            matches: playerProfile?.stats?.matchesPlayed || managerProfile?.stats?.matchesPlayed || 0,
+            goals: playerProfile?.stats?.goals || 0,
+            assists: playerProfile?.stats?.assists || 0,
+            rating: playerProfile?.stats?.averageRating || 7.0,
+          }}
+          onClose={() => setIsCardGeneratorOpen(false)}
+        />
+      )}
 
       <MobileBottomNav />
     </div>

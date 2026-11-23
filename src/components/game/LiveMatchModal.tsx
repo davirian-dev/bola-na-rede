@@ -13,6 +13,8 @@ import { NSSInsideBoxMinigame } from '@/components/game/NSSInsideBoxMinigame';
 import { NSSDefenseMinigame } from '@/components/game/NSSDefenseMinigame';
 import { NSSPassMinigame } from '@/components/game/NSSPassMinigame';
 import { DribbleMinigame } from '@/components/match/DribbleMinigame';
+import { GoalkeeperMinigame } from '@/components/match/GoalkeeperMinigame';
+import { DefenseMinigame } from '@/components/match/DefenseMinigame';
 import { TacticalBoardMinigame } from '@/components/manager/TacticalBoardMinigame';
 import { ManagerSpeechMinigame } from '@/components/manager/ManagerSpeechMinigame';
 import { 
@@ -90,6 +92,12 @@ export function LiveMatchModal({
     | 'defense_minigame'
     | 'pass_minigame'
     | 'dribble_minigame'
+    | 'goalkeeper_shot'
+    | 'goalkeeper_rush'
+    | 'goalkeeper_cross'
+    | 'defense_tackle'
+    | 'defense_interception'
+    | 'defense_aerial'
     | 'rpg_decision'
   >('none');
   const [momentResolved, setMomentResolved] = useState(false);
@@ -788,6 +796,45 @@ export function LiveMatchModal({
     setIsPlaying(true);
   };
 
+  const handleGoalkeeperResult = (result: { success: boolean; type: string; rating: number; commentary?: string }) => {
+    setActiveMoment('none');
+    setMomentResolved(true);
+    setIsPlaying(true);
+    if (result.success) {
+      setComments((c) => [
+        { minute, text: result.commentary || `🧤 DEFESAÇA! ${userActorName} fecha o gol e salva o clube!`, type: 'chance' },
+        ...c
+      ]);
+    } else {
+      if (isUserHome) {
+        setAwayScore((s) => s + 1);
+      } else {
+        setHomeScore((s) => s + 1);
+      }
+      setComments((c) => [
+        { minute, text: result.commentary || `⚽ GOL DO ADVERSÁRIO! Finalização no ângulo sem chance de defesa!`, type: 'goal' },
+        ...c
+      ]);
+    }
+  };
+
+  const handleDefenseResult = (result: { success: boolean; type: string; rating: number; cardRisk?: boolean; commentary?: string }) => {
+    setActiveMoment('none');
+    setMomentResolved(true);
+    setIsPlaying(true);
+    if (result.success) {
+      setComments((c) => [
+        { minute, text: result.commentary || `🛡️ DESARME LIMPO! ${userActorName} mata a jogada adversária com perfeição!`, type: 'chance' },
+        ...c
+      ]);
+    } else {
+      setComments((c) => [
+        { minute, text: result.commentary || `⚠️ Falha na marcação! Lance perigoso contra a nossa defesa!`, type: 'chance' },
+        ...c
+      ]);
+    }
+  };
+
   const handleDribbleFailMinigame = (reason: 'tackle' | 'foul') => {
     setActiveMoment('none');
     setMomentResolved(true);
@@ -1043,75 +1090,211 @@ export function LiveMatchModal({
                 </div>
 
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 w-full max-w-xl">
-                  {/* Opção 1: Cara a cara no gol */}
-                  <button
-                    type="button"
-                    onClick={() => setActiveMoment('inside_box_minigame')}
-                    className="p-3 rounded-xl bg-gradient-to-br from-rose-950/80 to-zinc-900 border-2 border-rose-500/40 hover:border-rose-400 hover:scale-[1.02] transition flex flex-col items-center text-center gap-1.5 cursor-pointer shadow-lg group"
-                  >
-                    <span className="text-2xl p-1.5 rounded-xl bg-rose-500/20 group-hover:scale-110 transition">⚡</span>
-                    <div>
-                      <h4 className="text-xs font-black text-white">Cara a Cara</h4>
-                      <p className="text-[10px] text-zinc-400">Na cara do gol</p>
-                    </div>
-                    <span className="text-[9px] font-black uppercase text-rose-400 bg-rose-500/20 px-2 py-0.2 rounded-full mt-auto">
-                      Finalização
-                    </span>
-                  </button>
+                  {playerProfile?.position === 'GOL' ? (
+                    <>
+                      {/* Goleiro Opção 1: Defesa de Chute */}
+                      <button
+                        type="button"
+                        onClick={() => setActiveMoment('goalkeeper_shot')}
+                        className="p-3 rounded-xl bg-gradient-to-br from-emerald-950/80 to-zinc-900 border-2 border-emerald-500/40 hover:border-emerald-400 hover:scale-[1.02] transition flex flex-col items-center text-center gap-1.5 cursor-pointer shadow-lg group"
+                      >
+                        <span className="text-2xl p-1.5 rounded-xl bg-emerald-500/20 group-hover:scale-110 transition">🧤</span>
+                        <div>
+                          <h4 className="text-xs font-black text-white">Defender Chute</h4>
+                          <p className="text-[10px] text-zinc-400">Fechar o ângulo</p>
+                        </div>
+                        <span className="text-[9px] font-black uppercase text-emerald-400 bg-emerald-500/20 px-2 py-0.2 rounded-full mt-auto">
+                          Reflexo
+                        </span>
+                      </button>
 
-                  {/* Opção 2: Falta com Barreira ou Chute de Longe */}
-                  <button
-                    type="button"
-                    onClick={() => setActiveMoment(Math.random() < 0.5 ? 'free_kick_minigame' : 'long_shot_minigame')}
-                    className="p-3 rounded-xl bg-gradient-to-br from-amber-950/80 to-zinc-900 border-2 border-amber-500/40 hover:border-amber-400 hover:scale-[1.02] transition flex flex-col items-center text-center gap-1.5 cursor-pointer shadow-lg group"
-                  >
-                    <span className="text-2xl p-1.5 rounded-xl bg-amber-500/20 group-hover:scale-110 transition">🎯</span>
-                    <div>
-                      <h4 className="text-xs font-black text-white">Falta / Bomba</h4>
-                      <p className="text-[10px] text-zinc-400">Bola com curva</p>
-                    </div>
-                    <span className="text-[9px] font-black uppercase text-amber-400 bg-amber-500/20 px-2 py-0.2 rounded-full mt-auto">
-                      Efeito NSS
-                    </span>
-                  </button>
+                      {/* Goleiro Opção 2: Saída 1x1 */}
+                      <button
+                        type="button"
+                        onClick={() => setActiveMoment('goalkeeper_rush')}
+                        className="p-3 rounded-xl bg-gradient-to-br from-amber-950/80 to-zinc-900 border-2 border-amber-500/40 hover:border-amber-400 hover:scale-[1.02] transition flex flex-col items-center text-center gap-1.5 cursor-pointer shadow-lg group"
+                      >
+                        <span className="text-2xl p-1.5 rounded-xl bg-amber-500/20 group-hover:scale-110 transition">⚡</span>
+                        <div>
+                          <h4 className="text-xs font-black text-white">Saída 1x1</h4>
+                          <p className="text-[10px] text-zinc-400">Abafar o atacante</p>
+                        </div>
+                        <span className="text-[9px] font-black uppercase text-amber-400 bg-amber-500/20 px-2 py-0.2 rounded-full mt-auto">
+                          Coragem
+                        </span>
+                      </button>
 
-                  {/* Opção 3: Passe Enfiado ou Cabeceio */}
-                  <button
-                    type="button"
-                    onClick={() => setActiveMoment(Math.random() < 0.4 ? 'header_minigame' : 'pass_minigame')}
-                    className="p-3 rounded-xl bg-gradient-to-br from-emerald-950/80 to-zinc-900 border-2 border-emerald-500/40 hover:border-emerald-400 hover:scale-[1.02] transition flex flex-col items-center text-center gap-1.5 cursor-pointer shadow-lg group"
-                  >
-                    <span className="text-2xl p-1.5 rounded-xl bg-emerald-500/20 group-hover:scale-110 transition">👟</span>
-                    <div>
-                      <h4 className="text-xs font-black text-white">Passe / Cruzamento</h4>
-                      <p className="text-[10px] text-zinc-400">Assistência genial</p>
-                    </div>
-                    <span className="text-[9px] font-black uppercase text-emerald-400 bg-emerald-500/20 px-2 py-0.2 rounded-full mt-auto">
-                      Visão
-                    </span>
-                  </button>
+                      {/* Goleiro Opção 3: Cruzamento / Bola Aérea */}
+                      <button
+                        type="button"
+                        onClick={() => setActiveMoment('goalkeeper_cross')}
+                        className="p-3 rounded-xl bg-gradient-to-br from-blue-950/80 to-zinc-900 border-2 border-blue-500/40 hover:border-blue-400 hover:scale-[1.02] transition flex flex-col items-center text-center gap-1.5 cursor-pointer shadow-lg group"
+                      >
+                        <span className="text-2xl p-1.5 rounded-xl bg-blue-500/20 group-hover:scale-110 transition">☁️</span>
+                        <div>
+                          <h4 className="text-xs font-black text-white">Cruzamento</h4>
+                          <p className="text-[10px] text-zinc-400">Pegar ou espalmar</p>
+                        </div>
+                        <span className="text-[9px] font-black uppercase text-blue-400 bg-blue-500/20 px-2 py-0.2 rounded-full mt-auto">
+                          Tempo de Bola
+                        </span>
+                      </button>
 
-                  {/* Opção 4: Drible 1x1 ou Desarme */}
-                  <button
-                    type="button"
-                    onClick={() => setActiveMoment(playerProfile?.tacticalStance === 'defend' ? 'defense_minigame' : 'dribble_minigame')}
-                    className="p-3 rounded-xl bg-gradient-to-br from-blue-950/80 to-zinc-900 border-2 border-blue-500/40 hover:border-blue-400 hover:scale-[1.02] transition flex flex-col items-center text-center gap-1.5 cursor-pointer shadow-lg group"
-                  >
-                    <span className="text-2xl p-1.5 rounded-xl bg-blue-500/20 group-hover:scale-110 transition">
-                      {playerProfile?.tacticalStance === 'defend' ? '🛡️' : '🕺'}
-                    </span>
-                    <div>
-                      <h4 className="text-xs font-black text-white">
-                        {playerProfile?.tacticalStance === 'defend' ? 'Desarme Limpo' : 'Drible no 1x1'}
-                      </h4>
-                      <p className="text-[10px] text-zinc-400">
-                        {playerProfile?.tacticalStance === 'defend' ? 'Bote na bola' : 'Finta e caneta'}
-                      </p>
-                    </div>
-                    <span className="text-[9px] font-black uppercase text-blue-400 bg-blue-500/20 px-2 py-0.2 rounded-full mt-auto">
-                      Habilidade
-                    </span>
-                  </button>
+                      {/* Goleiro Opção 4: Reposição Longa */}
+                      <button
+                        type="button"
+                        onClick={() => setActiveMoment('pass_minigame')}
+                        className="p-3 rounded-xl bg-gradient-to-br from-purple-950/80 to-zinc-900 border-2 border-purple-500/40 hover:border-purple-400 hover:scale-[1.02] transition flex flex-col items-center text-center gap-1.5 cursor-pointer shadow-lg group"
+                      >
+                        <span className="text-2xl p-1.5 rounded-xl bg-purple-500/20 group-hover:scale-110 transition">👟</span>
+                        <div>
+                          <h4 className="text-xs font-black text-white">Lançamento</h4>
+                          <p className="text-[10px] text-zinc-400">Armar contra-ataque</p>
+                        </div>
+                        <span className="text-[9px] font-black uppercase text-purple-400 bg-purple-500/20 px-2 py-0.2 rounded-full mt-auto">
+                          Passe Longo
+                        </span>
+                      </button>
+                    </>
+                  ) : (['ZAG', 'LD', 'LE', 'VOL'].includes(playerProfile?.position || '') || playerProfile?.tacticalStance === 'defend') ? (
+                    <>
+                      {/* Defensor Opção 1: Desarme 1x1 */}
+                      <button
+                        type="button"
+                        onClick={() => setActiveMoment('defense_tackle')}
+                        className="p-3 rounded-xl bg-gradient-to-br from-emerald-950/80 to-zinc-900 border-2 border-emerald-500/40 hover:border-emerald-400 hover:scale-[1.02] transition flex flex-col items-center text-center gap-1.5 cursor-pointer shadow-lg group"
+                      >
+                        <span className="text-2xl p-1.5 rounded-xl bg-emerald-500/20 group-hover:scale-110 transition">🛡️</span>
+                        <div>
+                          <h4 className="text-xs font-black text-white">Desarme 1x1</h4>
+                          <p className="text-[10px] text-zinc-400">Bote na bola</p>
+                        </div>
+                        <span className="text-[9px] font-black uppercase text-emerald-400 bg-emerald-500/20 px-2 py-0.2 rounded-full mt-auto">
+                          Dividida
+                        </span>
+                      </button>
+
+                      {/* Defensor Opção 2: Interceptação */}
+                      <button
+                        type="button"
+                        onClick={() => setActiveMoment('defense_interception')}
+                        className="p-3 rounded-xl bg-gradient-to-br from-blue-950/80 to-zinc-900 border-2 border-blue-500/40 hover:border-blue-400 hover:scale-[1.02] transition flex flex-col items-center text-center gap-1.5 cursor-pointer shadow-lg group"
+                      >
+                        <span className="text-2xl p-1.5 rounded-xl bg-blue-500/20 group-hover:scale-110 transition">⚡</span>
+                        <div>
+                          <h4 className="text-xs font-black text-white">Interceptação</h4>
+                          <p className="text-[10px] text-zinc-400">Ler a linha de passe</p>
+                        </div>
+                        <span className="text-[9px] font-black uppercase text-blue-400 bg-blue-500/20 px-2 py-0.2 rounded-full mt-auto">
+                          Posicionamento
+                        </span>
+                      </button>
+
+                      {/* Defensor Opção 3: Duelo Aéreo */}
+                      <button
+                        type="button"
+                        onClick={() => setActiveMoment('defense_aerial')}
+                        className="p-3 rounded-xl bg-gradient-to-br from-amber-950/80 to-zinc-900 border-2 border-amber-500/40 hover:border-amber-400 hover:scale-[1.02] transition flex flex-col items-center text-center gap-1.5 cursor-pointer shadow-lg group"
+                      >
+                        <span className="text-2xl p-1.5 rounded-xl bg-amber-500/20 group-hover:scale-110 transition">✈️</span>
+                        <div>
+                          <h4 className="text-xs font-black text-white">Corte no Alto</h4>
+                          <p className="text-[10px] text-zinc-400">Cabeceio defensivo</p>
+                        </div>
+                        <span className="text-[9px] font-black uppercase text-amber-400 bg-amber-500/20 px-2 py-0.2 rounded-full mt-auto">
+                          Impulsão
+                        </span>
+                      </button>
+
+                      {/* Defensor Opção 4: Subida / Chute Longo */}
+                      <button
+                        type="button"
+                        onClick={() => setActiveMoment(Math.random() < 0.5 ? 'long_shot_minigame' : 'pass_minigame')}
+                        className="p-3 rounded-xl bg-gradient-to-br from-rose-950/80 to-zinc-900 border-2 border-rose-500/40 hover:border-rose-400 hover:scale-[1.02] transition flex flex-col items-center text-center gap-1.5 cursor-pointer shadow-lg group"
+                      >
+                        <span className="text-2xl p-1.5 rounded-xl bg-rose-500/20 group-hover:scale-110 transition">🚀</span>
+                        <div>
+                          <h4 className="text-xs font-black text-white">Subida Surpresa</h4>
+                          <p className="text-[10px] text-zinc-400">Bomba ou passe</p>
+                        </div>
+                        <span className="text-[9px] font-black uppercase text-rose-400 bg-rose-500/20 px-2 py-0.2 rounded-full mt-auto">
+                          Apoio
+                        </span>
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      {/* Atacante Opção 1: Cara a cara no gol */}
+                      <button
+                        type="button"
+                        onClick={() => setActiveMoment('inside_box_minigame')}
+                        className="p-3 rounded-xl bg-gradient-to-br from-rose-950/80 to-zinc-900 border-2 border-rose-500/40 hover:border-rose-400 hover:scale-[1.02] transition flex flex-col items-center text-center gap-1.5 cursor-pointer shadow-lg group"
+                      >
+                        <span className="text-2xl p-1.5 rounded-xl bg-rose-500/20 group-hover:scale-110 transition">⚡</span>
+                        <div>
+                          <h4 className="text-xs font-black text-white">Cara a Cara</h4>
+                          <p className="text-[10px] text-zinc-400">Na cara do gol</p>
+                        </div>
+                        <span className="text-[9px] font-black uppercase text-rose-400 bg-rose-500/20 px-2 py-0.2 rounded-full mt-auto">
+                          Finalização
+                        </span>
+                      </button>
+
+                      {/* Atacante Opção 2: Falta com Barreira ou Chute de Longe */}
+                      <button
+                        type="button"
+                        onClick={() => setActiveMoment(Math.random() < 0.5 ? 'free_kick_minigame' : 'long_shot_minigame')}
+                        className="p-3 rounded-xl bg-gradient-to-br from-amber-950/80 to-zinc-900 border-2 border-amber-500/40 hover:border-amber-400 hover:scale-[1.02] transition flex flex-col items-center text-center gap-1.5 cursor-pointer shadow-lg group"
+                      >
+                        <span className="text-2xl p-1.5 rounded-xl bg-amber-500/20 group-hover:scale-110 transition">🎯</span>
+                        <div>
+                          <h4 className="text-xs font-black text-white">Falta / Bomba</h4>
+                          <p className="text-[10px] text-zinc-400">Bola com curva</p>
+                        </div>
+                        <span className="text-[9px] font-black uppercase text-amber-400 bg-amber-500/20 px-2 py-0.2 rounded-full mt-auto">
+                          Efeito NSS
+                        </span>
+                      </button>
+
+                      {/* Atacante Opção 3: Passe Enfiado ou Cabeceio */}
+                      <button
+                        type="button"
+                        onClick={() => setActiveMoment(Math.random() < 0.4 ? 'header_minigame' : 'pass_minigame')}
+                        className="p-3 rounded-xl bg-gradient-to-br from-emerald-950/80 to-zinc-900 border-2 border-emerald-500/40 hover:border-emerald-400 hover:scale-[1.02] transition flex flex-col items-center text-center gap-1.5 cursor-pointer shadow-lg group"
+                      >
+                        <span className="text-2xl p-1.5 rounded-xl bg-emerald-500/20 group-hover:scale-110 transition">👟</span>
+                        <div>
+                          <h4 className="text-xs font-black text-white">Passe / Cabeceio</h4>
+                          <p className="text-[10px] text-zinc-400">Assistência genial</p>
+                        </div>
+                        <span className="text-[9px] font-black uppercase text-emerald-400 bg-emerald-500/20 px-2 py-0.2 rounded-full mt-auto">
+                          Visão
+                        </span>
+                      </button>
+
+                      {/* Atacante Opção 4: Drible 1x1 */}
+                      <button
+                        type="button"
+                        onClick={() => setActiveMoment('dribble_minigame')}
+                        className="p-3 rounded-xl bg-gradient-to-br from-blue-950/80 to-zinc-900 border-2 border-blue-500/40 hover:border-blue-400 hover:scale-[1.02] transition flex flex-col items-center text-center gap-1.5 cursor-pointer shadow-lg group"
+                      >
+                        <span className="text-2xl p-1.5 rounded-xl bg-blue-500/20 group-hover:scale-110 transition">
+                          🕺
+                        </span>
+                        <div>
+                          <h4 className="text-xs font-black text-white">
+                            Drible no 1x1
+                          </h4>
+                          <p className="text-[10px] text-zinc-400">
+                            Finta e caneta
+                          </p>
+                        </div>
+                        <span className="text-[9px] font-black uppercase text-blue-400 bg-blue-500/20 px-2 py-0.2 rounded-full mt-auto">
+                          Habilidade
+                        </span>
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
             ) : activeMoment === 'free_kick_minigame' ? (
@@ -1206,6 +1389,30 @@ export function LiveMatchModal({
                   onAdvanceToShot={handleAdvanceFromDribbleToShot}
                   defenderName={isUserHome ? (awayClub.roster?.[2]?.name || 'Zagueiro Central') : (homeClub.roster?.[2]?.name || 'Zagueiro Central')}
                   defenderRating={isUserHome ? (awayClub.roster?.[2]?.overall || 72) : (homeClub.roster?.[2]?.overall || 72)}
+                />
+              </div>
+            ) : activeMoment === 'goalkeeper_shot' || activeMoment === 'goalkeeper_rush' || activeMoment === 'goalkeeper_cross' ? (
+              <div className="flex-1 flex flex-col justify-center">
+                <GoalkeeperMinigame
+                  variant={activeMoment === 'goalkeeper_shot' ? 'shot_save' : activeMoment === 'goalkeeper_rush' ? 'rush_1v1' : 'cross_catch'}
+                  playerName={userActorName}
+                  playerReflexes={playerProfile?.attributes?.elasticity || playerProfile?.attributes?.gkReflexes || 75}
+                  playerPositioning={playerProfile?.attributes?.positioning || 75}
+                  onResult={handleGoalkeeperResult}
+                  onCancel={() => { setActiveMoment('none'); setIsPlaying(true); }}
+                />
+              </div>
+            ) : activeMoment === 'defense_tackle' || activeMoment === 'defense_interception' || activeMoment === 'defense_aerial' ? (
+              <div className="flex-1 flex flex-col justify-center">
+                <DefenseMinigame
+                  variant={activeMoment === 'defense_tackle' ? 'tackle_1v1' : activeMoment === 'defense_interception' ? 'interception' : 'aerial_duel'}
+                  playerName={userActorName}
+                  playerTackling={playerProfile?.attributes?.tackling || 75}
+                  playerHeading={playerProfile?.attributes?.heading || 75}
+                  playerJumping={playerProfile?.attributes?.jumping || 75}
+                  playerPositioning={playerProfile?.attributes?.positioning || 75}
+                  onResult={handleDefenseResult}
+                  onCancel={() => { setActiveMoment('none'); setIsPlaying(true); }}
                 />
               </div>
             ) : (

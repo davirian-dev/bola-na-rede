@@ -56,6 +56,17 @@ export function DesktopSidebar() {
       icon: Trophy,
     },
     {
+      label: 'Calendário de Jogos',
+      href: '/calendario',
+      icon: Database,
+    },
+    {
+      label: 'Loja Pix & VIP',
+      href: '/loja-pix',
+      icon: Sparkles,
+      badge: 'PIX',
+    },
+    {
       label: 'Rankings & Prêmios',
       href: '/ranking',
       icon: TrendingUp,

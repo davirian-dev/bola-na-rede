@@ -191,8 +191,137 @@ class SoundEngine {
     }, 150);
   }
 
+  // 6. Som de Cartão (Amarelo/Vermelho) — Alerta tenso
+  public playCardSound() {
+    if (this.muted) return;
+    const ctx = this.initCtx();
+    if (!ctx) return;
+    try {
+      const now = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(440, now);
+      osc.frequency.setValueAtTime(330, now + 0.1);
+      gain.gain.setValueAtTime(0.2, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.28);
+    } catch {}
+  }
+
+  // 7. Som de Chuva Ambiente
+  private rainNode: AudioBufferSourceNode | null = null;
+  private rainGain: GainNode | null = null;
+
+  public playRainAmbient(active: boolean) {
+    if (active && this.muted) return;
+    const ctx = this.initCtx();
+    if (!ctx) return;
+    try {
+      if (!active) {
+        if (this.rainGain) {
+          this.rainGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
+          setTimeout(() => { 
+            this.rainNode?.stop(); 
+            this.rainNode = null; 
+            this.rainGain = null; 
+          }, 600);
+        }
+        return;
+      }
+      if (this.rainNode) return; // já tocando
+      const bufSize = ctx.sampleRate * 2;
+      const buffer = ctx.createBuffer(1, bufSize, ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufSize; i++) data[i] = Math.random() * 2 - 1;
+      const noise = ctx.createBufferSource();
+      noise.buffer = buffer;
+      noise.loop = true;
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(600, ctx.currentTime);
+      const gain = ctx.createGain();
+      gain.gain.setValueAtTime(0.06, ctx.currentTime);
+      noise.connect(filter);
+      filter.connect(gain);
+      gain.connect(ctx.destination);
+      noise.start();
+      this.rainNode = noise;
+      this.rainGain = gain;
+    } catch {}
+  }
+
+  // 8. Som de UI Click leve
+  public playUiClick() {
+    if (this.muted) return;
+    const ctx = this.initCtx();
+    if (!ctx) return;
+    try {
+      const now = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(1200, now);
+      osc.frequency.exponentialRampToValueAtTime(800, now + 0.03);
+      gain.gain.setValueAtTime(0.1, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.05);
+    } catch {}
+  }
+
+  // 9. Som de Desbloqueio / Conquista
+  public playUnlock() {
+    if (this.muted) return;
+    const ctx = this.initCtx();
+    if (!ctx) return;
+    try {
+      const now = ctx.currentTime;
+      [523, 659, 784].forEach((freq, i) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, now + i * 0.12);
+        gain.gain.setValueAtTime(0.15, now + i * 0.12);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.12 + 0.2);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now + i * 0.12);
+        osc.stop(now + i * 0.12 + 0.22);
+      });
+    } catch {}
+  }
+
+  // 10. Chute com potência variável
+  public playKickPower(power: number) {
+    if (this.muted) return;
+    const ctx = this.initCtx();
+    if (!ctx) return;
+    try {
+      const now = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      const baseFreq = 80 + (power / 100) * 100;
+      osc.frequency.setValueAtTime(baseFreq, now);
+      osc.frequency.exponentialRampToValueAtTime(30, now + 0.1);
+      const vol = 0.2 + (power / 100) * 0.3;
+      gain.gain.setValueAtTime(vol, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.13);
+    } catch {}
+  }
+
   // Wrapper Universal para Minigames
-  public play(type: 'whistle' | 'kick' | 'goal' | 'woodwork' | 'cheer' | string) {
+  public play(type: 'whistle' | 'kick' | 'goal' | 'woodwork' | 'cheer' | 'card' | 'rain_on' | 'rain_off' | 'ui_click' | 'unlock' | string) {
     if (this.muted) return;
     switch (type) {
       case 'whistle': return this.playWhistle();
@@ -200,6 +329,11 @@ class SoundEngine {
       case 'goal': return this.playGoal();
       case 'woodwork': return this.playWoodwork();
       case 'cheer': return this.playCheer();
+      case 'card': return this.playCardSound();
+      case 'rain_on': return this.playRainAmbient(true);
+      case 'rain_off': return this.playRainAmbient(false);
+      case 'ui_click': return this.playUiClick();
+      case 'unlock': return this.playUnlock();
       default: return this.playKick();
     }
   }
@@ -213,5 +347,10 @@ export const playKick = () => sound.playKick();
 export const playWoodwork = () => sound.playWoodwork();
 export const playCheer = () => sound.playCheer();
 export const playGoal = () => sound.playGoal();
+export const playCardSound = () => sound.playCardSound();
+export const playRainAmbient = (active: boolean) => sound.playRainAmbient(active);
+export const playUiClick = () => sound.playUiClick();
+export const playUnlock = () => sound.playUnlock();
+export const playKickPower = (power: number) => sound.playKickPower(power);
 export const toggleMute = () => sound.toggleMute();
 export const isMuted = () => sound.isMuted();

@@ -595,7 +595,7 @@ export default function LandingAuthPage() {
 
       {/* Rodapé da Landing com LGPD e Políticas */}
       <footer className="relative z-20 w-full py-6 text-center border-t border-border/50 text-xs text-muted-foreground space-y-2">
-        <div className="flex items-center justify-center gap-4 text-xs font-semibold">
+        <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs font-semibold px-4">
           <Link href="/pontuacao" className="hover:text-foreground transition-colors">
             Sistema de Pontuação
           </Link>
@@ -604,13 +604,25 @@ export default function LandingAuthPage() {
             Hall da Fama
           </Link>
           <span>•</span>
-          <a href="/privacidade.html" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors">
-            Privacidade & LGPD
-          </a>
+          <Link href="/calendario" className="hover:text-foreground transition-colors">
+            Calendário
+          </Link>
           <span>•</span>
-          <a href="/termos.html" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors">
+          <Link href="/loja-pix" className="hover:text-emerald-400 transition-colors">
+            Loja Pix
+          </Link>
+          <span>•</span>
+          <Link href="/suporte" className="hover:text-foreground transition-colors">
+            Suporte
+          </Link>
+          <span>•</span>
+          <Link href="/privacidade" className="hover:text-foreground transition-colors">
+            Privacidade & LGPD
+          </Link>
+          <span>•</span>
+          <Link href="/termos" className="hover:text-foreground transition-colors">
             Termos de Uso
-          </a>
+          </Link>
         </div>
         <p className="text-[11px] text-muted-foreground">
           Bola na Rede: Carreira © 2026 • Inspirado no clássico futebol brasileiro (Brasfoot, Elifoot & New Star Soccer).
