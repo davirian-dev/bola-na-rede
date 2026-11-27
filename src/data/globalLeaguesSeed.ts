@@ -6,6 +6,7 @@
 import { Club, Division, Player, Position } from '@/types/game';
 import { generatePlayer } from './brazilSeed';
 import { injectFamousStars } from './famousStarRosters';
+import { organizeRosterForFormation } from '@/engine/positionEngine';
 
 export interface RawGlobalClubDef {
   id: string;
@@ -407,12 +408,9 @@ const ROSTER_POSITIONS: Position[] = [
 ];
 
 const YOUTH_POSITIONS: Position[] = [
-  'GOL',
-  'ZAG', 'ZAG',
-  'LD', 'LE',
+  'GOL', 'LD', 'ZAG', 'ZAG', 'LE',
   'VOL', 'MC', 'MEI',
-  'PD', 'PE',
-  'ATA'
+  'PD', 'ATA', 'PE'
 ];
 
 /**
@@ -427,8 +425,8 @@ export function generateGlobalClubs(): Record<string, Club> {
       generatePlayer(raw.id, idx + 1, pos, raw.division, false)
     );
 
-    // Injeta os astros reais (Messi, CR7, Neymar, etc.) no elenco
-    roster = injectFamousStars(raw.id, roster);
+    // Injeta os astros reais (Messi, CR7, Neymar, etc.) e organiza o 11 titular no esquema 4-3-3
+    roster = organizeRosterForFormation(injectFamousStars(raw.id, roster), '4-3-3');
 
     // 11 jogadores no elenco Sub-20
     const youthRoster: Player[] = YOUTH_POSITIONS.map((pos, idx) =>
@@ -455,9 +453,9 @@ export function generateGlobalClubs(): Record<string, Club> {
       youthRoster,
       rivalClubIds: raw.rivalClubIds,
       derbyName: raw.derbyName,
-      captainPlayerId: roster[0]?.id || `${raw.id}-p-1`,
-      penaltyTakerPlayerId: roster[0]?.id || `${raw.id}-p-1`,
-      freeKickTakerPlayerId: roster[0]?.id || `${raw.id}-p-1`,
+      captainPlayerId: roster[2]?.id || roster[0]?.id,
+      penaltyTakerPlayerId: roster[9]?.id || roster[8]?.id,
+      freeKickTakerPlayerId: roster[7]?.id || roster[10]?.id,
       lineup: roster.slice(0, 11).map((p) => p.id),
       tactics: {
         formation: '4-3-3',

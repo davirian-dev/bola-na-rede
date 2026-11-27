@@ -2,13 +2,19 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useGameStore } from '@/store/gameStore';
-import { X, Mic, Flame, Volume2, Sparkles, Trophy, RotateCcw, CheckCircle2, AlertCircle } from 'lucide-react';
+import { X, Mic, Volume2, Sparkles, RotateCcw } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { sound } from '@/lib/soundEffects';
+import { Division } from '@/types/game';
+import { useMinigameBalance } from '@/engine/minigameBalance';
+import { DifficultyBadge } from '@/components/game/DifficultyBadge';
 
 interface ManagerSpeechMinigameProps {
   isOpen: boolean;
   onClose: () => void;
-  isHalfTime?: boolean; // Se foi chamado no intervalo da partida
+  isHalfTime?: boolean;
+  divisionOverride?: Division;
+  opponentOverall?: number;
   onCompleted?: (result: { score: number; moraleGain: number; success: boolean }) => void;
 }
 
@@ -40,9 +46,17 @@ export const ManagerSpeechMinigame: React.FC<ManagerSpeechMinigameProps> = ({
   isOpen,
   onClose,
   isHalfTime = false,
+  divisionOverride,
+  opponentOverall,
   onCompleted,
 }) => {
-  const { managerProfile, updateManagerMorale } = useGameStore() as any;
+  const { updateManagerMorale } = useGameStore() as {
+    updateManagerMorale?: (gain: number) => void;
+  };
+  const balance = useMinigameBalance({
+    division: divisionOverride,
+    opponentOverall,
+  });
 
   const [currentRound, setCurrentRound] = useState<number>(0);
   const [sliderPos, setSliderPos] = useState<number>(50);
@@ -50,27 +64,31 @@ export const ManagerSpeechMinigame: React.FC<ManagerSpeechMinigameProps> = ({
   const [isLocked, setIsLocked] = useState<boolean>(false);
   const [roundFeedback, setRoundFeedback] = useState<string>('');
   const [isFinished, setIsFinished] = useState<boolean>(false);
+  const [finalStats, setFinalStats] = useState<{ score: number; moraleGain: number }>({
+    score: 0,
+    moraleGain: 0,
+  });
 
   const animationFrameRef = useRef<number | null>(null);
+  const posRef = useRef<number>(50);
   const directionRef = useRef<number>(1);
-  const speedRef = useRef<number>(1.6);
+  const speedRef = useRef<number>(1.7 * balance.powerBarSpeedMult);
   const isHandledRef = useRef<boolean>(false);
 
-  // Animação do ponteiro oscilante (vai de 0 a 100 e volta)
+  // Oscilador suave a 60fps sem reiniciar o effect a cada frame
   useEffect(() => {
     if (!isOpen || isLocked || isFinished) return;
 
-    let pos = sliderPos;
     const animate = () => {
-      pos += directionRef.current * speedRef.current;
-      if (pos >= 100) {
-        pos = 100;
+      posRef.current += directionRef.current * speedRef.current;
+      if (posRef.current >= 100) {
+        posRef.current = 100;
         directionRef.current = -1;
-      } else if (pos <= 0) {
-        pos = 0;
+      } else if (posRef.current <= 0) {
+        posRef.current = 0;
         directionRef.current = 1;
       }
-      setSliderPos(pos);
+      setSliderPos(posRef.current);
       animationFrameRef.current = requestAnimationFrame(animate);
     };
 
@@ -79,7 +97,7 @@ export const ManagerSpeechMinigame: React.FC<ManagerSpeechMinigameProps> = ({
     return () => {
       if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
     };
-  }, [isOpen, isLocked, isFinished, sliderPos]);
+  }, [isOpen, isLocked, isFinished]);
 
   const handleSpeak = () => {
     if (isLocked || isFinished || isHandledRef.current) return;
@@ -87,25 +105,20 @@ export const ManagerSpeechMinigame: React.FC<ManagerSpeechMinigameProps> = ({
     setIsLocked(true);
     if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
 
-    // Avalia a zona de acerto:
-    // 38 a 68 é a Zona Verde (Sweet Spot)
-    // 15 a 37 ou 69 a 85 é Zona Amarela
-    // < 15 ou > 85 é Zona Vermelha
-    const pos = sliderPos;
-    let scoreType: 'perfect' | 'good' | 'bad' = 'good';
+    const pos = posRef.current;
     let feedback = '';
 
     if (pos >= 38 && pos <= 68) {
-      scoreType = 'perfect';
       feedback = '🔥 Discurso Perfeito! O capitão bate palmas, o vestiário inflama e o elenco responde com sangue nos olhos!';
+      sound.playCheer();
       setHits((h) => [...h, 100]);
     } else if ((pos >= 15 && pos < 38) || (pos > 68 && pos <= 85)) {
-      scoreType = 'good';
-      feedback = '👍 Discurso Firme. Os jogadores concordam com a cabeça e assimilam o recado com seriedade.';
+      feedback = '👍 Discurso Firme. Os jogadores concordam e assimilam o recado com seriedade.';
+      sound.playUiClick();
       setHits((h) => [...h, 60]);
     } else {
-      scoreType = 'bad';
       feedback = '⚠️ Tom Descalibrado! O discurso soou hesitante ou ríspido demais. Alguns atletas sentiram a pressão.';
+      sound.playCardSound();
       setHits((h) => [...h, 20]);
     }
 
@@ -118,17 +131,17 @@ export const ManagerSpeechMinigame: React.FC<ManagerSpeechMinigameProps> = ({
       setCurrentRound((c) => c + 1);
       setIsLocked(false);
       setRoundFeedback('');
-      // Aumenta ligeiramente a velocidade a cada rodada
-      speedRef.current += 0.4;
+      speedRef.current += 0.45 * balance.powerBarSpeedMult;
     } else {
-      // Concluiu as 3 rodadas
-      setIsFinished(true);
       const totalHits = hits.reduce((a, b) => a + b, 0);
       const avgScore = Math.round(totalHits / SPEECH_ROUNDS.length);
+      const moraleGain = avgScore >= 80 ? 20 : avgScore >= 50 ? 12 : 5;
 
-      const moraleGain = avgScore >= 80 ? 20 : avgScore >= 50 ? 10 : 5;
+      setFinalStats({ score: avgScore, moraleGain });
+      setIsFinished(true);
 
       if (avgScore >= 75) {
+        sound.playGoal();
         confetti({
           particleCount: 80,
           spread: 70,
@@ -137,28 +150,26 @@ export const ManagerSpeechMinigame: React.FC<ManagerSpeechMinigameProps> = ({
         });
       }
 
-      if (updateManagerMorale) {
-        updateManagerMorale(moraleGain);
-      }
-
-      if (onCompleted) {
-        onCompleted({
-          score: avgScore,
-          moraleGain,
-          success: avgScore >= 60,
-        });
-      }
+      updateManagerMorale?.(moraleGain);
+      onCompleted?.({
+        score: avgScore,
+        moraleGain,
+        success: avgScore >= 60,
+      });
     }
   };
 
   const handleRestart = () => {
+    posRef.current = 50;
+    directionRef.current = 1;
+    speedRef.current = 1.7 * balance.powerBarSpeedMult;
+    isHandledRef.current = false;
     setCurrentRound(0);
     setSliderPos(50);
     setHits([]);
     setIsLocked(false);
     setRoundFeedback('');
     setIsFinished(false);
-    speedRef.current = 1.6;
   };
 
   if (!isOpen) return null;
@@ -168,7 +179,6 @@ export const ManagerSpeechMinigame: React.FC<ManagerSpeechMinigameProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md">
       <div className="relative w-full max-w-xl bg-zinc-950 border-2 border-amber-500/50 rounded-3xl shadow-2xl overflow-hidden flex flex-col">
-        {/* Header */}
         <div className="p-4 sm:p-5 border-b border-zinc-800 bg-gradient-to-r from-amber-950/60 to-zinc-900 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <div className="w-10 h-10 rounded-2xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-xl">
@@ -189,101 +199,81 @@ export const ManagerSpeechMinigame: React.FC<ManagerSpeechMinigameProps> = ({
             </div>
           </div>
 
-          <button
-            onClick={onClose}
-            className="p-2 rounded-xl bg-zinc-800/80 hover:bg-zinc-700 text-zinc-400 hover:text-white transition cursor-pointer"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-2">
+            <DifficultyBadge balance={balance} compact />
+            <button
+              onClick={onClose}
+              className="p-2 rounded-xl bg-zinc-800/80 hover:bg-zinc-700 text-zinc-400 hover:text-white transition cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
-        {/* Body Content */}
         <div className="p-4 sm:p-6 space-y-5">
           {!isFinished ? (
             <>
-              {/* Tema e Frase do Treinador */}
               <div className="bg-zinc-900/90 border border-amber-500/30 rounded-2xl p-4 space-y-2 text-center relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-24 h-24 bg-amber-500/5 rounded-full blur-xl pointer-events-none" />
-                
                 <span className="text-[11px] font-black uppercase tracking-widest text-amber-400 block">
                   {currentSpeech.topic}
                 </span>
-
                 <blockquote className="text-base sm:text-lg font-bold text-white italic px-2">
                   {currentSpeech.options}
                 </blockquote>
-
-                <p className="text-xs text-zinc-400 font-medium">
-                  {currentSpeech.subtext}
-                </p>
+                <p className="text-xs text-zinc-400 font-medium">{currentSpeech.subtext}</p>
               </div>
 
-              {/* Medidor Rítmico de Discurso (Oscilador com Sweet Spot) */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between text-xs font-black">
                   <span className="text-zinc-400">Timbre & Intensidade:</span>
                   <span className="text-amber-400 flex items-center gap-1">
                     <Volume2 className="w-3.5 h-3.5" />
-                    Pressione no Centro Verde!
+                    Toque quando passar no Centro Verde!
                   </span>
                 </div>
 
-                {/* Trilha do Oscilador (Interativa ao Toque) */}
-                <div 
+                <div
                   onClick={handleSpeak}
                   onTouchStart={(e) => {
-                    if (e.touches && e.touches.length > 0) {
+                    if (e.touches.length > 0) {
                       e.preventDefault();
                       handleSpeak();
                     }
                   }}
                   className="relative h-12 w-full rounded-2xl bg-zinc-900 border-2 border-zinc-800 overflow-hidden shadow-inner flex items-center cursor-pointer touch-none select-none active:scale-[0.99] transition-transform"
                 >
-                  {/* Zona Amarela Esquerda (Morno) */}
                   <div className="h-full w-[38%] bg-amber-500/20 border-r border-amber-500/30 flex items-center justify-center">
                     <span className="text-[9px] font-bold text-amber-400/80 uppercase">Morno</span>
                   </div>
-
-                  {/* Zona Verde Centro (Sweet Spot Perfeito) */}
-                  <div className="h-full w-[30%] bg-emerald-500/30 border-r border-emerald-500/40 flex items-center justify-center relative">
-                    <span className="text-[10px] font-black text-emerald-300 uppercase tracking-wider flex items-center gap-1">
+                  <div className="h-full w-[30%] bg-emerald-500/30 border-r border-emerald-500/40 flex items-center justify-center">
+                    <span className="text-[10px] font-black text-emerald-300 uppercase tracking-wider">
                       ★ PERFEITO ★
                     </span>
                   </div>
-
-                  {/* Zona Amarela/Vermelha Direita (Exagero) */}
                   <div className="h-full w-[32%] bg-rose-500/20 flex items-center justify-center">
                     <span className="text-[9px] font-bold text-rose-400/80 uppercase">Excesso</span>
                   </div>
 
-                  {/* Agulha / Marcador Móvel */}
                   <div
-                    className="absolute top-0 bottom-0 w-3.5 -ml-1.5 bg-white shadow-2xl rounded-full z-10 border border-zinc-950 transition-none pointer-events-none"
+                    className="absolute top-0 bottom-0 w-3.5 -ml-1.5 bg-white shadow-2xl rounded-full z-10 border border-zinc-950 pointer-events-none"
                     style={{ left: `${sliderPos}%` }}
                   >
-                    <div className="w-full h-full bg-amber-400 rounded-full animate-pulse" />
+                    <div className="w-full h-full bg-amber-400 rounded-full" />
                   </div>
-                </div>
-
-                <div className="flex justify-between text-[10px] text-zinc-500 px-1 font-semibold">
-                  <span>Hesitante</span>
-                  <span className="text-emerald-400 font-bold">Tom Preciso</span>
-                  <span>Descontrolado</span>
                 </div>
               </div>
 
-              {/* Botão de Discurso / Próxima */}
               {!isLocked ? (
                 <button
                   type="button"
                   onClick={handleSpeak}
                   onTouchStart={(e) => {
-                    if (e.touches && e.touches.length > 0) {
+                    if (e.touches.length > 0) {
                       e.preventDefault();
                       handleSpeak();
                     }
                   }}
-                  className="w-full py-4 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-zinc-950 font-black text-sm uppercase tracking-wider shadow-lg hover:shadow-amber-500/25 transition-transform active:scale-[0.98] cursor-pointer flex items-center justify-center gap-2 touch-manipulation select-none"
+                  className="w-full py-4 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-zinc-950 font-black text-sm uppercase tracking-wider shadow-lg transition-transform active:scale-[0.98] cursor-pointer flex items-center justify-center gap-2 touch-manipulation select-none"
                 >
                   <Mic className="w-5 h-5 fill-zinc-950" />
                   SOLTAR A VOZ COM ENERGIA!
@@ -306,7 +296,6 @@ export const ManagerSpeechMinigame: React.FC<ManagerSpeechMinigameProps> = ({
               )}
             </>
           ) : (
-            /* Tela Final com Resultados */
             <div className="text-center py-6 space-y-4">
               <div className="w-16 h-16 rounded-full bg-amber-500/20 border-2 border-amber-500/50 flex items-center justify-center text-3xl mx-auto">
                 🔥
@@ -314,25 +303,21 @@ export const ManagerSpeechMinigame: React.FC<ManagerSpeechMinigameProps> = ({
 
               <div className="space-y-1">
                 <span className="text-[10px] font-black uppercase tracking-widest text-amber-400 bg-amber-500/15 border border-amber-500/30 px-2.5 py-0.5 rounded-full">
-                  Preleção Concluída
+                  Preleção Concluída ({finalStats.score}% precisão)
                 </span>
                 <h3 className="text-xl font-black text-white font-display">
-                  Vestiário Inflamado para a Batalha!
+                  {finalStats.score >= 70 ? 'Vestiário Inflamado para a Batalha!' : 'Elenco Focado na Missão'}
                 </h3>
-                <p className="text-xs text-zinc-400 max-w-sm mx-auto">
-                  Sua postura motivacional ecoou pelos corredores. Os atletas sobem para o gramado convictos da vitória!
-                </p>
               </div>
 
-              {/* Bônus Concedidos */}
               <div className="grid grid-cols-2 gap-3 max-w-sm mx-auto pt-2">
                 <div className="p-3 rounded-2xl bg-zinc-900 border border-zinc-800 text-center">
                   <span className="text-xs text-zinc-400 font-semibold block">Moral do Elenco</span>
-                  <span className="text-xl font-black text-emerald-400">+15 a +20 pts</span>
+                  <span className="text-xl font-black text-emerald-400">+{finalStats.moraleGain} pts</span>
                 </div>
                 <div className="p-3 rounded-2xl bg-zinc-900 border border-zinc-800 text-center">
-                  <span className="text-xs text-zinc-400 font-semibold block">Confiança da Torcida</span>
-                  <span className="text-xl font-black text-amber-400">+5 pts</span>
+                  <span className="text-xs text-zinc-400 font-semibold block">Precisão do Tom</span>
+                  <span className="text-xl font-black text-amber-400">{finalStats.score}%</span>
                 </div>
               </div>
 

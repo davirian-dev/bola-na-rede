@@ -188,7 +188,7 @@ export function NSSPlayerShopModal({ isOpen, onClose }: NSSPlayerShopModalProps)
 
                 <div className="flex flex-wrap items-center justify-end gap-1.5 text-xs font-bold max-w-xs">
                   {(() => {
-                    const bAttrs = (activeBoot.bonusAttributes || {}) as any;
+                    const bAttrs = (activeBoot.bonusAttributes || {}) as Record<string, number | undefined>;
                     return (
                       <>
                         {bAttrs.pace && (

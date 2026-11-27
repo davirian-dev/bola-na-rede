@@ -7,6 +7,14 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>;
 }
 
+interface StandaloneNavigator extends Navigator {
+  standalone?: boolean;
+}
+
+interface LegacyWindow extends Window {
+  MSStream?: unknown;
+}
+
 export function usePWAInstall() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isInstallable, setIsInstallable] = useState(false);
@@ -29,23 +37,23 @@ export function usePWAInstall() {
 
     if (typeof window === 'undefined') return;
 
-    // Detecta se já está rodando em modo standalone (PWA instalada)
-    const checkStandalone = () => {
+    // Detecta standalone e iOS fora do corpo síncrono do effect
+    const initTimer = setTimeout(() => {
+      const nav = window.navigator as StandaloneNavigator;
+      const win = window as LegacyWindow;
       const isStandaloneMode =
         window.matchMedia('(display-mode: standalone)').matches ||
-        (window.navigator as any).standalone === true ||
+        nav.standalone === true ||
         document.referrer.includes('android-app://');
       setIsStandalone(isStandaloneMode);
       if (isStandaloneMode) {
         setIsInstalled(true);
       }
-    };
-    checkStandalone();
 
-    // Detecta iOS (iPhone / iPad)
-    const userAgent = window.navigator.userAgent.toLowerCase();
-    const isAppleDevice = /iphone|ipad|ipod/.test(userAgent) && !(window as any).MSStream;
-    setIsIOS(isAppleDevice);
+      const userAgent = window.navigator.userAgent.toLowerCase();
+      const isAppleDevice = /iphone|ipad|ipod/.test(userAgent) && !win.MSStream;
+      setIsIOS(isAppleDevice);
+    }, 0);
 
     // Captura o evento beforeinstallprompt (Android / Chrome / Edge)
     const handleBeforeInstallPrompt = (e: Event) => {
@@ -64,6 +72,7 @@ export function usePWAInstall() {
     window.addEventListener('appinstalled', handleAppInstalled);
 
     return () => {
+      clearTimeout(initTimer);
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
       window.removeEventListener('appinstalled', handleAppInstalled);
     };

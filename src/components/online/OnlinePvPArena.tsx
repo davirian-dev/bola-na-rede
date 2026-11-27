@@ -36,6 +36,11 @@ interface OpponentData {
   avatarIcon: string;
 }
 
+function pickRandomOppSide(): 'left' | 'center' | 'right' {
+  const oppSides = ['left', 'center', 'right'] as const;
+  return oppSides[Math.floor(Math.random() * oppSides.length)];
+}
+
 const OPPONENT_POOL: OpponentData[] = [
   {
     id: 'opp-1',
@@ -158,14 +163,25 @@ export function OnlinePvPArena() {
     : (managerProfile?.clubId ? clubs[managerProfile.clubId] : clubs['pal']);
   const userRating = mode === 'player' ? (playerProfile?.overall || 65) : 75;
 
+  const startMatch = (opp: OpponentData) => {
+    setCurrentOpponent(opp);
+    setCurrentRound(0);
+    setTurn('user_shooting');
+    setUserScoreBoard(['pending', 'pending', 'pending', 'pending', 'pending']);
+    setOppScoreBoard(['pending', 'pending', 'pending', 'pending', 'pending']);
+    setLastEventText(`⚔️ Duelo Iniciado! Você cobra a 1ª bola parada contra ${opp.name}!`);
+    setMatchResultData(null);
+    setArenaState('in_match');
+  };
+
   // Timer de Matchmaking com cleanup robusto
   useEffect(() => {
     if (arenaState !== 'searching') {
-      setSearchTimer(0);
       return;
     }
 
     let seconds = 0;
+    let launchTimeout: ReturnType<typeof setTimeout> | null = null;
     const interval = setInterval(() => {
       seconds += 1;
       setSearchTimer(seconds);
@@ -176,34 +192,28 @@ export function OnlinePvPArena() {
         setCurrentOpponent(randomOpp);
         setArenaState('match_found');
         sound.playWhistle();
-        setTimeout(() => {
+        launchTimeout = setTimeout(() => {
           startMatch(randomOpp);
         }, 2200);
       }
     }, 1000);
 
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      if (launchTimeout) clearTimeout(launchTimeout);
+    };
   }, [arenaState]);
 
   const handleStartSearch = (type: 'penalties' | 'tactical') => {
+    setSearchTimer(0);
     setMatchType(type);
     setArenaState('searching');
     sound.playWhistle();
   };
 
   const handleCancelSearch = () => {
+    setSearchTimer(0);
     setArenaState('idle');
-  };
-
-  const startMatch = (opp: OpponentData) => {
-    setCurrentOpponent(opp);
-    setCurrentRound(0);
-    setTurn('user_shooting');
-    setUserScoreBoard(['pending', 'pending', 'pending', 'pending', 'pending']);
-    setOppScoreBoard(['pending', 'pending', 'pending', 'pending', 'pending']);
-    setLastEventText(`⚔️ Duelo Iniciado! Você cobra a 1ª bola parada contra ${opp.name}!`);
-    setMatchResultData(null);
-    setArenaState('in_match');
   };
 
   // 1. Quando o usuário chuta no minigame (sucesso)
@@ -244,8 +254,7 @@ export function OnlinePvPArena() {
     setKeeperDefending(true);
 
     // O adversário chuta em um lado
-    const oppSides: ('left' | 'center' | 'right')[] = ['left', 'center', 'right'];
-    const oppSide = oppSides[Math.floor(Math.random() * oppSides.length)];
+    const oppSide = pickRandomOppSide();
     const oppScores = oppSide !== side;
 
     setTimeout(() => {

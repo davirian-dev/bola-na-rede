@@ -57,7 +57,8 @@ alter table public.community_packs enable row level security;
 -- Políticas de Acesso
 create policy "Perfis públicos para leitura" on public.profiles for select using (true);
 create policy "Usuário edita o próprio perfil" on public.profiles for update using (auth.uid() = id);
-create policy "Usuário cria o próprio perfil" on public.profiles for insert with check (auth.uid() = id);
+create policy "Usuário cria o próprio perfil" on public.profiles for insert with check (auth.uid() = id and plan = 'free');
+revoke update (plan) on public.profiles from authenticated, anon;
 
 create policy "Usuário acessa apenas seus saves" on public.saves for all using (auth.uid() = user_id);
 

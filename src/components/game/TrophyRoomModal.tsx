@@ -124,7 +124,7 @@ export const TrophyRoomModal: React.FC<TrophyRoomModalProps> = ({ isOpen, onClos
   // Cálculo Oficial de Pontos de Glória
   let calculatedGloryPoints = 0;
   OFFICIAL_TROPHIES.forEach((trophy) => {
-    const count = (titlesCount as any)[trophy.id] || 0;
+    const count = (titlesCount as Record<string, number>)[trophy.id] || 0;
     calculatedGloryPoints += count * trophy.gloryPoints;
   });
   // Bônus por gols na carreira
@@ -140,7 +140,7 @@ export const TrophyRoomModal: React.FC<TrophyRoomModalProps> = ({ isOpen, onClos
       rank: 5,
       name: (mode === 'player' ? (playerProfile?.nickname || playerProfile?.name) : managerProfile?.name) || 'Sua Carreira',
       country: '🇧🇷',
-      trophies: Object.values(titlesCount).reduce((a: number, b: any) => a + (Number(b) || 0), 0),
+      trophies: Object.values(titlesCount).reduce((a: number, b: number | undefined) => a + (Number(b) || 0), 0),
       gloryPoints: calculatedGloryPoints,
       isUser: true,
       role: mode === 'player' ? 'Atleta Boleiro' : 'Comandante Técnico',
@@ -230,7 +230,7 @@ export const TrophyRoomModal: React.FC<TrophyRoomModalProps> = ({ isOpen, onClos
           {activeTab === 'hall' && (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {OFFICIAL_TROPHIES.map((trophy) => {
-                const count = (titlesCount as any)[trophy.id] || 0;
+                const count = (titlesCount as Record<string, number>)[trophy.id] || 0;
                 const isUnlocked = count > 0;
 
                 return (

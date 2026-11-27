@@ -5,17 +5,13 @@ import confetti from 'canvas-confetti';
 import { useGameStore } from '@/store/gameStore';
 import { playWhistle, playGoal, playKick } from '@/lib/soundEffects';
 import { renderBallWithShadow } from '@/engine/ballPhysics';
+import { drawCartoonPlayer, drawGoalWithNet } from '@/lib/minigameCanvas';
+import { Division } from '@/types/game';
+import { useMinigameBalance } from '@/engine/minigameBalance';
+import { DifficultyBadge } from './DifficultyBadge';
 import { 
   RotateCcw, 
-  Sparkles, 
-  CheckCircle2, 
-  XCircle, 
-  Target,
-  ArrowRight,
-  Info,
-  Zap,
-  Users,
-  Flag
+  Zap
 } from 'lucide-react';
 
 interface NSSPassMinigameProps {
@@ -24,6 +20,8 @@ interface NSSPassMinigameProps {
   onClose?: () => void;
   mode?: 'training' | 'match_clutch';
   teammateName?: string;
+  divisionOverride?: Division;
+  opponentOverall?: number;
 }
 
 export function NSSPassMinigame({
@@ -32,9 +30,19 @@ export function NSSPassMinigame({
   onClose,
   mode = 'training',
   teammateName = 'Companheiro',
+  divisionOverride,
+  opponentOverall,
 }: NSSPassMinigameProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const playerProfile = useGameStore((s) => s.playerProfile);
+  const balance = useMinigameBalance({
+    division: divisionOverride,
+    opponentOverall,
+  });
+  const balanceRef = useRef(balance);
+  useEffect(() => {
+    balanceRef.current = balance;
+  }, [balance]);
 
   const skinToneColor = {
     1: '#fce7d2',
@@ -52,14 +60,28 @@ export function NSSPassMinigame({
   const [feedbackText, setFeedbackText] = useState('Toque ou arraste no campo para lançar a bola! Cuidado com a Linha de Impedimento 🚩!');
   const [power, setPower] = useState<number>(55); // Barra de Força 10% a 100%
 
+  // Estado da simulação física em Canvas2D (declarado antes dos effects)
+  const simRef = useRef({
+    ball: { x: 200, y: 290, vx: 0, vy: 0, moving: false, radius: 7 },
+    passer: { x: 200, y: 300, radius: 10 },
+    receiver: { x: 90, y: 155, targetX: 310, targetY: 155, vx: 1.4, vy: 0.5, radius: 10, reachedBall: false },
+    defenders: [
+      { x: 160, y: 190, vx: 1.1, minX: 110, maxX: 230, radius: 11 },
+      { x: 270, y: 170, vx: -1.2, minX: 200, maxX: 330, radius: 11 },
+    ],
+    wasOffsideAtKick: false,
+    aim: { active: false, startX: 200, startY: 290, targetX: 200, targetY: 130 },
+  });
+
   // Oscilação Contínua da Barra de Força
   useEffect(() => {
-    if (passResult === 'passing' || simRef.current.ball.moving) return;
+    if (passResult === 'passing') return;
 
     let dir = 1;
     const interval = setInterval(() => {
+      if (simRef.current.ball.moving) return;
       setPower((p) => {
-        let next = p + dir * 3.5;
+        let next = p + dir * (3.5 * balanceRef.current.powerBarSpeedMult);
         if (next >= 100) {
           next = 100;
           dir = -1;
@@ -74,19 +96,6 @@ export function NSSPassMinigame({
     return () => clearInterval(interval);
   }, [passResult]);
 
-  // Estado da simulação física em Canvas2D
-  const simRef = useRef({
-    ball: { x: 200, y: 290, vx: 0, vy: 0, moving: false, radius: 7 },
-    passer: { x: 200, y: 300, radius: 10 },
-    receiver: { x: 90, y: 155, targetX: 310, targetY: 155, vx: 1.4, vy: 0.5, radius: 10, reachedBall: false },
-    defenders: [
-      { x: 160, y: 190, vx: 1.1, minX: 110, maxX: 230, radius: 11 },
-      { x: 270, y: 170, vx: -1.2, minX: 200, maxX: 330, radius: 11 },
-    ],
-    wasOffsideAtKick: false,
-    aim: { active: false, startX: 200, startY: 290, targetX: 200, targetY: 130 },
-  });
-
   const resetPass = useCallback(() => {
     const s = simRef.current;
     s.ball = { x: 200, y: 290, vx: 0, vy: 0, moving: false, radius: 7 };
@@ -94,7 +103,7 @@ export function NSSPassMinigame({
     s.defenders = [
       { x: 150, y: 190, vx: 1.1, minX: 100, maxX: 220, radius: 11 },
       { x: 260, y: 175, vx: -1.2, minX: 190, maxX: 320, radius: 11 },
-    ],
+    ];
     s.wasOffsideAtKick = false;
     s.aim.active = false;
     setPassResult('idle');
@@ -126,26 +135,30 @@ export function NSSPassMinigame({
       }
 
       // Linhas da Grande Área e Gol no Topo
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.45)';
       ctx.lineWidth = 2.5;
-      ctx.strokeRect(40, 20, width - 80, 120);
-      ctx.strokeRect(120, 20, width - 240, 50);
-
-      // Gol no topo
-      ctx.fillStyle = 'rgba(15, 23, 42, 0.6)';
-      ctx.fillRect(140, 0, 120, 20);
-      ctx.strokeRect(140, 0, 120, 20);
-
-      // Goleiro adversário
-      ctx.fillStyle = '#fbbf24';
       ctx.beginPath();
-      ctx.arc(200, 25, 8, 0, Math.PI * 2);
-      ctx.fill();
+      ctx.moveTo(10, 26);
+      ctx.lineTo(width - 10, 26);
+      ctx.stroke();
+      ctx.strokeRect(40, 26, width - 80, 118);
+      ctx.strokeRect(120, 26, width - 240, 48);
 
-      // 2. Movimentação dos Zagueiros (Patrulha)
+      // Gol no topo com rede atrás da linha do gol (y = 26)
+      drawGoalWithNet(ctx, 140, 2, 120, 24);
+
+      // Goleiro adversário (Bonequinho na linha do gol)
+      drawCartoonPlayer(ctx, 200, 24, {
+        jerseyColor: '#f59e0b',
+        shortsColor: '#0f172a',
+        gloveColor: '#22c55e',
+        scale: 0.78,
+      });
+
+      // 2. Movimentação dos Zagueiros (Patrulha calibrada por OVR × Liga)
       if (!s.ball.moving && passResult === 'idle') {
         s.defenders.forEach((def) => {
-          def.x += def.vx;
+          def.x += def.vx * balanceRef.current.defenderSpeedMult;
           if (def.x > def.maxX || def.x < def.minX) def.vx *= -1;
         });
 
@@ -180,57 +193,43 @@ export function NSSPassMinigame({
       );
       ctx.restore();
 
-      // 3. Renderiza Zagueiros (Vermelho)
+      // 3. Renderiza Zagueiros (Bonequinhos Vermelhos)
       s.defenders.forEach((def) => {
-        ctx.fillStyle = '#ef4444';
-        ctx.beginPath();
-        ctx.arc(def.x, def.y, def.radius, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 1.5;
-        ctx.stroke();
-
-        // Número ou indicador de zaga
-        ctx.fillStyle = '#ffffff';
-        ctx.font = 'bold 9px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText('ZAG', def.x, def.y + 3);
+        drawCartoonPlayer(ctx, def.x, def.y, {
+          jerseyColor: '#dc2626',
+          shortsColor: '#ffffff',
+          label: 'ZAG',
+          labelColor: '#fca5a5',
+          scale: 0.85,
+        });
       });
 
-      // 4. Renderiza Atacante / Receptor (Amarelo/Verde)
-      ctx.fillStyle = '#10b981';
-      ctx.beginPath();
-      ctx.arc(s.receiver.x, s.receiver.y, s.receiver.radius, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = 2;
-      ctx.stroke();
+      // 4. Renderiza Atacante / Receptor (Bonequinho Ciano)
+      drawCartoonPlayer(ctx, s.receiver.x, s.receiver.y, {
+        jerseyColor: '#06b6d4',
+        shortsColor: '#0f172a',
+        label: safeTeammateName,
+        labelColor: '#67e8f9',
+        scale: 0.88,
+      });
 
       // Indicador de seta de corrida no atacante
       ctx.strokeStyle = '#34d399';
-      ctx.lineWidth = 1.5;
+      ctx.lineWidth = 2;
       ctx.beginPath();
-      ctx.moveTo(s.receiver.x, s.receiver.y - 14);
-      ctx.lineTo(s.receiver.x + (s.receiver.vx * 12), s.receiver.y - 14);
+      ctx.moveTo(s.receiver.x, s.receiver.y - 26);
+      ctx.lineTo(s.receiver.x + s.receiver.vx * 14, s.receiver.y - 26);
       ctx.stroke();
 
-      ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 8px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText(safeTeammateName, s.receiver.x, s.receiver.y + 20);
-
-      // 5. Renderiza Passador (Você) com o Tom de Pele Real
-      ctx.fillStyle = skinToneColor;
-      ctx.beginPath();
-      ctx.arc(s.passer.x, s.passer.y, s.passer.radius, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.strokeStyle = '#10b981';
-      ctx.lineWidth = 2.5;
-      ctx.stroke();
-      ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 8px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('VOCÊ', s.passer.x, s.passer.y + 20);
+      // 5. Renderiza Passador (Você - Bonequinho Verde)
+      drawCartoonPlayer(ctx, s.passer.x, s.passer.y - 4, {
+        jerseyColor: '#10b981',
+        shortsColor: '#0f172a',
+        skinColor: skinToneColor,
+        label: 'VOCÊ',
+        labelColor: '#6ee7b7',
+        scale: 0.92,
+      });
 
       // 6. Linha de Mira
       if (s.aim.active && !s.ball.moving) {
@@ -332,11 +331,20 @@ export function NSSPassMinigame({
         vy: 0,
         vz: 0,
         radius: s.ball.radius || 6,
+        baseRadius: s.ball.radius || 6,
+        spinCurve: 0,
         rotationAngle: 0,
+        friction: 0.985,
+        gravity: 0.25,
+        shotType: 'medium',
+        isOffTarget: false,
+        inFlight: true,
+        bouncedCount: 0,
         ballId: activeBallId,
         trailPoints: [],
         hasMotionTrail: false,
-      } as any);
+        screenShake: 0,
+      });
 
       animId = requestAnimationFrame(render);
     };
@@ -344,7 +352,7 @@ export function NSSPassMinigame({
     render();
 
     return () => cancelAnimationFrame(animId);
-  }, [passResult, teammateName, onCompletePass, onInterception]);
+  }, [passResult, teammateName, onCompletePass, onInterception, playerProfile?.equippedBallId, safeTeammateName, skinToneColor]);
 
   // Controles de Toque e Mouse
   const handleAimStart = (clientX: number, clientY: number) => {
@@ -434,7 +442,8 @@ export function NSSPassMinigame({
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 flex-wrap justify-end">
+          <DifficultyBadge balance={balance} compact />
           <div className="flex items-center gap-1.5 text-xs font-bold text-muted-foreground bg-secondary px-2.5 py-1 rounded-lg">
             <span>Sucessos:</span>
             <span className="text-emerald-500 font-mono font-black">{successes}/{attempts}</span>

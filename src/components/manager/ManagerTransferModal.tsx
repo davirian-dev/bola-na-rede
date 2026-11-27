@@ -30,20 +30,11 @@ export const ManagerTransferModal: React.FC<ManagerTransferModalProps> = ({ isOp
   const [offerFee, setOfferFee] = useState<number>(0);
   const [feedbackMsg, setFeedbackMsg] = useState<{ success: boolean; text: string } | null>(null);
 
-  if (!isOpen || !managerProfile) return null;
-
-  const currentClub = clubs[managerProfile.clubId];
-  if (!currentClub) return null;
-
-  const myRoster = currentClub.roster || [];
-  const myYouthRoster = currentClub.youthRoster || [];
-  const currentBudget = currentClub.budget || 0;
-  const currentWageTotal = myRoster.reduce((acc, p) => acc + (p.wage * 4), 0);
-  const wageLimitMonthly = (currentClub.wageBudget || 2500000) * 4;
-  const freeWageMonthly = Math.max(0, wageLimitMonthly - currentWageTotal);
+  const currentClub = managerProfile ? clubs[managerProfile.clubId] : undefined;
 
   // Reúne jogadores de todos os outros clubes + jogadores livres (sem clube)
   const allMarketPlayers = useMemo(() => {
+    if (!isOpen || !currentClub) return [];
     const list: { player: Player; club: Club | null }[] = [];
 
     // Jogadores livres no mercado
@@ -136,7 +127,7 @@ export const ManagerTransferModal: React.FC<ManagerTransferModalProps> = ({ isOp
     });
 
     return list;
-  }, [clubs, currentClub.id]);
+  }, [clubs, currentClub, isOpen]);
 
   // Filtros aplicados
   const filteredPlayers = useMemo(() => {
@@ -153,6 +144,15 @@ export const ManagerTransferModal: React.FC<ManagerTransferModalProps> = ({ isOp
       return 0;
     });
   }, [allMarketPlayers, filterPos, filterMaxAge, filterMinOvr, filterMaxPrice, sortOrder]);
+
+  if (!isOpen || !managerProfile || !currentClub) return null;
+
+  const myRoster = currentClub.roster || [];
+  const myYouthRoster = currentClub.youthRoster || [];
+  const currentBudget = currentClub.budget || 0;
+  const currentWageTotal = myRoster.reduce((acc, p) => acc + (p.wage * 4), 0);
+  const wageLimitMonthly = (currentClub.wageBudget || 2500000) * 4;
+  const freeWageMonthly = Math.max(0, wageLimitMonthly - currentWageTotal);
 
   const formatPrice = (val: number) => {
     if (val === 0) return 'Livre';
@@ -402,7 +402,7 @@ export const ManagerTransferModal: React.FC<ManagerTransferModalProps> = ({ isOp
                   <label className="text-[10px] font-bold text-zinc-400 uppercase block mb-1">Ordenar</label>
                   <select
                     value={sortOrder}
-                    onChange={(e) => setSortOrder(e.target.value as any)}
+                    onChange={(e) => setSortOrder(e.target.value as 'ovr' | 'price' | 'age')}
                     className="w-full py-1.5 px-2 rounded-lg bg-zinc-950 border border-zinc-800 text-white font-semibold"
                   >
                     <option value="ovr">Maior OVR</option>
@@ -520,7 +520,7 @@ export const ManagerTransferModal: React.FC<ManagerTransferModalProps> = ({ isOp
                   <span className="text-[10px] uppercase font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/30">
                     Relatório Recente · Promessa
                   </span>
-                  <h4 className="text-sm font-black text-white">Mateus "Rayo" Silva (18 anos, ATA)</h4>
+                  <h4 className="text-sm font-black text-white">Mateus &quot;Rayo&quot; Silva (18 anos, ATA)</h4>
                   <p className="text-xs text-zinc-400">
                     OVR atual: 72 · Potencial estimado: <strong>86 a 89</strong>. Velocidade pura e faro de gol. Preço estimado: R$ 8,5 mi.
                   </p>

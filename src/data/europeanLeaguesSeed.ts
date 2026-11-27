@@ -3,9 +3,10 @@
 // Ligas Oficiais A e B da Inglaterra, Espanha, Itália, Alemanha e França
 // ==============================================================================
 
-import { Club, Division, Player, Position } from '@/types/game';
+import { Club, Division, KitPattern, Player, Position } from '@/types/game';
 import { generatePlayer } from './brazilSeed';
 import { injectFamousStars } from './famousStarRosters';
+import { organizeRosterForFormation } from '@/engine/positionEngine';
 
 export interface RawEuropeanClubDef {
   id: string;
@@ -215,12 +216,9 @@ export function generateEuropeanClubs(): Record<string, Club> {
   ];
 
   const YOUTH_POSITIONS: Position[] = [
-    'GOL',
-    'ZAG', 'ZAG',
-    'LD', 'LE',
+    'GOL', 'LD', 'ZAG', 'ZAG', 'LE',
     'VOL', 'MC', 'MEI',
-    'PD', 'PE',
-    'ATA'
+    'PD', 'ATA', 'PE'
   ];
 
   for (const raw of RAW_EUROPEAN_CLUBS) {
@@ -228,8 +226,8 @@ export function generateEuropeanClubs(): Record<string, Club> {
       generatePlayer(raw.id, idx, pos, raw.division, false)
     );
 
-    // Injeta os craques reais atualizados
-    roster = injectFamousStars(raw.id, roster);
+    // Injeta os craques reais atualizados e organiza o 11 titular no esquema 4-3-3
+    roster = organizeRosterForFormation(injectFamousStars(raw.id, roster), '4-3-3');
 
     const youthRoster: Player[] = YOUTH_POSITIONS.map((pos, idx) =>
       generatePlayer(raw.id, idx, pos, raw.division, true)
@@ -263,9 +261,9 @@ export function generateEuropeanClubs(): Record<string, Club> {
       youthRoster,
       rivalClubIds: raw.rivalClubIds,
       derbyName: raw.derbyName,
-      captainPlayerId: roster[2]?.id,
-      penaltyTakerPlayerId: roster[16]?.id || roster[12]?.id,
-      freeKickTakerPlayerId: roster[12]?.id || roster[13]?.id,
+      captainPlayerId: roster[2]?.id || roster[0]?.id,
+      penaltyTakerPlayerId: roster[9]?.id || roster[8]?.id,
+      freeKickTakerPlayerId: roster[7]?.id || roster[10]?.id,
       lineup: roster.slice(0, 11).map((p) => p.id),
       tactics: {
         formation: '4-3-3',
@@ -275,7 +273,7 @@ export function generateEuropeanClubs(): Record<string, Club> {
         home: {
           primaryColor: raw.primaryColor,
           secondaryColor: raw.secondaryColor,
-          pattern: homePattern as any,
+          pattern: homePattern as KitPattern,
           collarType: 'round',
           sponsorText: raw.country === 'Inglaterra' ? 'FLY EMIRATES' : raw.country === 'Espanha' ? 'SPOTIFY' : 'JEEP',
         },

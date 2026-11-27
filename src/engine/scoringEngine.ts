@@ -3,7 +3,7 @@
 // Sistema de Pontuação e Hall da Fama (Fiel aos Padrões Oficiais)
 // ==============================================================================
 
-import { GameState, Trophy } from '@/types/game';
+import { GameState } from '@/types/game';
 import { LIFESTYLE_CATALOG } from '@/data/lifestyleSeed';
 
 export interface ScoreCategoryBreakdown {

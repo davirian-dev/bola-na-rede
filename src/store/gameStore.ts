@@ -47,7 +47,7 @@ import {
   SeasonRivalry,
   TieredAchievement
 } from '@/types/game';
-import { progressPositionTraining, calculatePositionPenalty, TRAINABLE_POSITIONS } from '@/engine/positionEngine';
+import { progressPositionTraining, calculatePositionPenalty, TRAINABLE_POSITIONS, organizeRosterForFormation } from '@/engine/positionEngine';
 import { generateFlashMissions, evaluateFlashMissions } from '@/engine/missionEngine';
 import { evaluateOnFireStreak } from '@/engine/streakEngine';
 import { shouldTriggerSpecialEvent, generateSpecialMatchEvent, resolveSpecialMatchEvent } from '@/engine/specialEventsEngine';
@@ -321,8 +321,12 @@ export const useGameStore = create<GameStore>()(
         const hasGenericAthletes = Object.values(state.clubs || {}).some((c) =>
           c.roster?.some((p) => p.name && (p.name.startsWith('Atleta ') || /^Atleta [A-Z]{2,5} \d+$/i.test(p.name)))
         );
+        const hasUnderleveledEuro = ['rma', 'mci', 'bar', 'liv', 'ars'].some((id) =>
+          state.clubs?.[id]?.roster?.some((p) => !p.id.includes('-star-') && !p.id.startsWith('player-user-') && p.overall < 70)
+        );
         const needsRosterPatch = state.rosterPatchVersion !== ROSTER_PATCH_2026.version ||
           hasGenericAthletes ||
+          hasUnderleveledEuro ||
           !state.clubs?.['san']?.roster?.some((p) => p.name.includes('Neymar')) ||
           state.clubs?.['hil']?.roster?.some((p) => p.name.includes('Neymar'));
 
@@ -371,8 +375,23 @@ export const useGameStore = create<GameStore>()(
             lastSavedAt: new Date().toISOString(),
           });
         } else if (needsRosterPatch) {
-          // Migração automática e transparente do Patch 2026 para saves já em andamento
+          // Migração automática e transparente do Patch 2026 e organização tática para saves já em andamento
           const patchedClubs = applyRosterPatch2026(state.clubs);
+          if (state.playerProfile && !state.playerProfile.isYouthTeam && patchedClubs[state.playerProfile.clubId]) {
+            const pClub = patchedClubs[state.playerProfile.clubId];
+            const isReserve = (state.playerProfile.squadStatus || 'reserve') === 'reserve';
+            const organized = organizeRosterForFormation(pClub.roster || [], pClub.tactics?.formation || '4-3-3', {
+              reservePlayerId: isReserve ? state.playerProfile.id : undefined,
+              forceStarterId: !isReserve ? state.playerProfile.id : undefined,
+              userSecondaryPositions: state.playerProfile.secondaryPositions,
+              userAdaptability: state.playerProfile.positionAdaptability,
+            });
+            patchedClubs[state.playerProfile.clubId] = {
+              ...pClub,
+              roster: organized,
+              lineup: organized.slice(0, 11).map((p) => p.id),
+            };
+          }
           set({
             clubs: patchedClubs,
             rosterPatchVersion: ROSTER_PATCH_2026.version,
@@ -720,11 +739,11 @@ export const useGameStore = create<GameStore>()(
         const player = state.playerProfile;
         if (!player) return;
 
-        let updatedStats = { ...player.stats };
+        const updatedStats = { ...player.stats };
         const hasImpact = (goalsScored > 0) || ((assistsProvided || 0) > 0);
-        let updatedMorale = Math.min(100, player.morale + (hasImpact ? 8 : 2));
-        let updatedRep = Math.min(100, player.reputation + (hasImpact ? 4 : 1));
-        let updatedAttrs = { ...player.attributes };
+        const updatedMorale = Math.min(100, player.morale + (hasImpact ? 8 : 2));
+        const updatedRep = Math.min(100, player.reputation + (hasImpact ? 4 : 1));
+        const updatedAttrs = { ...player.attributes };
 
         if (assistsProvided && assistsProvided > 0) {
           updatedStats.assists = (updatedStats.assists || 0) + assistsProvided;
@@ -1018,9 +1037,13 @@ export const useGameStore = create<GameStore>()(
         legendArchetype = 'neymar_joy'
       }) => {
         const state = get();
-        const availableClubs = (state.clubs && Object.keys(state.clubs).length > 0)
+        const rawClubs = (state.clubs && Object.keys(state.clubs).length > 0)
           ? state.clubs
-          : generateBrazilDatabase().clubs;
+          : { ...generateBrazilDatabase().clubs, ...generateEuropeanClubs(), ...generateGlobalClubs() };
+        const needsPatchOnCreate =
+          state.rosterPatchVersion !== ROSTER_PATCH_2026.version ||
+          ['rma', 'mci', 'bar'].some((id) => rawClubs[id]?.roster?.some((p) => !p.id.includes('-star-') && p.overall < 70));
+        const availableClubs = needsPatchOnCreate ? applyRosterPatch2026(rawClubs) : rawClubs;
 
         const club = availableClubs[clubId] || Object.values(availableClubs)[0];
         const archetypeDef = getLegendArchetype(legendArchetype);
@@ -1028,7 +1051,7 @@ export const useGameStore = create<GameStore>()(
         // 1. Calibração do Overall pela Idade Inicial (14 Atributos Oficiais)
         const ageDelta = Math.round((age - 18) * 2.8);
 
-        let baseAttrs: PlayerAttributes = {
+        const baseAttrs: PlayerAttributes = {
           pace: Math.min(88, Math.max(38, 58 + ageDelta)),
           dribbling: Math.min(88, Math.max(38, 56 + ageDelta)),
           tackling: Math.min(88, Math.max(38, 48 + ageDelta)),
@@ -1051,10 +1074,10 @@ export const useGameStore = create<GameStore>()(
 
         // Bônus do Arquétipo Lendário Inspirado
         if (archetypeDef.initialBoost) {
+          const boostTarget = baseAttrs as unknown as Record<string, number | undefined>;
           Object.entries(archetypeDef.initialBoost).forEach(([attrKey, boostVal]) => {
-            const k = attrKey as keyof PlayerAttributes;
-            if (typeof baseAttrs[k] === 'number') {
-              (baseAttrs as any)[k] = Math.min(92, ((baseAttrs[k] as number) || 50) + (boostVal || 0));
+            if (typeof boostTarget[attrKey] === 'number') {
+              boostTarget[attrKey] = Math.min(92, (boostTarget[attrKey] || 50) + (boostVal || 0));
             }
           });
         }
@@ -1186,9 +1209,10 @@ export const useGameStore = create<GameStore>()(
           const goldObj = getPlayStyleGoldById(goldPlayStyle);
           if (goldObj) {
             goldValueBonus = goldObj.value;
+            const boostTarget = baseAttrs as unknown as Record<string, number | undefined>;
             Object.entries(goldObj.initialBoost).forEach(([attrKey, val]) => {
-              if (attrKey in baseAttrs && typeof val === 'number') {
-                (baseAttrs as any)[attrKey] += val;
+              if (attrKey in boostTarget && typeof val === 'number') {
+                boostTarget[attrKey] = (boostTarget[attrKey] || 0) + val;
               }
             });
           }
@@ -1346,11 +1370,22 @@ export const useGameStore = create<GameStore>()(
           },
         };
 
+        const rawSeniorRoster = [userAsPlayer, ...(club.roster || []).filter((p) => p.id !== userAsPlayer.id)];
+        const organizedSeniorRoster = playerProfile.isYouthTeam
+          ? (club.roster || [])
+          : organizeRosterForFormation(rawSeniorRoster, club.tactics?.formation || '4-3-3', {
+              reservePlayerId: playerProfile.squadStatus === 'reserve' ? userAsPlayer.id : undefined,
+              forceStarterId: playerProfile.squadStatus !== 'reserve' ? userAsPlayer.id : undefined,
+              userSecondaryPositions: playerProfile.secondaryPositions,
+              userAdaptability: playerProfile.positionAdaptability,
+            });
+
         const updatedClubs = {
           ...availableClubs,
           [club.id]: {
             ...club,
-            roster: playerProfile.isYouthTeam ? (club.roster || []) : [userAsPlayer, ...(club.roster || []).filter(p => p.id !== userAsPlayer.id)],
+            roster: organizedSeniorRoster,
+            lineup: organizedSeniorRoster.slice(0, 11).map((p) => p.id),
             youthRoster: playerProfile.isYouthTeam ? [userAsPlayer, ...(club.youthRoster || []).filter(p => p.id !== userAsPlayer.id)] : (club.youthRoster || []),
           },
         };
@@ -1405,9 +1440,13 @@ export const useGameStore = create<GameStore>()(
         goldPlayStyle = 'mastermind_gold'
       }) => {
         const state = get();
-        const availableClubs = (state.clubs && Object.keys(state.clubs).length > 0)
+        const rawClubs = (state.clubs && Object.keys(state.clubs).length > 0)
           ? state.clubs
-          : generateBrazilDatabase().clubs;
+          : { ...generateBrazilDatabase().clubs, ...generateEuropeanClubs(), ...generateGlobalClubs() };
+        const needsPatchOnCreate =
+          state.rosterPatchVersion !== ROSTER_PATCH_2026.version ||
+          ['rma', 'mci', 'bar'].some((id) => rawClubs[id]?.roster?.some((p) => !p.id.includes('-star-') && p.overall < 70));
+        const availableClubs = needsPatchOnCreate ? applyRosterPatch2026(rawClubs) : rawClubs;
 
         const club = availableClubs[clubId] || Object.values(availableClubs)[0];
 
@@ -1496,15 +1535,30 @@ export const useGameStore = create<GameStore>()(
           clubId: club.id,
         };
 
+        const organizedClubRoster = organizeRosterForFormation(club.roster || [], formation);
+        const clubsWithManagerFormation = {
+          ...availableClubs,
+          [club.id]: {
+            ...club,
+            roster: organizedClubRoster,
+            lineup: organizedClubRoster.slice(0, 11).map((p) => p.id),
+            tactics: {
+              ...(club.tactics || { philosophy: 'balanced' }),
+              formation,
+            },
+          },
+        };
+
         const cal = (state.allFixtures && state.allFixtures.length > 0)
           ? { leagues: state.leagues, copaDoBrasil: state.copaDoBrasil, sub20Tournament: state.sub20Tournament, allFixtures: state.allFixtures }
-          : generateAnnualCalendar(availableClubs, 2026);
+          : generateAnnualCalendar(clubsWithManagerFormation, 2026);
 
         const initialMissions = generateFlashMissions('manager', 'ATA', false);
-        const initialRivalry = initializeSeasonRivalry(2026, 'manager', club, availableClubs);
+        const initialRivalry = initializeSeasonRivalry(2026, 'manager', clubsWithManagerFormation[club.id], clubsWithManagerFormation);
 
         set({
           mode: 'manager',
+          clubs: clubsWithManagerFormation,
           managerProfile,
           playerProfile: undefined,
           currentWeek: 1,
@@ -1620,9 +1674,24 @@ export const useGameStore = create<GameStore>()(
       },
 
       setManagerFormation: (formation) => {
-        const { managerProfile } = get();
+        const { managerProfile, clubs } = get();
         if (!managerProfile) return;
+        const club = clubs[managerProfile.clubId];
+        const updatedClubs = { ...clubs };
+        if (club) {
+          const organized = organizeRosterForFormation(club.roster || [], formation);
+          updatedClubs[club.id] = {
+            ...club,
+            roster: organized,
+            lineup: organized.slice(0, 11).map((p) => p.id),
+            tactics: {
+              ...(club.tactics || { philosophy: 'balanced' }),
+              formation,
+            },
+          };
+        }
         set({
+          clubs: updatedClubs,
           managerProfile: {
             ...managerProfile,
             formation,
@@ -2003,11 +2072,23 @@ export const useGameStore = create<GameStore>()(
                 averageRating: state.playerProfile.stats?.averageRating || 6.0,
               },
             };
+            const rawHealRoster = state.playerProfile.isYouthTeam
+              ? (club.roster || [])
+              : [userAsPlayer, ...(club.roster || [])];
+            const organizedHealRoster = state.playerProfile.isYouthTeam
+              ? rawHealRoster
+              : organizeRosterForFormation(rawHealRoster, club.tactics?.formation || '4-3-3', {
+                  reservePlayerId: (state.playerProfile.squadStatus || 'reserve') === 'reserve' ? userAsPlayer.id : undefined,
+                  forceStarterId: (state.playerProfile.squadStatus || 'reserve') !== 'reserve' ? userAsPlayer.id : undefined,
+                  userSecondaryPositions: state.playerProfile.secondaryPositions,
+                  userAdaptability: state.playerProfile.positionAdaptability,
+                });
             healedClubs = {
               ...state.clubs,
               [club.id]: {
                 ...club,
-                roster: state.playerProfile.isYouthTeam ? (club.roster || []) : [userAsPlayer, ...(club.roster || [])],
+                roster: organizedHealRoster,
+                lineup: organizedHealRoster.slice(0, 11).map((p) => p.id),
                 youthRoster: state.playerProfile.isYouthTeam ? [userAsPlayer, ...(club.youthRoster || [])] : (club.youthRoster || []),
               },
             };
@@ -2195,6 +2276,27 @@ export const useGameStore = create<GameStore>()(
           if (prog.promotedToSenior) {
             promoted = true;
           }
+
+          // Atualiza posicionamento do atleta no elenco conforme status (Titular vs Banco)
+          if (!updatedPlayerProfile.isYouthTeam && healedClubs[updatedPlayerProfile.clubId]) {
+            const uClub = healedClubs[updatedPlayerProfile.clubId];
+            const isReserve = currentSquadStatus === 'reserve';
+            const organized = organizeRosterForFormation(
+              uClub.roster || [],
+              uClub.tactics?.formation || '4-3-3',
+              {
+                reservePlayerId: isReserve ? updatedPlayerProfile.id : undefined,
+                forceStarterId: !isReserve ? updatedPlayerProfile.id : undefined,
+                userSecondaryPositions: updatedPlayerProfile.secondaryPositions,
+                userAdaptability: updatedPlayerProfile.positionAdaptability,
+              }
+            );
+            healedClubs[updatedPlayerProfile.clubId] = {
+              ...uClub,
+              roster: organized,
+              lineup: organized.slice(0, 11).map((p) => p.id),
+            };
+          }
         }
 
         // 4. ESTATÍSTICAS DO TREINADOR (MODO TREINADOR)
@@ -2267,7 +2369,7 @@ export const useGameStore = create<GameStore>()(
             [tPos]: newProgress,
           };
 
-          let newSecPositions = [...(updatedPlayerProfile.secondaryPositions || [])];
+          const newSecPositions = [...(updatedPlayerProfile.secondaryPositions || [])];
           if (isCompleted && !newSecPositions.includes(tPos)) {
             newSecPositions.push(tPos);
           }
@@ -2438,7 +2540,7 @@ export const useGameStore = create<GameStore>()(
           nextDilemma = evaluateDilemmaTrigger(
             { ...state, playerProfile: updatedPlayerProfile, managerProfile: updatedManagerProfile },
             {
-              isDerby: (userMatch as any)?.isDerby,
+              isDerby: (userMatch as { isDerby?: boolean } | undefined)?.isDerby,
               matchResult: isUserWin ? 'win' : isUserLoss ? 'loss' : 'draw',
             }
           );
@@ -2876,49 +2978,13 @@ export const useGameStore = create<GameStore>()(
         const club = state.clubs[clubId];
         if (!club || !club.roster || club.roster.length === 0) return;
 
-        const players = [...club.roster].sort((a, b) => b.overall - a.overall);
-        const selectedIds: string[] = [];
-
-        // 1 Goleiro
-        const gk = players.find(p => p.position === 'GOL');
-        if (gk) selectedIds.push(gk.id);
-
-        // 2 Zagueiros
-        const zags = players.filter(p => p.position === 'ZAG' && !selectedIds.includes(p.id)).slice(0, 2);
-        zags.forEach(p => selectedIds.push(p.id));
-
-        // 1 Lateral Esquerdo
-        const le = players.find(p => p.position === 'LE' && !selectedIds.includes(p.id));
-        if (le) selectedIds.push(le.id);
-
-        // 1 Lateral Direito
-        const ld = players.find(p => p.position === 'LD' && !selectedIds.includes(p.id));
-        if (ld) selectedIds.push(ld.id);
-
-        // 2 Volantes
-        const vols = players.filter(p => p.position === 'VOL' && !selectedIds.includes(p.id)).slice(0, 2);
-        vols.forEach(p => selectedIds.push(p.id));
-
-        // 2 Meias
-        const meis = players.filter(p => (p.position === 'MEI' || p.position === 'MC') && !selectedIds.includes(p.id)).slice(0, 2);
-        meis.forEach(p => selectedIds.push(p.id));
-
-        // 2 Atacantes
-        const atas = players.filter(p => (p.position === 'ATA' || p.position === 'PD' || p.position === 'PE') && !selectedIds.includes(p.id)).slice(0, 2);
-        atas.forEach(p => selectedIds.push(p.id));
-
-        // Se ainda não tiver 11, completa com os melhores disponíveis
-        if (selectedIds.length < 11) {
-          for (const p of players) {
-            if (!selectedIds.includes(p.id)) {
-              selectedIds.push(p.id);
-              if (selectedIds.length === 11) break;
-            }
-          }
-        }
+        const formation = state.managerProfile?.formation || club.tactics?.formation || '4-3-3';
+        const organizedRoster = organizeRosterForFormation(club.roster, formation);
+        const selectedIds = organizedRoster.slice(0, 11).map((p) => p.id);
 
         const updatedClub = {
           ...club,
+          roster: organizedRoster,
           lineup: selectedIds,
         };
 

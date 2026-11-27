@@ -4,7 +4,6 @@
 // Integração completa com Catálogo de Bolas (Jabulani, Brazuca, Fogo, Cyber, Ouro, etc.)
 // ==============================================================================
 
-import { BallItem } from '@/types/game';
 import { getBallById } from '@/data/balls';
 
 export type ShotType = 'weak' | 'medium' | 'power' | 'lob';
@@ -204,7 +203,7 @@ export function calculateShotPhysics(input: ShotPhysicsInput): ShotPhysicsResult
   // Velocidade inicial da bola
   const baseSpeed = 10 * speedMultiplier;
   let vx = dirX * baseSpeed;
-  let vy = dirY * baseSpeed;
+  const vy = dirY * baseSpeed;
 
   if (offTargetReason === 'wide_left') {
     vx -= 2.5;

@@ -8,6 +8,7 @@ import { useGameStore } from '@/store/gameStore';
 import { isSupabaseConfigured, getSupabase } from '@/lib/supabase/client';
 import { ThemeToggle } from '@/components/layout/ThemeToggle';
 import { InstallAppModal } from '@/components/layout/InstallAppModal';
+import { useIsMounted } from '@/hooks/useIsMounted';
 import { 
   Play, 
   LogIn, 
@@ -31,9 +32,10 @@ export default function LandingAuthPage() {
   const playerProfile = useGameStore((s) => s.playerProfile);
   const managerProfile = useGameStore((s) => s.managerProfile);
 
-  const [hasExistingSave, setHasExistingSave] = useState(false);
+  const mounted = useIsMounted();
+  const hasExistingSave = mounted && Boolean(playerProfile || managerProfile);
+  const isConfigured = isSupabaseConfigured();
   const [activeTab, setActiveTab] = useState<'login' | 'signup' | 'guest'>('guest');
-  const [isConfigured, setIsConfigured] = useState(true);
   const [isInstallModalOpen, setIsInstallModalOpen] = useState(false);
 
   // Form states
@@ -46,11 +48,7 @@ export default function LandingAuthPage() {
 
   useEffect(() => {
     initDatabaseIfEmpty();
-    setIsConfigured(isSupabaseConfigured());
-    if (playerProfile || managerProfile) {
-      setHasExistingSave(true);
-    }
-  }, [initDatabaseIfEmpty, playerProfile, managerProfile]);
+  }, [initDatabaseIfEmpty]);
 
   // Ação: Jogar como Visitante
   const handlePlayAsGuest = () => {
@@ -93,8 +91,8 @@ export default function LandingAuthPage() {
       setTimeout(() => {
         router.push(hasExistingSave ? '/dashboard' : '/new-career');
       }, 800);
-    } catch (err: any) {
-      setErrorMessage(err.message || 'Falha ao autenticar.');
+    } catch (err: unknown) {
+      setErrorMessage(err instanceof Error ? err.message : 'Falha ao autenticar.');
     } finally {
       setLoading(false);
     }
@@ -152,8 +150,8 @@ export default function LandingAuthPage() {
       setTimeout(() => {
         router.push(hasExistingSave ? '/dashboard' : '/new-career');
       }, 1000);
-    } catch (err: any) {
-      setErrorMessage(err.message || 'Falha ao criar conta.');
+    } catch (err: unknown) {
+      setErrorMessage(err instanceof Error ? err.message : 'Falha ao criar conta.');
     } finally {
       setLoading(false);
     }

@@ -3,7 +3,7 @@
 // Injeção de Dopamina Pré-Jogo: Objetivos imediatos a cada partida com bônus no pós-jogo
 // ==============================================================================
 
-import { FlashMission, FlashMissionType, Position, Fixture } from '@/types/game';
+import { FlashMission, Position, Fixture } from '@/types/game';
 
 export interface MissionEvaluationContext {
   mode: 'player' | 'manager';
@@ -27,7 +27,6 @@ export function generateFlashMissions(
 
   if (mode === 'player') {
     const isAttacker = ['ATA', 'CA', 'PE', 'PD', 'MEI'].includes(position);
-    const isDefender = ['GOL', 'ZAG', 'LD', 'LE', 'VOL'].includes(position);
 
     const candidates: FlashMission[] = [];
 

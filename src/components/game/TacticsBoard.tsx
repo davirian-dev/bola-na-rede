@@ -52,7 +52,7 @@ export function TacticsBoard({
   const targetClubId = clubId || (mode === 'player' ? playerProfile?.clubId : managerProfile?.clubId);
   const club = targetClubId ? clubs[targetClubId] : null;
 
-  const currentFormation: TacticalFormation = managerProfile?.formation || '4-3-3';
+  const currentFormation: TacticalFormation = managerProfile?.formation || club?.tactics?.formation || '4-3-3';
   const [selectedFormation, setSelectedFormation] = useState<TacticalFormation>(currentFormation);
   const [selectedPlayerIndex, setSelectedPlayerIndex] = useState<number | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);

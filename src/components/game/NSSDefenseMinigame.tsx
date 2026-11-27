@@ -1,14 +1,20 @@
 'use client';
 
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { useGameStore } from '@/store/gameStore';
-import { Shield, CheckCircle2, XCircle, Footprints } from 'lucide-react';
+import { Shield, CheckCircle2, XCircle, RotateCcw } from 'lucide-react';
 import { sound } from '@/lib/soundEffects';
+import { drawPitchBackground, drawCartoonPlayer, drawStyledBall } from '@/lib/minigameCanvas';
+import { Division } from '@/types/game';
+import { useMinigameBalance } from '@/engine/minigameBalance';
+import { DifficultyBadge } from './DifficultyBadge';
 
 interface NSSDefenseMinigameProps {
   onDefendSuccess?: (ratingBonus: number) => void;
   onDefendFail?: () => void;
   onClose?: () => void;
+  divisionOverride?: Division;
+  opponentOverall?: number;
   matchInfo?: {
     minute: number;
     oppClubName: string;
@@ -20,125 +26,183 @@ export function NSSDefenseMinigame({
   onDefendSuccess,
   onDefendFail,
   onClose,
+  divisionOverride,
+  opponentOverall,
   matchInfo,
 }: NSSDefenseMinigameProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const playerProfile = useGameStore((s) => s.playerProfile);
+  const balance = useMinigameBalance({
+    division: divisionOverride,
+    opponentOverall,
+  });
+  const balanceRef = useRef(balance);
+  useEffect(() => {
+    balanceRef.current = balance;
+  }, [balance]);
 
-  const [defenseState, setDefenseState] = useState<'approaching' | 'tackling' | 'success' | 'foul' | 'beaten'>('approaching');
-  const [feedbackText, setFeedbackText] = useState('O atacante adversário vem com a bola dominada! Aguarde a zona perfeita e dê o bote limpo!');
+  const [defenseState, setDefenseState] = useState<'approaching' | 'success' | 'foul' | 'beaten'>('approaching');
+  const [feedbackText, setFeedbackText] = useState('Aguarde o atacante entrar na zona verde e dê o bote limpo!');
+  const [inZoneNow, setInZoneNow] = useState(false);
 
-  // Atacante adversário correndo em direção ao gol
-  const [attackerX, setAttackerX] = useState(120);
-  const [attackerY, setAttackerY] = useState(120);
-
-  // Zona do Bote Defensivo
-  const tackleZoneX = 280;
-  const tackleZoneY = 250;
-  const tackleZoneRadius = 45;
+  const onSuccessRef = useRef(onDefendSuccess);
+  const onFailRef = useRef(onDefendFail);
 
   useEffect(() => {
-    if (defenseState !== 'approaching') return;
+    onSuccessRef.current = onDefendSuccess;
+    onFailRef.current = onDefendFail;
+  }, [onDefendSuccess, onDefendFail]);
 
-    const interval = setInterval(() => {
-      setAttackerX((x) => x + 3.2);
-      setAttackerY((y) => y + 2.6);
+  const tacklingStat = playerProfile?.attributes?.tackling || 72;
+  const sweetRadius = Math.round((46 + Math.max(0, (tacklingStat - 65) * 0.4)) * balance.sweetSpotScale);
 
-      // Se passou da zona sem tomar bote
-      if (attackerY >= 310) {
-        setDefenseState('beaten');
-        setFeedbackText('Driblado! O adversário passou em velocidade rumo à área!');
-        sound.play('whistle');
-        if (onDefendFail) onDefendFail();
-      }
-    }, 45);
+  const simRef = useRef({
+    attX: 110,
+    attY: 95,
+    defX: 290,
+    defY: 255,
+    state: 'approaching' as 'approaching' | 'success' | 'foul' | 'beaten',
+    slideProgress: 0,
+  });
 
-    return () => clearInterval(interval);
-  }, [defenseState, attackerY, onDefendFail]);
+  const resetPlay = useCallback(() => {
+    simRef.current = {
+      attX: 110,
+      attY: 95,
+      defX: 290,
+      defY: 255,
+      state: 'approaching',
+      slideProgress: 0,
+    };
+    setDefenseState('approaching');
+    setInZoneNow(false);
+    setFeedbackText('Aguarde o atacante entrar na zona verde e dê o bote limpo!');
+  }, []);
 
-  // Render do Canvas
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    let animId: number;
 
-    // Gramado
-    const grassGrad = ctx.createLinearGradient(0, 0, 0, canvas.height);
-    grassGrad.addColorStop(0, '#15803d');
-    grassGrad.addColorStop(1, '#166534');
-    ctx.fillStyle = grassGrad;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    const render = () => {
+      const s = simRef.current;
+      const w = canvas.width;
+      const h = canvas.height;
 
-    // Linha defensiva
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
-    ctx.lineWidth = 2.5;
-    ctx.beginPath();
-    ctx.moveTo(0, 310);
-    ctx.lineTo(canvas.width, 310);
-    ctx.stroke();
+      if (s.state === 'approaching') {
+        const attMult = balanceRef.current.defenderSpeedMult;
+        s.attX += 2.35 * attMult;
+        s.attY += 2.05 * attMult;
 
-    // Zona Ideal de Bote (Círculo Verde Pulsante)
-    ctx.beginPath();
-    ctx.arc(tackleZoneX, tackleZoneY, tackleZoneRadius, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(16, 185, 129, 0.25)';
-    ctx.fill();
-    ctx.strokeStyle = 'rgba(16, 185, 129, 0.8)';
-    ctx.lineWidth = 2.5;
-    ctx.setLineDash([5, 5]);
-    ctx.stroke();
-    ctx.setLineDash([]);
+        const dist = Math.hypot(s.attX - s.defX, s.attY - s.defY);
+        setInZoneNow(dist <= sweetRadius);
 
-    // Atacante Adversário com Bola
-    ctx.fillStyle = '#dc2626';
-    ctx.beginPath();
-    ctx.arc(attackerX, attackerY - 20, 10, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillRect(attackerX - 8, attackerY - 10, 16, 22);
+        if (s.attY >= 325) {
+          s.state = 'beaten';
+          setDefenseState('beaten');
+          setFeedbackText('Driblado! O atacante passou em velocidade rumo à área!');
+          sound.playWhistle();
+          onFailRef.current?.();
+        }
+      } else if (s.slideProgress < 1) {
+        s.slideProgress = Math.min(1, s.slideProgress + 0.12);
+      }
 
-    // Bola sendo conduzida
-    ctx.beginPath();
-    ctx.arc(attackerX + 10, attackerY + 10, 8, 0, Math.PI * 2);
-    ctx.fillStyle = '#ffffff';
-    ctx.fill();
-    ctx.strokeStyle = '#18181b';
-    ctx.lineWidth = 2;
-    ctx.stroke();
+      drawPitchBackground(ctx, w, h, 34);
 
-    // Defensor (Você) aguardando na base
-    ctx.fillStyle = '#0284c7';
-    ctx.beginPath();
-    ctx.arc(tackleZoneX, tackleZoneY - 10, 11, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillRect(tackleZoneX - 9, tackleZoneY, 18, 24);
-  }, [attackerX, attackerY, defenseState]);
+      // Linha da área defensiva
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.45)';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.moveTo(20, 325);
+      ctx.lineTo(w - 20, 325);
+      ctx.stroke();
 
-  // Ação de Dar o Bote
+      // Zona ideal de bote pulsante
+      const distNow = Math.hypot(s.attX - s.defX, s.attY - s.defY);
+      const isHot = distNow <= sweetRadius && s.state === 'approaching';
+      const pulse = 1 + Math.sin(Date.now() * 0.01) * 0.05;
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(s.defX, s.defY, sweetRadius * pulse, 0, Math.PI * 2);
+      ctx.fillStyle = isHot ? 'rgba(16, 185, 129, 0.35)' : 'rgba(59, 130, 246, 0.15)';
+      ctx.fill();
+      ctx.strokeStyle = isHot ? '#34d399' : 'rgba(96, 165, 250, 0.7)';
+      ctx.lineWidth = isHot ? 3 : 2;
+      ctx.setLineDash([6, 5]);
+      ctx.stroke();
+      ctx.restore();
+
+      // Atacante adversário conduzindo
+      drawCartoonPlayer(ctx, s.attX, s.attY, {
+        jerseyColor: '#dc2626',
+        shortsColor: '#ffffff',
+        label: 'RIVAL',
+        labelColor: '#fca5a5',
+        scale: 1.05,
+      });
+
+      // Bola nos pés (ou afastada após desarme)
+      const ballX = s.state === 'success' ? s.defX - 28 * s.slideProgress : s.attX + 12;
+      const ballY = s.state === 'success' ? s.defY - 18 * s.slideProgress : s.attY + 14;
+      drawStyledBall(ctx, ballX, ballY, 8, s.state === 'success' ? 6 * s.slideProgress : 0);
+
+      // Defensor (Você)
+      const curDefX =
+        s.state === 'success' || s.state === 'foul'
+          ? s.defX + (s.attX - s.defX) * 0.55 * s.slideProgress
+          : s.defX;
+      const curDefY =
+        s.state === 'success' || s.state === 'foul'
+          ? s.defY + (s.attY - s.defY) * 0.55 * s.slideProgress
+          : s.defY;
+
+      drawCartoonPlayer(ctx, curDefX, curDefY, {
+        jerseyColor: '#0284c7',
+        shortsColor: '#0f172a',
+        label: 'VOCÊ',
+        labelColor: '#7dd3fc',
+        scale: 1.1,
+        sliding: s.state === 'success' || s.state === 'foul',
+      });
+
+      animId = requestAnimationFrame(render);
+    };
+
+    animId = requestAnimationFrame(render);
+    return () => cancelAnimationFrame(animId);
+  }, [sweetRadius]);
+
   const handleTackle = () => {
-    if (defenseState !== 'approaching') return;
+    const s = simRef.current;
+    if (s.state !== 'approaching') return;
 
-    const dist = Math.hypot(attackerX - tackleZoneX, attackerY - tackleZoneY);
-    const tacklingStat = playerProfile?.attributes?.tackling || 70;
-    const isInsideSweetSpot = dist <= tackleZoneRadius;
+    const dist = Math.hypot(s.attX - s.defX, s.attY - s.defY);
 
-    if (isInsideSweetSpot) {
+    if (dist <= sweetRadius) {
+      s.state = 'success';
       setDefenseState('success');
-      sound.play('kick');
-      setFeedbackText('DESARME PERFEITO! Bote limpo na bola, desarmando o atacante sem cometer falta! 🛡️');
-      if (onDefendSuccess) onDefendSuccess(0.4);
-    } else if (dist < tackleZoneRadius + 30) {
-      // Falta tática
+      sound.playKick();
+      sound.playCheer();
+      setFeedbackText('DESARME PERFEITO! Bote limpo na bola sem cometer falta! 🛡️');
+      onSuccessRef.current?.(0.45);
+    } else if (dist <= sweetRadius + 36) {
+      s.state = 'foul';
       setDefenseState('foul');
-      sound.play('whistle');
-      setFeedbackText('FALTA TÁTICA! Chegou atrasado e parou a jogada com infração na intermediária!');
-      if (onDefendFail) onDefendFail();
+      sound.playWhistle();
+      sound.playCardSound();
+      setFeedbackText('FALTA TÁTICA! Chegou atrasado e derrubou o atacante!');
+      onFailRef.current?.();
     } else {
+      s.state = 'beaten';
       setDefenseState('beaten');
-      sound.play('whistle');
-      setFeedbackText('Bote no vazio! O atacante passou ileso!');
-      if (onDefendFail) onDefendFail();
+      sound.playWhistle();
+      setFeedbackText('Bote no vazio! O atacante passou livre!');
+      onFailRef.current?.();
     }
   };
 
@@ -153,50 +217,78 @@ export function NSSDefenseMinigame({
             <h3 className="text-sm font-black text-foreground flex items-center gap-2">
               Lance Defensivo • Desarme 1x1
               <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 font-extrabold uppercase">
-                Postura Defensiva
+                Desarme {tacklingStat}
               </span>
             </h3>
             <span className="text-[10px] font-bold text-muted-foreground">
-              Acerte o tempo de bola e roube a posse sem fazer falta!
+              Toque no campo ou no botão quando o círculo ficar VERDE!
             </span>
           </div>
         </div>
 
-        {matchInfo && (
-          <span className="text-[11px] font-black px-2.5 py-1 rounded-lg bg-secondary text-foreground">
-            {matchInfo.oppClubName} • {matchInfo.minute}'
-          </span>
-        )}
+        <div className="flex items-center gap-2 flex-wrap justify-end">
+          <DifficultyBadge balance={balance} compact />
+          {matchInfo && (
+            <span className="text-[11px] font-black px-2.5 py-1 rounded-lg bg-secondary text-foreground">
+              {matchInfo.oppClubName} • {matchInfo.minute}&apos;
+            </span>
+          )}
+        </div>
       </div>
 
       <div className="relative w-full aspect-[560/380] bg-zinc-950 rounded-2xl overflow-hidden border border-border/60 shadow-inner">
-        <canvas ref={canvasRef} width={560} height={380} className="w-full h-full touch-none" />
+        <canvas
+          ref={canvasRef}
+          width={560}
+          height={380}
+          onClick={handleTackle}
+          onTouchStart={(e) => {
+            if (e.touches.length > 0) {
+              e.preventDefault();
+              handleTackle();
+            }
+          }}
+          className="w-full h-full cursor-pointer touch-none"
+        />
 
         {defenseState !== 'approaching' && (
           <div className="absolute inset-0 bg-black/75 backdrop-blur-sm flex flex-col items-center justify-center p-4 text-center animate-in fade-in duration-200">
             {defenseState === 'success' ? (
               <div className="flex flex-col items-center">
-                <CheckCircle2 className="w-14 h-14 text-blue-400 mb-2 animate-bounce" />
-                <h4 className="text-xl font-black text-blue-400 uppercase tracking-wide">Desarme Limpo!</h4>
+                <CheckCircle2 className="w-14 h-14 text-emerald-400 mb-2 animate-bounce" />
+                <h4 className="text-xl font-black text-emerald-400 uppercase tracking-wide">Desarme Limpo!</h4>
                 <p className="text-xs text-zinc-300 mt-1 max-w-sm">{feedbackText}</p>
               </div>
             ) : (
               <div className="flex flex-col items-center">
                 <XCircle className="w-14 h-14 text-rose-500 mb-2" />
-                <h4 className="text-xl font-black text-rose-500 uppercase tracking-wide">Lance Perdido</h4>
+                <h4 className="text-xl font-black text-rose-500 uppercase tracking-wide">
+                  {defenseState === 'foul' ? 'Falta Marcada' : 'Lance Perdido'}
+                </h4>
                 <p className="text-xs text-zinc-300 mt-1 max-w-sm">{feedbackText}</p>
               </div>
             )}
 
-            {onClose && (
-              <button
-                type="button"
-                onClick={onClose}
-                className="mt-4 px-6 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-black text-xs transition-all shadow-lg cursor-pointer"
-              >
-                Voltar à Partida
-              </button>
-            )}
+            <div className="mt-4 flex gap-2">
+              {!matchInfo && (
+                <button
+                  type="button"
+                  onClick={resetPlay}
+                  className="px-4 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" /> Novo Lance
+                </button>
+              )}
+              {onClose && (
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="px-6 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-black text-xs transition-all shadow-lg cursor-pointer"
+                >
+                  Voltar à Partida
+                </button>
+              )}
+            </div>
           </div>
         )}
       </div>
@@ -205,10 +297,14 @@ export function NSSDefenseMinigame({
         type="button"
         disabled={defenseState !== 'approaching'}
         onClick={handleTackle}
-        className="w-full mt-4 py-3.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white font-black text-sm tracking-wide transition-all shadow-lg flex items-center justify-center gap-2 cursor-pointer active:scale-95"
+        className={`w-full mt-4 py-3.5 px-4 rounded-xl disabled:opacity-50 font-black text-sm tracking-wide transition-all shadow-lg flex items-center justify-center gap-2 cursor-pointer active:scale-95 ${
+          inZoneNow
+            ? 'bg-emerald-500 hover:bg-emerald-400 text-zinc-950 animate-pulse'
+            : 'bg-blue-600 hover:bg-blue-500 text-white'
+        }`}
       >
         <Shield className="w-5 h-5" />
-        DAR O BOTE LIMPO AGORA!
+        {inZoneNow ? 'MOMENTO IDEAL — DAR O BOTE AGORA! ⚡' : 'DAR O BOTE LIMPO AGORA!'}
       </button>
     </div>
   );

@@ -2,21 +2,21 @@
 
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import confetti from 'canvas-confetti';
-import { useGameStore } from '@/store/gameStore';
-import { 
-  Trophy, 
-  RotateCcw, 
-  Sparkles, 
-  Flame, 
-  CheckCircle2, 
-  XCircle, 
-  ArrowRight,
-  Wind,
-  Target
-} from 'lucide-react';
+import { Flame, CheckCircle2, XCircle, RotateCcw } from 'lucide-react';
 import { sound } from '@/lib/soundEffects';
 import { BallImpactSelector, BallImpact } from './BallImpactSelector';
 import { MatchWeatherType } from '@/types/game';
+import {
+  drawPitchBackground,
+  drawGoalWithNet,
+  drawCartoonPlayer,
+  drawStyledBall,
+  getCanvasPointerCoords,
+} from '@/lib/minigameCanvas';
+import { applyScreenShake } from '@/engine/ballPhysics';
+import { Division } from '@/types/game';
+import { useMinigameBalance } from '@/engine/minigameBalance';
+import { DifficultyBadge } from './DifficultyBadge';
 
 interface NSSFreeKickMinigameProps {
   onScoreGoal?: (ratingBonus: number) => void;
@@ -24,6 +24,8 @@ interface NSSFreeKickMinigameProps {
   onClose?: () => void;
   mode?: 'training' | 'match_clutch';
   weather?: MatchWeatherType;
+  divisionOverride?: Division;
+  opponentOverall?: number;
   matchInfo?: {
     minute: number;
     oppClubName: string;
@@ -37,54 +39,93 @@ export function NSSFreeKickMinigame({
   onClose,
   mode = 'training',
   weather = 'sunny',
+  divisionOverride,
+  opponentOverall,
   matchInfo,
 }: NSSFreeKickMinigameProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const playerProfile = useGameStore((s) => s.playerProfile);
+  const balance = useMinigameBalance({
+    division: divisionOverride,
+    opponentOverall,
+  });
+  const balanceRef = useRef(balance);
+  useEffect(() => {
+    balanceRef.current = balance;
+  }, [balance]);
 
-  // Distância da cobrança de falta (18m a 32m)
-  const [distanceMeters] = useState<number>(() => Math.floor(Math.random() * 12) + 20);
-
-  // Vento (-3 a +3 nós laterais)
+  const [distanceMeters] = useState<number>(() => Math.floor(Math.random() * 11) + 20);
   const [windKnots] = useState<number>(() => {
     if (weather === 'windy') return Math.floor(Math.random() * 7) - 3;
     return Math.floor(Math.random() * 3) - 1;
   });
 
   const [shotResult, setShotResult] = useState<'aiming' | 'shooting' | 'goal' | 'saved' | 'woodwork' | 'blocked' | 'out'>('aiming');
-  const [feedbackText, setFeedbackText] = useState('Ajuste o efeito na bola, mire no canto e trave a força na barra!');
-  const [power, setPower] = useState<number>(50);
+  const [feedbackText, setFeedbackText] = useState('Ajuste o efeito, toque no gol para mirar e trave a potência!');
+  const [power, setPower] = useState<number>(60);
   const [powerLocked, setPowerLocked] = useState<boolean>(false);
-  const [impact, setImpact] = useState<BallImpact>({ x: 0.35, y: 0.4 }); // Efeito colocado padrão
-  const [targetAim, setTargetAim] = useState<{ x: number; y: number }>({ x: 280, y: 130 });
+  const [impact, setImpact] = useState<BallImpact>({ x: 0.35, y: 0.4 });
 
-  // Posições da Barreira e Goleiro
-  const wallJumpOffsetRef = useRef<number>(0);
-  const ballPosRef = useRef<{ x: number; y: number; z: number; vx: number; vy: number; vz: number }>({
-    x: 280,
-    y: 350,
-    z: 0,
-    vx: 0,
-    vy: 0,
-    vz: 0,
+  const onGoalRef = useRef(onScoreGoal);
+  const onMissRef = useRef(onMiss);
+
+  useEffect(() => {
+    onGoalRef.current = onScoreGoal;
+    onMissRef.current = onMiss;
+  }, [onScoreGoal, onMiss]);
+
+  const simRef = useRef({
+    state: 'aiming' as 'aiming' | 'shooting' | 'goal' | 'saved' | 'woodwork' | 'blocked' | 'out',
+    aim: { x: 205, y: 74 },
+    impact: { x: 0.35, y: 0.4 },
+    wallJumpOffset: 0,
+    gk: { x: 310, tilt: 0, targetDiveX: 310 },
+    ball: { x: 280, y: 338, z: 0, vx: 0, vy: 0, vz: 0 },
+    trail: [] as { x: number; y: number; z: number }[],
+    shake: 0,
+    netStretch: 0,
   });
 
-  // Animação da barra de força
+  useEffect(() => {
+    simRef.current.impact = impact;
+  }, [impact]);
+
+  // Barra de força oscilando continuamente
   useEffect(() => {
     if (shotResult !== 'aiming' || powerLocked) return;
     let dir = 1;
     const interval = setInterval(() => {
       setPower((p) => {
-        let next = p + dir * 3.8;
-        if (next >= 100) { next = 100; dir = -1; }
-        else if (next <= 10) { next = 10; dir = 1; }
+        let next = p + dir * (3.8 * balanceRef.current.powerBarSpeedMult);
+        if (next >= 100) {
+          next = 100;
+          dir = -1;
+        } else if (next <= 12) {
+          next = 12;
+          dir = 1;
+        }
         return Math.round(next);
       });
-    }, 45);
+    }, 40);
     return () => clearInterval(interval);
   }, [shotResult, powerLocked]);
 
-  // Renderização do Canvas 2D
+  const resetPlay = useCallback(() => {
+    simRef.current = {
+      state: 'aiming',
+      aim: { x: 205, y: 74 },
+      impact,
+      wallJumpOffset: 0,
+      gk: { x: 310, tilt: 0, targetDiveX: 310 },
+      ball: { x: 280, y: 338, z: 0, vx: 0, vy: 0, vz: 0 },
+      trail: [],
+      shake: 0,
+      netStretch: 0,
+    };
+    setPowerLocked(false);
+    setShotResult('aiming');
+    setFeedbackText('Ajuste o efeito, toque no gol para mirar e trave a potência!');
+  }, [impact]);
+
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -94,249 +135,201 @@ export function NSSFreeKickMinigame({
     let animId: number;
 
     const render = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      // 1. Gramado com perspectiva
-      const grassGrad = ctx.createLinearGradient(0, 0, 0, canvas.height);
-      grassGrad.addColorStop(0, '#15803d');
-      grassGrad.addColorStop(1, '#166534');
-      ctx.fillStyle = grassGrad;
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-      // Linhas da grande área
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
-      ctx.lineWidth = 2.5;
-      ctx.beginPath();
-      ctx.moveTo(100, 240);
-      ctx.lineTo(460, 240);
-      ctx.stroke();
-
-      // Meia-lua
-      ctx.beginPath();
-      ctx.arc(280, 240, 60, Math.PI, 0);
-      ctx.stroke();
-
-      // 2. Trave e Rede do Gol
+      const s = simRef.current;
+      const w = canvas.width;
+      const h = canvas.height;
       const goalLeft = 140;
       const goalRight = 420;
-      const goalTop = 70;
-      const goalBottom = 170;
+      const goalTop = 24;
+      const goalBottom = 108; // Linha do gol!
 
-      // Rede interna
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
-      ctx.fillRect(goalLeft, goalTop, goalRight - goalLeft, goalBottom - goalTop);
-
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
-      ctx.lineWidth = 1;
-      for (let x = goalLeft + 15; x < goalRight; x += 15) {
-        ctx.beginPath();
-        ctx.moveTo(x, goalTop);
-        ctx.lineTo(x, goalBottom);
-        ctx.stroke();
-      }
-      for (let y = goalTop + 15; y < goalBottom; y += 15) {
-        ctx.beginPath();
-        ctx.moveTo(goalLeft, y);
-        ctx.lineTo(goalRight, y);
-        ctx.stroke();
+      ctx.save();
+      if (s.shake > 0) {
+        applyScreenShake(ctx, s.shake);
+        s.shake = Math.max(0, s.shake - 0.45);
       }
 
-      // Moldura da Trave (Postes brancos)
-      ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = 5;
-      ctx.strokeRect(goalLeft, goalTop, goalRight - goalLeft, goalBottom - goalTop);
+      if (s.state === 'shooting') {
+        s.ball.x += s.ball.vx;
+        s.ball.y += s.ball.vy;
+        s.ball.z = Math.max(0, s.ball.z + s.ball.vz);
+        s.ball.vz -= 0.17;
+        s.ball.vx += s.impact.x * 0.34 + windKnots * 0.06;
 
-      // 3. Goleiro Adversário
-      const gkX = 280;
-      const gkY = goalBottom - 25;
-      ctx.fillStyle = '#f59e0b';
-      ctx.beginPath();
-      ctx.arc(gkX, gkY - 14, 10, 0, Math.PI * 2); // Cabeça
-      ctx.fill();
-      ctx.fillRect(gkX - 8, gkY - 4, 16, 26); // Corpo
-      // Luvas
-      ctx.fillStyle = '#ffffff';
-      ctx.beginPath();
-      ctx.arc(gkX - 12, gkY + 2, 5, 0, Math.PI * 2);
-      ctx.arc(gkX + 12, gkY + 2, 5, 0, Math.PI * 2);
-      ctx.fill();
+        if (s.wallJumpOffset < 22) s.wallJumpOffset += 2.2;
 
-      // 4. Barreira de Defensores (4 jogadores pulando)
-      const wallCount = 4;
-      const wallStartX = 230;
-      const wallBaseY = 245 - wallJumpOffsetRef.current;
+        // Goleiro salta em direção ao chute (calibrado por OVR × Liga)
+        const gkDiff = s.gk.targetDiveX - s.gk.x;
+        s.gk.x += gkDiff * (0.085 * balanceRef.current.keeperSpeedMult);
+        s.gk.tilt = Math.sign(gkDiff) * 0.45;
 
-      for (let i = 0; i < wallCount; i++) {
-        const wx = wallStartX + i * 26;
-        // Cabeça
-        ctx.fillStyle = '#f87171';
-        ctx.beginPath();
-        ctx.arc(wx, wallBaseY - 26, 9, 0, Math.PI * 2);
-        ctx.fill();
-        // Camisa
-        ctx.fillStyle = '#dc2626';
-        ctx.fillRect(wx - 8, wallBaseY - 16, 16, 28);
-        // Pernas
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(wx - 6, wallBaseY + 12, 4, 14);
-        ctx.fillRect(wx + 2, wallBaseY + 12, 4, 14);
-      }
+        s.trail.push({ x: s.ball.x, y: s.ball.y, z: s.ball.z });
+        if (s.trail.length > 10) s.trail.shift();
 
-      // Sombra da barreira no chão
-      for (let i = 0; i < wallCount; i++) {
-        const wx = wallStartX + i * 26;
-        ctx.beginPath();
-        ctx.ellipse(wx, 265, 10, 3, 0, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(0,0,0,0.3)';
-        ctx.fill();
-      }
+        // Colisão com a barreira (4 jogadores em x = 218..302, y = 242)
+        if (s.ball.y <= 252 && s.ball.y >= 232 && s.ball.z < 28 && s.ball.x >= 210 && s.ball.x <= 312) {
+          s.state = 'blocked';
+          s.shake = 5;
+          setShotResult('blocked');
+          setFeedbackText('Na barreira! A falta explodiu nos defensores!');
+          sound.playWoodwork();
+          onMissRef.current?.();
+        } else if (s.ball.y <= goalBottom) {
+          const hitPost =
+            Math.abs(s.ball.x - goalLeft) < 10 || Math.abs(s.ball.x - goalRight) < 10;
+          const distToGk = Math.abs(s.ball.x - s.gk.x);
+          const isInsideWidth = s.ball.x >= goalLeft + 8 && s.ball.x <= goalRight - 8;
+          const isInsideHeight = s.ball.z >= 0 && s.ball.z <= 64;
 
-      // 5. Mira do Chute (quando está mirando)
-      if (shotResult === 'aiming') {
-        ctx.strokeStyle = '#eab308';
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.arc(targetAim.x, targetAim.y, 14, 0, Math.PI * 2);
-        ctx.stroke();
-
-        ctx.beginPath();
-        ctx.moveTo(targetAim.x - 18, targetAim.y);
-        ctx.lineTo(targetAim.x + 18, targetAim.y);
-        ctx.moveTo(targetAim.x, targetAim.y - 18);
-        ctx.lineTo(targetAim.x, targetAim.y + 18);
-        ctx.stroke();
-
-        // Linha pontilhada com prévia da curva
-        ctx.setLineDash([4, 4]);
-        ctx.strokeStyle = 'rgba(234, 179, 8, 0.6)';
-        ctx.beginPath();
-        ctx.moveTo(ballPosRef.current.x, ballPosRef.current.y);
-        const curveMidX = (ballPosRef.current.x + targetAim.x) / 2 + impact.x * 45;
-        const curveMidY = (ballPosRef.current.y + targetAim.y) / 2 - impact.y * 30;
-        ctx.quadraticCurveTo(curveMidX, curveMidY, targetAim.x, targetAim.y);
-        ctx.stroke();
-        ctx.setLineDash([]);
-      }
-
-      // 6. Bola e Trajetória em Voo
-      const ball = ballPosRef.current;
-      if (shotResult === 'shooting') {
-        ball.x += ball.vx;
-        ball.y += ball.vy;
-        ball.z += ball.vz;
-        ball.vz -= 0.18; // Gravidade
-
-        // Efeito da curva e vento durante o voo
-        ball.vx += (impact.x * 0.38) + (windKnots * 0.08);
-
-        // Barreira pula aos poucos
-        if (wallJumpOffsetRef.current < 20) {
-          wallJumpOffsetRef.current += 1.8;
-        }
-
-        // Checagem de Colisão com a Barreira (quando atinge Y ~ 245)
-        if (ball.y <= 255 && ball.y >= 235 && ball.z < 26) {
-          if (ball.x >= 220 && ball.x <= 325) {
-            setShotResult('blocked');
-            setFeedbackText('Na barreira! A bola carimbou o zagueiro adversário!');
-            sound.play('whistle');
-            if (onMiss) onMiss();
-            return;
-          }
-        }
-
-        // Checagem de Linha do Gol (Y <= 170)
-        if (ball.y <= 170) {
-          const isInsideWidth = ball.x >= goalLeft + 8 && ball.x <= goalRight - 8;
-          const isInsideHeight = ball.y >= goalTop && ball.z >= 0 && ball.z <= 60;
-
-          if (isInsideWidth && isInsideHeight) {
+          if (hitPost) {
+            s.state = 'woodwork';
+            s.shake = 9;
+            setShotResult('woodwork');
+            setFeedbackText('NO ÂNGULO DA TRAVE! Explodiu no ferro!');
+            sound.playWoodwork();
+            onMissRef.current?.();
+          } else if (distToGk < 22 * Math.max(0.72, Math.min(1.3, balanceRef.current.keeperSpeedMult)) && s.ball.z < 46) {
+            s.state = 'saved';
+            s.shake = 4;
+            setShotResult('saved');
+            setFeedbackText('DEFESA ESPETACULAR! O goleiro voou e espalmou a falta!');
+            sound.playWoodwork();
+            onMissRef.current?.();
+          } else if (isInsideWidth && isInsideHeight) {
+            s.state = 'goal';
+            s.netStretch = 12;
+            s.shake = 6;
             setShotResult('goal');
             setFeedbackText('GOLAÇO DE FALTA! Bola na gaveta com efeito indefensável! 🔥');
-            sound.play('goal');
+            sound.playGoal();
             confetti({
               particleCount: 80,
               spread: 80,
               origin: { y: 0.6 },
               colors: ['#10b981', '#fbbf24', '#ffffff'],
             });
-            if (onScoreGoal) onScoreGoal(0.6);
+            onGoalRef.current?.(0.6);
           } else {
+            s.state = 'out';
             setShotResult('out');
-            setFeedbackText('Pra fora! A falta passou raspando o travessão!');
-            sound.play('whistle');
-            if (onMiss) onMiss();
+            setFeedbackText('Pra fora! A cobrança passou raspando o travessão!');
+            sound.playWhistle();
+            onMissRef.current?.();
           }
-          return;
         }
+      } else if (s.netStretch > 0) {
+        s.netStretch = Math.max(0, s.netStretch - 0.35);
       }
 
-      // Desenha a Bola
-      const ballRadius = Math.max(5, 12 - (350 - ball.y) * 0.02);
+      drawPitchBackground(ctx, w, h, 32);
+
+      // Linha de fundo/gol, pequena área, grande área e meia-lua
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.45)';
+      ctx.lineWidth = 2.5;
       ctx.beginPath();
-      ctx.arc(ball.x, ball.y - ball.z, ballRadius, 0, Math.PI * 2);
-      ctx.fillStyle = '#ffffff';
-      ctx.fill();
-      ctx.strokeStyle = '#18181b';
-      ctx.lineWidth = 2;
+      ctx.moveTo(12, goalBottom);
+      ctx.lineTo(w - 12, goalBottom);
+      ctx.stroke();
+      ctx.strokeRect(185, goalBottom, 190, 52);
+      ctx.strokeRect(90, goalBottom, 380, 142);
+      ctx.beginPath();
+      ctx.arc(280, goalBottom + 142, 48, 0, Math.PI);
       ctx.stroke();
 
-      // Sombra da bola no chão
-      ctx.beginPath();
-      ctx.ellipse(ball.x, ball.y, ballRadius * 0.9, ballRadius * 0.35, 0, 0, Math.PI * 2);
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
-      ctx.fill();
+      drawGoalWithNet(ctx, goalLeft, goalTop, goalRight - goalLeft, goalBottom - goalTop, s.netStretch);
 
-      if (shotResult === 'shooting') {
-        animId = requestAnimationFrame(render);
+      // Goleiro em cima da linha do gol
+      drawCartoonPlayer(ctx, s.gk.x, goalBottom - 8, {
+        jerseyColor: '#f59e0b',
+        shortsColor: '#0f172a',
+        gloveColor: '#22c55e',
+        label: 'GOL',
+        labelColor: '#fde68a',
+        divingTilt: s.gk.tilt,
+      });
+
+      // Barreira (4 bonequinhos)
+      for (let i = 0; i < 4; i++) {
+        const wx = 218 + i * 28;
+        drawCartoonPlayer(ctx, wx, 242 - s.wallJumpOffset, {
+          jerseyColor: '#dc2626',
+          shortsColor: '#ffffff',
+          scale: 0.95,
+        });
       }
+
+      // Cobrador (Você)
+      drawCartoonPlayer(ctx, 252, 345, {
+        jerseyColor: '#10b981',
+        shortsColor: '#0f172a',
+        label: 'VOCÊ',
+        labelColor: '#6ee7b7',
+        scale: 1.08,
+      });
+
+      // Mira com prévia da curva
+      if (s.state === 'aiming') {
+        ctx.save();
+        ctx.strokeStyle = '#eab308';
+        ctx.lineWidth = 2.2;
+        ctx.beginPath();
+        ctx.arc(s.aim.x, s.aim.y, 13, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.setLineDash([5, 4]);
+        ctx.strokeStyle = 'rgba(250, 204, 21, 0.75)';
+        ctx.beginPath();
+        ctx.moveTo(s.ball.x, s.ball.y);
+        const curveMidX = (s.ball.x + s.aim.x) / 2 + s.impact.x * 46;
+        const curveMidY = (s.ball.y + s.aim.y) / 2 - s.impact.y * 28;
+        ctx.quadraticCurveTo(curveMidX, curveMidY, s.aim.x, s.aim.y);
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      drawStyledBall(ctx, s.ball.x, s.ball.y, 9, s.ball.z, s.trail);
+
+      ctx.restore();
+      animId = requestAnimationFrame(render);
     };
 
-    render();
+    animId = requestAnimationFrame(render);
     return () => cancelAnimationFrame(animId);
-  }, [shotResult, targetAim, impact, windKnots, onScoreGoal, onMiss]);
+  }, [windKnots]);
 
-  // Mira pelo toque/clique no Canvas
-  const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (shotResult !== 'aiming') return;
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const rect = canvas.getBoundingClientRect();
-    const x = ((e.clientX - rect.left) / rect.width) * canvas.width;
-    const y = ((e.clientY - rect.top) / rect.height) * canvas.height;
-
-    // Limita mira na região do gol
-    setTargetAim({
-      x: Math.max(130, Math.min(430, x)),
-      y: Math.max(65, Math.min(185, y)),
-    });
+  const updateAim = (clientX: number, clientY: number) => {
+    const s = simRef.current;
+    if (s.state !== 'aiming' || !canvasRef.current) return;
+    const { x, y } = getCanvasPointerCoords(canvasRef.current, clientX, clientY);
+    s.aim = {
+      x: Math.max(132, Math.min(428, x)),
+      y: Math.max(26, Math.min(112, y)),
+    };
   };
 
-  // Disparo do Chute
   const handleKick = () => {
-    if (shotResult !== 'aiming') return;
+    const s = simRef.current;
+    if (s.state !== 'aiming') return;
     setPowerLocked(true);
+    s.state = 'shooting';
+    s.trail = [];
     setShotResult('shooting');
-    sound.play('kick');
+    sound.playKickPower(power);
 
-    // Cálculo da trajetória da bola
-    const dx = (targetAim.x - 280) / 22;
-    const dy = -8.5 * (power / 58);
-    const dz = 4.2 + (impact.y * 3.2);
+    // Goleiro tenta adivinhar o canto
+    const predictedX = s.aim.x + s.impact.x * 38;
+    const guess = Math.random() < 0.45 ? predictedX : s.aim.x < 280 ? 350 : 210;
+    s.gk.targetDiveX = Math.max(goalLeftClamp(165), Math.min(395, guess));
 
-    ballPosRef.current = {
-      x: 280,
-      y: 350,
-      z: 0,
-      vx: dx,
-      vy: dy,
-      vz: dz,
-    };
+    const dx = (s.aim.x - 280) / 22;
+    const dy = -8.8 * (power / 60);
+    const dz = 4.0 + impact.y * 3.1;
+
+    s.ball = { x: 280, y: 338, z: 0, vx: dx, vy: dy, vz: dz };
   };
 
   return (
     <div className="flex flex-col items-center w-full max-w-xl mx-auto p-4 bg-card border border-border/80 rounded-3xl shadow-2xl">
-      {/* Cabeçalho do Minigame */}
       <div className="flex items-center justify-between w-full mb-3 border-b border-border pb-2.5">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center font-black">
@@ -350,29 +343,42 @@ export function NSSFreeKickMinigame({
               </span>
             </h3>
             <span className="text-[10px] font-bold text-muted-foreground">
-              Vento: {windKnots > 0 ? `➡️ +${windKnots} nós (Direita)` : windKnots < 0 ? `⬅️ ${windKnots} nós (Esquerda)` : 'Calmo 🍃'}
+              Vento: {windKnots > 0 ? `➡️ +${windKnots} nós` : windKnots < 0 ? `⬅️ ${windKnots} nós` : 'Calmo 🍃'}
             </span>
           </div>
         </div>
 
-        {matchInfo && (
-          <span className="text-[11px] font-black px-2.5 py-1 rounded-lg bg-secondary text-foreground">
-            {matchInfo.oppClubName} • {matchInfo.minute}' ({matchInfo.currentScore})
-          </span>
-        )}
+        <div className="flex items-center gap-2 flex-wrap justify-end">
+          <DifficultyBadge balance={balance} compact />
+          {matchInfo && (
+            <span className="text-[11px] font-black px-2.5 py-1 rounded-lg bg-secondary text-foreground">
+              {matchInfo.oppClubName} • {matchInfo.minute}&apos; ({matchInfo.currentScore})
+            </span>
+          )}
+        </div>
       </div>
 
-      {/* Canvas do Lance */}
       <div className="relative w-full aspect-[560/380] bg-zinc-950 rounded-2xl overflow-hidden border border-border/60 shadow-inner">
         <canvas
           ref={canvasRef}
           width={560}
           height={380}
-          onClick={handleCanvasClick}
+          onClick={(e) => updateAim(e.clientX, e.clientY)}
+          onTouchStart={(e) => {
+            if (e.touches[0]) {
+              e.preventDefault();
+              updateAim(e.touches[0].clientX, e.touches[0].clientY);
+            }
+          }}
+          onTouchMove={(e) => {
+            if (e.touches[0]) {
+              e.preventDefault();
+              updateAim(e.touches[0].clientX, e.touches[0].clientY);
+            }
+          }}
           className="w-full h-full cursor-crosshair touch-none"
         />
 
-        {/* Overlay de Resultado */}
         {shotResult !== 'aiming' && shotResult !== 'shooting' && (
           <div className="absolute inset-0 bg-black/75 backdrop-blur-sm flex flex-col items-center justify-center p-4 text-center animate-in fade-in duration-200">
             {shotResult === 'goal' ? (
@@ -389,32 +395,44 @@ export function NSSFreeKickMinigame({
               </div>
             )}
 
-            {onClose && (
-              <button
-                type="button"
-                onClick={onClose}
-                className="mt-4 px-6 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-black text-xs transition-all shadow-lg cursor-pointer"
-              >
-                Voltar à Partida
-              </button>
-            )}
+            <div className="mt-4 flex gap-2">
+              {mode === 'training' && (
+                <button
+                  type="button"
+                  onClick={resetPlay}
+                  className="px-4 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" /> Nova Falta
+                </button>
+              )}
+              {onClose && (
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="px-6 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-black text-xs transition-all shadow-lg cursor-pointer"
+                >
+                  Voltar à Partida
+                </button>
+              )}
+            </div>
           </div>
         )}
       </div>
 
-      {/* Controles de Chute e Efeito */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full mt-4 pt-3 border-t border-border">
-        {/* Lado Esquerdo: Seletor de Impacto */}
         <div className="flex flex-col items-center">
           <BallImpactSelector value={impact} onChange={setImpact} disabled={shotResult !== 'aiming'} size="sm" />
         </div>
 
-        {/* Lado Direito: Barra de Força + Botão de Chutar */}
-        <div className="flex flex-col justify-between">
+        <div className="flex flex-col justify-between gap-3">
           <div>
             <div className="flex items-center justify-between text-xs font-black mb-1.5">
               <span className="text-muted-foreground uppercase text-[10px]">Potência do Chute:</span>
-              <span className={`font-mono ${power > 85 ? 'text-rose-400' : power > 55 ? 'text-amber-400' : 'text-emerald-400'}`}>
+              <span
+                className={`font-mono ${
+                  power > 85 ? 'text-rose-400' : power > 55 ? 'text-amber-400' : 'text-emerald-400'
+                }`}
+              >
                 {power}%
               </span>
             </div>
@@ -425,23 +443,25 @@ export function NSSFreeKickMinigame({
                 }`}
                 style={{ width: `${power}%` }}
               />
-              <div className="absolute top-0 bottom-0 left-[60%] w-0.5 bg-white/40" title="Zona Ideal" />
+              <div className="absolute top-0 bottom-0 left-[62%] w-0.5 bg-white/50" />
             </div>
           </div>
 
-          <div className="mt-3 flex gap-2">
-            <button
-              type="button"
-              disabled={shotResult !== 'aiming'}
-              onClick={handleKick}
-              className="flex-1 py-3 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-zinc-950 font-black text-sm tracking-wide transition-all shadow-lg flex items-center justify-center gap-2 cursor-pointer active:scale-95"
-            >
-              <Flame className="w-4 h-4" />
-              BATER NO GOL COM EFEITO
-            </button>
-          </div>
+          <button
+            type="button"
+            disabled={shotResult !== 'aiming'}
+            onClick={handleKick}
+            className="w-full py-3 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-zinc-950 font-black text-sm tracking-wide transition-all shadow-lg flex items-center justify-center gap-2 cursor-pointer active:scale-95"
+          >
+            <Flame className="w-4 h-4" />
+            BATER COM EFEITO ({power}%)
+          </button>
         </div>
       </div>
     </div>
   );
+}
+
+function goalLeftClamp(min: number) {
+  return min;
 }

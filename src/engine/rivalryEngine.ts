@@ -3,7 +3,7 @@
 // Duelo da Temporada ⚔️: Craque vs Craque ou Técnico vs Técnico durante todo o ano
 // ==============================================================================
 
-import { SeasonRivalry, Club, Player } from '@/types/game';
+import { SeasonRivalry, Club } from '@/types/game';
 
 export function initializeSeasonRivalry(
   seasonYear: number,

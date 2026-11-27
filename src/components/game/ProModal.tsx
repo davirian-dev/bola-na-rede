@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useGameStore } from '@/store/gameStore';
+import { useIsMounted } from '@/hooks/useIsMounted';
 import { 
   Crown, 
   Check, 
@@ -75,23 +76,21 @@ export function ProModal({ isOpen, onClose, onOpenDonation }: ProModalProps) {
   const [copiedKey, setCopiedKey] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
-  const [mounted, setMounted] = useState(false);
+  const mounted = useIsMounted();
 
   const PIX_KEY = process.env.NEXT_PUBLIC_PIX_KEY || 'elisantos157h@gmail.com';
 
   useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  useEffect(() => {
+    let resetTimer: ReturnType<typeof setTimeout> | null = null;
     if (isOpen) {
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = '';
-      setShowCancelConfirm(false);
+      resetTimer = setTimeout(() => setShowCancelConfirm(false), 0);
     }
     return () => {
       document.body.style.overflow = '';
+      if (resetTimer) clearTimeout(resetTimer);
     };
   }, [isOpen]);
 

@@ -62,7 +62,7 @@ export function processSeasonEnd(state: GameState): SeasonSummaryResult {
   const viceAId = aStandings[1]?.clubId || 'pal';
   const viceBId = bStandings[1]?.clubId || 'san';
   const viceCId = cStandings[1]?.clubId || 'fig';
-  const viceDId = dStandings[1]?.clubId || 'xav';
+  const viceDId = dStandings[1]?.clubId || 'brasil_pel';
   const viceSub20Id = sub20Standings[1]?.clubId || 'cor';
 
   // 2. Acesso e Rebaixamento (G4 sobem, Z4 descem)

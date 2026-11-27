@@ -1,0 +1,782 @@
+{
+  "eslint.config.mjs": {
+    "mtime": 1795564125.8368635,
+    "seen": 1795721446.9816341,
+    "ast_hash": "6c4307ffa009658f5c97f5629094c0c2",
+    "semantic_hash": "6c4307ffa009658f5c97f5629094c0c2"
+  },
+  "next.config.ts": {
+    "mtime": 1795564125.8368635,
+    "seen": 1795721446.9816341,
+    "ast_hash": "9267652e4446755f1a8608f27b67c949",
+    "semantic_hash": "9267652e4446755f1a8608f27b67c949"
+  },
+  "package.json": {
+    "mtime": 1795566396.0516148,
+    "seen": 1795721446.9816341,
+    "ast_hash": "e65abe9cb88bce74de592e00d74558cd",
+    "semantic_hash": "e65abe9cb88bce74de592e00d74558cd"
+  },
+  "public/manifest.json": {
+    "mtime": 1795564125.8728666,
+    "seen": 1795721446.9816341,
+    "ast_hash": "15154f327176d20bddc2305d24119000",
+    "semantic_hash": "15154f327176d20bddc2305d24119000"
+  },
+  "public/sw.js": {
+    "mtime": 1795564125.8728666,
+    "seen": 1795721446.9816341,
+    "ast_hash": "ce14c8f21e9e8f3da7d369c185ced85f",
+    "semantic_hash": "ce14c8f21e9e8f3da7d369c185ced85f"
+  },
+  "scripts/diag_new_career.js": {
+    "mtime": 1795564125.8931513,
+    "seen": 1795721446.9816341,
+    "ast_hash": "d8c4d6ca95ca76f301087e799caa0d1a",
+    "semantic_hash": "d8c4d6ca95ca76f301087e799caa0d1a"
+  },
+  "scripts/generate_official_game_assets.py": {
+    "mtime": 1795564125.8931513,
+    "seen": 1795721446.9816341,
+    "ast_hash": "f1de46df0f4b9700afd31214f74d5522",
+    "semantic_hash": "f1de46df0f4b9700afd31214f74d5522"
+  },
+  "scripts/playtest.js": {
+    "mtime": 1795564125.8931513,
+    "seen": 1795721446.9816341,
+    "ast_hash": "78cdfa3a4131dfde303ec0428a3fe134",
+    "semantic_hash": "78cdfa3a4131dfde303ec0428a3fe134"
+  },
+  "scripts/stress-test-dynasty.js": {
+    "mtime": 1795564125.8931513,
+    "seen": 1795721446.9816341,
+    "ast_hash": "f01e731cf01ab919e39c8f06aa0d8366",
+    "semantic_hash": "f01e731cf01ab919e39c8f06aa0d8366"
+  },
+  "scripts/test_full_8weeks.js": {
+    "mtime": 1795564125.8931513,
+    "seen": 1795721446.9816341,
+    "ast_hash": "bf364856a7b6b25a0a8f7d444028362c",
+    "semantic_hash": "bf364856a7b6b25a0a8f7d444028362c"
+  },
+  "src/app/arena-2d/page.tsx": {
+    "mtime": 1795605064.1155672,
+    "seen": 1795721446.9816341,
+    "ast_hash": "44a543eecdc26af8490590158fb23242",
+    "semantic_hash": "44a543eecdc26af8490590158fb23242"
+  },
+  "src/app/calendario/page.tsx": {
+    "mtime": 1795564125.896541,
+    "seen": 1795721446.9816341,
+    "ast_hash": "8378be71cf167442984c79066bf10c79",
+    "semantic_hash": "8378be71cf167442984c79066bf10c79"
+  },
+  "src/app/competicoes/page.tsx": {
+    "mtime": 1795604177.1836507,
+    "seen": 1795721446.9816341,
+    "ast_hash": "6bcb3c8c45b63555f41e5c1d1c3ad551",
+    "semantic_hash": "6bcb3c8c45b63555f41e5c1d1c3ad551"
+  },
+  "src/app/dashboard/page.tsx": {
+    "mtime": 1795604488.101981,
+    "seen": 1795721446.9816341,
+    "ast_hash": "c69b82ea430d107a104986e98faf8d9e",
+    "semantic_hash": "c69b82ea430d107a104986e98faf8d9e"
+  },
+  "src/app/desafios/page.tsx": {
+    "mtime": 1795564125.896541,
+    "seen": 1795721446.9816341,
+    "ast_hash": "ebab075534bc40040bbd50de21f2cb12",
+    "semantic_hash": "ebab075534bc40040bbd50de21f2cb12"
+  },
+  "src/app/editor/page.tsx": {
+    "mtime": 1795564125.896541,
+    "seen": 1795721446.9816341,
+    "ast_hash": "282087d5c8287933120e87f931ba5150",
+    "semantic_hash": "282087d5c8287933120e87f931ba5150"
+  },
+  "src/app/layout.tsx": {
+    "mtime": 1795564125.9014666,
+    "seen": 1795721446.9816341,
+    "ast_hash": "10e84587ca5126e8b21e68f6596896de",
+    "semantic_hash": "10e84587ca5126e8b21e68f6596896de"
+  },
+  "src/app/loja-pix/page.tsx": {
+    "mtime": 1795604357.8128092,
+    "seen": 1795721446.9816341,
+    "ast_hash": "0defc6c2bd4e728fdbd74d7b0eaf952f",
+    "semantic_hash": "0defc6c2bd4e728fdbd74d7b0eaf952f"
+  },
+  "src/app/new-career/page.tsx": {
+    "mtime": 1795604478.308476,
+    "seen": 1795721446.9816341,
+    "ast_hash": "ba820c166f0a03a7329ec889926a0ab8",
+    "semantic_hash": "ba820c166f0a03a7329ec889926a0ab8"
+  },
+  "src/app/noticias/page.tsx": {
+    "mtime": 1795604356.0398264,
+    "seen": 1795721446.9816341,
+    "ast_hash": "e54f90ce77cdd2e0a491941215ed3644",
+    "semantic_hash": "e54f90ce77cdd2e0a491941215ed3644"
+  },
+  "src/app/online/page.tsx": {
+    "mtime": 1795604601.2119417,
+    "seen": 1795721446.9816341,
+    "ast_hash": "fc9a7587d4d68c0ab7433353198fbb9d",
+    "semantic_hash": "fc9a7587d4d68c0ab7433353198fbb9d"
+  },
+  "src/app/page.tsx": {
+    "mtime": 1795604392.9093454,
+    "seen": 1795721446.9816341,
+    "ast_hash": "668445513df138968fc390d495259ddb",
+    "semantic_hash": "668445513df138968fc390d495259ddb"
+  },
+  "src/app/pontuacao/page.tsx": {
+    "mtime": 1795564125.905484,
+    "seen": 1795721446.9816341,
+    "ast_hash": "ecb148ad81a96d10243be24c1b3a6e27",
+    "semantic_hash": "ecb148ad81a96d10243be24c1b3a6e27"
+  },
+  "src/app/privacidade/page.tsx": {
+    "mtime": 1795564125.905484,
+    "seen": 1795721446.9816341,
+    "ast_hash": "14700fd1308e0f37d71d021d915cd196",
+    "semantic_hash": "14700fd1308e0f37d71d021d915cd196"
+  },
+  "src/app/ranking/page.tsx": {
+    "mtime": 1795564125.905484,
+    "seen": 1795721446.9816341,
+    "ast_hash": "ff570f22d1e0205359175de533e276e3",
+    "semantic_hash": "ff570f22d1e0205359175de533e276e3"
+  },
+  "src/app/suporte/page.tsx": {
+    "mtime": 1795604396.6101108,
+    "seen": 1795721446.9816341,
+    "ast_hash": "d165049fa851a8c84a9258e4f74ffcd2",
+    "semantic_hash": "d165049fa851a8c84a9258e4f74ffcd2"
+  },
+  "src/app/termos/page.tsx": {
+    "mtime": 1795564125.9074903,
+    "seen": 1795721446.9816341,
+    "ast_hash": "2156723ed7cffd82bfa7592159426064",
+    "semantic_hash": "2156723ed7cffd82bfa7592159426064"
+  },
+  "src/app/transferencias/page.tsx": {
+    "mtime": 1795564125.9074903,
+    "seen": 1795721446.9816341,
+    "ast_hash": "a259ad7b09d26e4757cf4ea260da2d1f",
+    "semantic_hash": "a259ad7b09d26e4757cf4ea260da2d1f"
+  },
+  "src/components/avatar/CharacterAvatar.tsx": {
+    "mtime": 1795564125.9092388,
+    "seen": 1795721446.9816341,
+    "ast_hash": "6bcf9efda53152ff3ae1496ef00d03a4",
+    "semantic_hash": "6bcf9efda53152ff3ae1496ef00d03a4"
+  },
+  "src/components/editor/CommunityKitHub.tsx": {
+    "mtime": 1795564125.9092388,
+    "seen": 1795721446.9816341,
+    "ast_hash": "496e5fd9e3fd206b6ff53e7b047ae2ae",
+    "semantic_hash": "496e5fd9e3fd206b6ff53e7b047ae2ae"
+  },
+  "src/components/game/AchievementsModal.tsx": {
+    "mtime": 1795604397.852635,
+    "seen": 1795721446.9816341,
+    "ast_hash": "5a7014226d5f472e85f66a5cd7176b58",
+    "semantic_hash": "5a7014226d5f472e85f66a5cd7176b58"
+  },
+  "src/components/game/AvatarCreatorModal.tsx": {
+    "mtime": 1795604419.9002213,
+    "seen": 1795721446.9816341,
+    "ast_hash": "7b3d4ebebe60570242eb94a216355524",
+    "semantic_hash": "7b3d4ebebe60570242eb94a216355524"
+  },
+  "src/components/game/AvatarDisplay.tsx": {
+    "mtime": 1795564125.9112458,
+    "seen": 1795721446.9816341,
+    "ast_hash": "128a8c37bbfe321e478f85a2b0d66ca1",
+    "semantic_hash": "128a8c37bbfe321e478f85a2b0d66ca1"
+  },
+  "src/components/game/BallImpactSelector.tsx": {
+    "mtime": 1795564125.9112458,
+    "seen": 1795721446.9816341,
+    "ast_hash": "6495a75c204a7c15f55073cada280f9b",
+    "semantic_hash": "6495a75c204a7c15f55073cada280f9b"
+  },
+  "src/components/game/CareerShareCardModal.tsx": {
+    "mtime": 1795564125.9112458,
+    "seen": 1795721446.9816341,
+    "ast_hash": "a74d0c74c7cd0186c88dc1701ab88551",
+    "semantic_hash": "a74d0c74c7cd0186c88dc1701ab88551"
+  },
+  "src/components/game/ClubBadge.tsx": {
+    "mtime": 1795564125.9112458,
+    "seen": 1795721446.9816341,
+    "ast_hash": "9efadd008d03f89f612c0b7915af57ee",
+    "semantic_hash": "9efadd008d03f89f612c0b7915af57ee"
+  },
+  "src/components/game/ControversyModal.tsx": {
+    "mtime": 1795564125.9112458,
+    "seen": 1795721446.9816341,
+    "ast_hash": "767c45629efb5f03b3325b70ba4d984f",
+    "semantic_hash": "767c45629efb5f03b3325b70ba4d984f"
+  },
+  "src/components/game/DifficultyBadge.tsx": {
+    "mtime": 1795604104.1972294,
+    "seen": 1795721446.9816341,
+    "ast_hash": "a7fda88d8575639a3e118c25b0a2fe5c",
+    "semantic_hash": "a7fda88d8575639a3e118c25b0a2fe5c"
+  },
+  "src/components/game/DilemmaModal.tsx": {
+    "mtime": 1795564125.9137316,
+    "seen": 1795721446.9816341,
+    "ast_hash": "39128b55298c9e77ee7597af49c18d24",
+    "semantic_hash": "39128b55298c9e77ee7597af49c18d24"
+  },
+  "src/components/game/DonationModal.tsx": {
+    "mtime": 1795604423.0287993,
+    "seen": 1795721446.9816341,
+    "ast_hash": "cff8f8be8153789eebe73507062a368d",
+    "semantic_hash": "cff8f8be8153789eebe73507062a368d"
+  },
+  "src/components/game/LiveMatchModal.tsx": {
+    "mtime": 1795604977.3732052,
+    "seen": 1795721446.9816341,
+    "ast_hash": "317011bfef5039791fe41e0a30a827f3",
+    "semantic_hash": "317011bfef5039791fe41e0a30a827f3"
+  },
+  "src/components/game/NSSDefenseMinigame.tsx": {
+    "mtime": 1795604835.8949502,
+    "seen": 1795721446.9816341,
+    "ast_hash": "24163a290d38a927d10752b1fbd4e82e",
+    "semantic_hash": "24163a290d38a927d10752b1fbd4e82e"
+  },
+  "src/components/game/NSSFreeKickMinigame.tsx": {
+    "mtime": 1795604808.2442386,
+    "seen": 1795721446.9816341,
+    "ast_hash": "ce4584876f509780da6e35a5d79a0672",
+    "semantic_hash": "ce4584876f509780da6e35a5d79a0672"
+  },
+  "src/components/game/NSSHeaderMinigame.tsx": {
+    "mtime": 1795604899.2056062,
+    "seen": 1795721446.9816341,
+    "ast_hash": "68bd76dcecd6b4e93e5822d05c93cabe",
+    "semantic_hash": "68bd76dcecd6b4e93e5822d05c93cabe"
+  },
+  "src/components/game/NSSInsideBoxMinigame.tsx": {
+    "mtime": 1795604821.886186,
+    "seen": 1795721446.9816341,
+    "ast_hash": "a2a4038cbf9ac239ed0caeb93031e050",
+    "semantic_hash": "a2a4038cbf9ac239ed0caeb93031e050"
+  },
+  "src/components/game/NSSLongShotMinigame.tsx": {
+    "mtime": 1795604814.7732208,
+    "seen": 1795721446.9816341,
+    "ast_hash": "4e5da19e27d5333a0a5a2e8c7eaca552",
+    "semantic_hash": "4e5da19e27d5333a0a5a2e8c7eaca552"
+  },
+  "src/components/game/NSSPassMinigame.tsx": {
+    "mtime": 1795604905.812605,
+    "seen": 1795721446.9816341,
+    "ast_hash": "eb854d539f2208a72a75840aa9298fed",
+    "semantic_hash": "eb854d539f2208a72a75840aa9298fed"
+  },
+  "src/components/game/NSSPenaltyMinigame.tsx": {
+    "mtime": 1795604799.5409076,
+    "seen": 1795721446.9816341,
+    "ast_hash": "8ef480aa28ce7ce6a9b54445b3583f18",
+    "semantic_hash": "8ef480aa28ce7ce6a9b54445b3583f18"
+  },
+  "src/components/game/NSSPlayerShopModal.tsx": {
+    "mtime": 1795604436.9345071,
+    "seen": 1795721446.9816341,
+    "ast_hash": "51be9a899f5af763cbae423bc90c11e1",
+    "semantic_hash": "51be9a899f5af763cbae423bc90c11e1"
+  },
+  "src/components/game/NationalTeamModal.tsx": {
+    "mtime": 1795564125.915731,
+    "seen": 1795721446.9816341,
+    "ast_hash": "e65094db65a76723bebf828c5ec917e7",
+    "semantic_hash": "e65094db65a76723bebf828c5ec917e7"
+  },
+  "src/components/game/OverallBadge.tsx": {
+    "mtime": 1795564125.915731,
+    "seen": 1795721446.9816341,
+    "ast_hash": "75d4e55734fb7b1279fbcb4f2c6bf5df",
+    "semantic_hash": "75d4e55734fb7b1279fbcb4f2c6bf5df"
+  },
+  "src/components/game/PerformanceIndicator.tsx": {
+    "mtime": 1795564125.915731,
+    "seen": 1795721446.9816341,
+    "ast_hash": "d3d702dbb17581dc6b29a77e039a8069",
+    "semantic_hash": "d3d702dbb17581dc6b29a77e039a8069"
+  },
+  "src/components/game/ProModal.tsx": {
+    "mtime": 1795604426.1039114,
+    "seen": 1795721446.9816341,
+    "ast_hash": "79d9509f0c71bb87f09da13dc3c7f222",
+    "semantic_hash": "79d9509f0c71bb87f09da13dc3c7f222"
+  },
+  "src/components/game/RoundResultModal.tsx": {
+    "mtime": 1795604432.02755,
+    "seen": 1795721446.9816341,
+    "ast_hash": "02d61cb0f09cd6d17f6161d04890b6ca",
+    "semantic_hash": "02d61cb0f09cd6d17f6161d04890b6ca"
+  },
+  "src/components/game/TacticsBoard.tsx": {
+    "mtime": 1795602602.2313259,
+    "seen": 1795721446.9816341,
+    "ast_hash": "f6fe61273763d4be6c1edb651e9af4d1",
+    "semantic_hash": "f6fe61273763d4be6c1edb651e9af4d1"
+  },
+  "src/components/game/TorcidaFeedModal.tsx": {
+    "mtime": 1795604434.3626575,
+    "seen": 1795721446.9816341,
+    "ast_hash": "58812f2708569b298f147af659378ed0",
+    "semantic_hash": "58812f2708569b298f147af659378ed0"
+  },
+  "src/components/game/TransferOfferModal.tsx": {
+    "mtime": 1795604435.770903,
+    "seen": 1795721446.9816341,
+    "ast_hash": "7bc080b3cd71941f5866284d3db0ce04",
+    "semantic_hash": "7bc080b3cd71941f5866284d3db0ce04"
+  },
+  "src/components/game/TrophyRoomModal.tsx": {
+    "mtime": 1795604386.675185,
+    "seen": 1795721446.9816341,
+    "ast_hash": "94f17f332afad40d72d37ae57c87b112",
+    "semantic_hash": "94f17f332afad40d72d37ae57c87b112"
+  },
+  "src/components/game/VIPStadiumWeatherModal.tsx": {
+    "mtime": 1795564125.9193878,
+    "seen": 1795721446.9816341,
+    "ast_hash": "61a5a4fe028c2cac701760407644ec68",
+    "semantic_hash": "61a5a4fe028c2cac701760407644ec68"
+  },
+  "src/components/layout/AppHeader.tsx": {
+    "mtime": 1795564125.9193878,
+    "seen": 1795721446.9816341,
+    "ast_hash": "e3c76b216d5db572a5964c3475894931",
+    "semantic_hash": "e3c76b216d5db572a5964c3475894931"
+  },
+  "src/components/layout/DesktopSidebar.tsx": {
+    "mtime": 1795604438.1569083,
+    "seen": 1795721446.9816341,
+    "ast_hash": "b8b83bc99142cab262bf1ac0c4b1eebd",
+    "semantic_hash": "b8b83bc99142cab262bf1ac0c4b1eebd"
+  },
+  "src/components/layout/GuestBanner.tsx": {
+    "mtime": 1795564125.9230816,
+    "seen": 1795721446.9816341,
+    "ast_hash": "4002b95c25be7fe95ea6ac07c23953b7",
+    "semantic_hash": "4002b95c25be7fe95ea6ac07c23953b7"
+  },
+  "src/components/layout/InstallAppModal.tsx": {
+    "mtime": 1795604382.023491,
+    "seen": 1795721446.9816341,
+    "ast_hash": "a709da301424cb4a56988606db174c68",
+    "semantic_hash": "a709da301424cb4a56988606db174c68"
+  },
+  "src/components/layout/MobileBottomNav.tsx": {
+    "mtime": 1795564125.9230816,
+    "seen": 1795721446.9816341,
+    "ast_hash": "f93c8f53542c0acd6c034773bc106d49",
+    "semantic_hash": "f93c8f53542c0acd6c034773bc106d49"
+  },
+  "src/components/layout/PWARegistration.tsx": {
+    "mtime": 1795564125.9230816,
+    "seen": 1795721446.9816341,
+    "ast_hash": "081c5b04334026c85bfd2c6fb81a73ba",
+    "semantic_hash": "081c5b04334026c85bfd2c6fb81a73ba"
+  },
+  "src/components/layout/ThemeProvider.tsx": {
+    "mtime": 1795564125.9230816,
+    "seen": 1795721446.9816341,
+    "ast_hash": "abbf55806dc65b12b61a7caadce6eefe",
+    "semantic_hash": "abbf55806dc65b12b61a7caadce6eefe"
+  },
+  "src/components/layout/ThemeToggle.tsx": {
+    "mtime": 1795604427.745331,
+    "seen": 1795721446.9816341,
+    "ast_hash": "fcd870e3a80a73ba71ec6867cc077d4e",
+    "semantic_hash": "fcd870e3a80a73ba71ec6867cc077d4e"
+  },
+  "src/components/manager/ManagerCareerModal.tsx": {
+    "mtime": 1795564125.9250882,
+    "seen": 1795721446.9816341,
+    "ast_hash": "f3e740ea35b84d7ebae5128c411e6b57",
+    "semantic_hash": "f3e740ea35b84d7ebae5128c411e6b57"
+  },
+  "src/components/manager/ManagerFinancesModal.tsx": {
+    "mtime": 1795564125.9250882,
+    "seen": 1795721446.9816341,
+    "ast_hash": "f91140f74897fdcd1b3bb6f7afe8b653",
+    "semantic_hash": "f91140f74897fdcd1b3bb6f7afe8b653"
+  },
+  "src/components/manager/ManagerRosterModal.tsx": {
+    "mtime": 1795564125.9269652,
+    "seen": 1795721446.9816341,
+    "ast_hash": "769c91b590ff69bd3b8d0bd5e90dfe3b",
+    "semantic_hash": "769c91b590ff69bd3b8d0bd5e90dfe3b"
+  },
+  "src/components/manager/ManagerSpeechMinigame.tsx": {
+    "mtime": 1795604933.063463,
+    "seen": 1795721446.9816341,
+    "ast_hash": "07b00d280d0066a17ae655c3b9b4ed8f",
+    "semantic_hash": "07b00d280d0066a17ae655c3b9b4ed8f"
+  },
+  "src/components/manager/ManagerTacticsModal.tsx": {
+    "mtime": 1795564125.9269652,
+    "seen": 1795721446.9816341,
+    "ast_hash": "b97383d0eee83fa373665d477fd5f44d",
+    "semantic_hash": "b97383d0eee83fa373665d477fd5f44d"
+  },
+  "src/components/manager/ManagerTrainingModal.tsx": {
+    "mtime": 1795564125.9269652,
+    "seen": 1795721446.9816341,
+    "ast_hash": "2f26299cee08145b5602d42586089d8b",
+    "semantic_hash": "2f26299cee08145b5602d42586089d8b"
+  },
+  "src/components/manager/ManagerTransferModal.tsx": {
+    "mtime": 1795604348.7742355,
+    "seen": 1795721446.9816341,
+    "ast_hash": "dc65d43e9e956c2f8b1be7a1372a4352",
+    "semantic_hash": "dc65d43e9e956c2f8b1be7a1372a4352"
+  },
+  "src/components/manager/TacticalBoardMinigame.tsx": {
+    "mtime": 1795604940.19506,
+    "seen": 1795721446.9816341,
+    "ast_hash": "27b5d3eafd123321acf0941950531be4",
+    "semantic_hash": "27b5d3eafd123321acf0941950531be4"
+  },
+  "src/components/match/DefenseMinigame.tsx": {
+    "mtime": 1795604918.5807683,
+    "seen": 1795721446.9816341,
+    "ast_hash": "054d3cee89c57e9bacb40ab7d05ba25e",
+    "semantic_hash": "054d3cee89c57e9bacb40ab7d05ba25e"
+  },
+  "src/components/match/DribbleMinigame.tsx": {
+    "mtime": 1795604994.9189055,
+    "seen": 1795721446.9816341,
+    "ast_hash": "42914081f6f51f71b3337858dd584ea1",
+    "semantic_hash": "42914081f6f51f71b3337858dd584ea1"
+  },
+  "src/components/match/GoalkeeperMinigame.tsx": {
+    "mtime": 1795604923.3132982,
+    "seen": 1795721446.9816341,
+    "ast_hash": "736d8860d3941cb9d4fef7f1521f7639",
+    "semantic_hash": "736d8860d3941cb9d4fef7f1521f7639"
+  },
+  "src/components/match/PhaserPitchMinigame.tsx": {
+    "mtime": 1795605094.471833,
+    "seen": 1795721446.9816341,
+    "ast_hash": "8e0cdb6196b7352707667a1f13b30ca3",
+    "semantic_hash": "8e0cdb6196b7352707667a1f13b30ca3"
+  },
+  "src/components/onboarding/QuickTutorial.tsx": {
+    "mtime": 1795604429.2900448,
+    "seen": 1795721446.9816341,
+    "ast_hash": "d954b88288430d6da750baf57993905a",
+    "semantic_hash": "d954b88288430d6da750baf57993905a"
+  },
+  "src/components/online/OnlinePvPArena.tsx": {
+    "mtime": 1795604417.408744,
+    "seen": 1795721446.9816341,
+    "ast_hash": "801f6b9461fcd1d0e4c269de634f8ea4",
+    "semantic_hash": "801f6b9461fcd1d0e4c269de634f8ea4"
+  },
+  "src/components/share/CareerCardGenerator.tsx": {
+    "mtime": 1795564125.932345,
+    "seen": 1795721446.9816341,
+    "ast_hash": "dd460f0d936cceda8d403f491cb62c4b",
+    "semantic_hash": "dd460f0d936cceda8d403f491cb62c4b"
+  },
+  "src/data/balls.ts": {
+    "mtime": 1795564125.932345,
+    "seen": 1795721446.9816341,
+    "ast_hash": "d723f3c6da32bf639c127d96706115e0",
+    "semantic_hash": "d723f3c6da32bf639c127d96706115e0"
+  },
+  "src/data/boots.ts": {
+    "mtime": 1795564125.932345,
+    "seen": 1795721446.9816341,
+    "ast_hash": "f061af316dcdee72b2424d982e35e2b1",
+    "semantic_hash": "f061af316dcdee72b2424d982e35e2b1"
+  },
+  "src/data/brazilSeed.ts": {
+    "mtime": 1795603335.3015125,
+    "seen": 1795721446.9816341,
+    "ast_hash": "0561c4b6dc8af37b5414e94b9121fa2b",
+    "semantic_hash": "0561c4b6dc8af37b5414e94b9121fa2b"
+  },
+  "src/data/controversiesSeed.ts": {
+    "mtime": 1795564125.934354,
+    "seen": 1795721446.9816341,
+    "ast_hash": "799c7b32cf8c330788a7044a046d5349",
+    "semantic_hash": "799c7b32cf8c330788a7044a046d5349"
+  },
+  "src/data/dilemmas.ts": {
+    "mtime": 1795564125.934354,
+    "seen": 1795721446.9816341,
+    "ast_hash": "eba3bc1c9d6a3b9ce35603a454bab930",
+    "semantic_hash": "eba3bc1c9d6a3b9ce35603a454bab930"
+  },
+  "src/data/epicSkillsSeed.ts": {
+    "mtime": 1795564125.934354,
+    "seen": 1795721446.9816341,
+    "ast_hash": "7701a61e0d0a010e9ef36017bdefe10f",
+    "semantic_hash": "7701a61e0d0a010e9ef36017bdefe10f"
+  },
+  "src/data/europeanLeaguesSeed.ts": {
+    "mtime": 1795604470.417428,
+    "seen": 1795721446.9816341,
+    "ast_hash": "702fe525583e9966b683f71fc375222b",
+    "semantic_hash": "702fe525583e9966b683f71fc375222b"
+  },
+  "src/data/famousStarRosters.ts": {
+    "mtime": 1795564125.934354,
+    "seen": 1795721446.9816341,
+    "ast_hash": "953c5e6467b2c08cad09b105672354c4",
+    "semantic_hash": "953c5e6467b2c08cad09b105672354c4"
+  },
+  "src/data/globalLeaguesSeed.ts": {
+    "mtime": 1795602467.398568,
+    "seen": 1795721446.9816341,
+    "ast_hash": "473ec366c03ca87f4286fb286bae7cad",
+    "semantic_hash": "473ec366c03ca87f4286fb286bae7cad"
+  },
+  "src/data/legendArchetypesSeed.ts": {
+    "mtime": 1795564125.9365857,
+    "seen": 1795721446.9816341,
+    "ast_hash": "b05e91d2feaf4e0db520b657914e3d91",
+    "semantic_hash": "b05e91d2feaf4e0db520b657914e3d91"
+  },
+  "src/data/lifestyleSeed.ts": {
+    "mtime": 1795564125.9365857,
+    "seen": 1795721446.9816341,
+    "ast_hash": "4985eff1be3bf501a5712220d2aa545e",
+    "semantic_hash": "4985eff1be3bf501a5712220d2aa545e"
+  },
+  "src/data/managerPlayStylesSeed.ts": {
+    "mtime": 1795564125.9365857,
+    "seen": 1795721446.9816341,
+    "ast_hash": "a65b1bd7d7a4d46eda0d6bf526443cda",
+    "semantic_hash": "a65b1bd7d7a4d46eda0d6bf526443cda"
+  },
+  "src/data/nssCatalogSeed.ts": {
+    "mtime": 1795564125.9365857,
+    "seen": 1795721446.9816341,
+    "ast_hash": "12d120ed08401ffbcbb54af1f2358210",
+    "semantic_hash": "12d120ed08401ffbcbb54af1f2358210"
+  },
+  "src/data/playStylesSeed.ts": {
+    "mtime": 1795564125.9365857,
+    "seen": 1795721446.9816341,
+    "ast_hash": "4fd28b742ef82b46a17dfc3f0641ad71",
+    "semantic_hash": "4fd28b742ef82b46a17dfc3f0641ad71"
+  },
+  "src/data/rosterPatch2026.ts": {
+    "mtime": 1795603752.9535258,
+    "seen": 1795721446.9816341,
+    "ast_hash": "ae70202c40b500c69dcbec424b5a01bd",
+    "semantic_hash": "ae70202c40b500c69dcbec424b5a01bd"
+  },
+  "src/data/tieredAchievementsSeed.ts": {
+    "mtime": 1795564125.9385934,
+    "seen": 1795721446.9816341,
+    "ast_hash": "d685be7c7d4035e4a1656abd45757234",
+    "semantic_hash": "d685be7c7d4035e4a1656abd45757234"
+  },
+  "src/engine/awardsEngine.ts": {
+    "mtime": 1795564125.9385934,
+    "seen": 1795721446.9816341,
+    "ast_hash": "13a8deadc39e1279db43feac418780eb",
+    "semantic_hash": "13a8deadc39e1279db43feac418780eb"
+  },
+  "src/engine/ballPhysics.ts": {
+    "mtime": 1795604471.904933,
+    "seen": 1795721446.9816341,
+    "ast_hash": "df3b1c5225cb4c3e3f84a2a84229e870",
+    "semantic_hash": "df3b1c5225cb4c3e3f84a2a84229e870"
+  },
+  "src/engine/calendar.ts": {
+    "mtime": 1795564125.9385934,
+    "seen": 1795721446.9816341,
+    "ast_hash": "d481dc83097522c24be9bff7408995b8",
+    "semantic_hash": "d481dc83097522c24be9bff7408995b8"
+  },
+  "src/engine/commentary.ts": {
+    "mtime": 1795564125.9412055,
+    "seen": 1795721446.9816341,
+    "ast_hash": "1bd1272151511cacc04139c4e09b338c",
+    "semantic_hash": "1bd1272151511cacc04139c4e09b338c"
+  },
+  "src/engine/dilemmaEngine.ts": {
+    "mtime": 1795564125.9412055,
+    "seen": 1795721446.9816341,
+    "ast_hash": "bc822eeff87a7fe9d3353b4ab3e18604",
+    "semantic_hash": "bc822eeff87a7fe9d3353b4ab3e18604"
+  },
+  "src/engine/minigameBalance.ts": {
+    "mtime": 1795604102.7286143,
+    "seen": 1795721446.9816341,
+    "ast_hash": "83073ab1e37924bb500219338c96add2",
+    "semantic_hash": "83073ab1e37924bb500219338c96add2"
+  },
+  "src/engine/missionEngine.ts": {
+    "mtime": 1795564125.9412055,
+    "seen": 1795721446.9816341,
+    "ast_hash": "5362a073833cb3e20e93233b58e8f8db",
+    "semantic_hash": "5362a073833cb3e20e93233b58e8f8db"
+  },
+  "src/engine/newsGenerator.ts": {
+    "mtime": 1795564125.9412055,
+    "seen": 1795721446.9816341,
+    "ast_hash": "fa054c1dfbe3264b35187e25b625aea3",
+    "semantic_hash": "fa054c1dfbe3264b35187e25b625aea3"
+  },
+  "src/engine/positionEngine.ts": {
+    "mtime": 1795603751.557996,
+    "seen": 1795721446.9816341,
+    "ast_hash": "cbc79c746abe45fdc1e2bec16fb6b2d7",
+    "semantic_hash": "cbc79c746abe45fdc1e2bec16fb6b2d7"
+  },
+  "src/engine/progression.ts": {
+    "mtime": 1795604474.0188093,
+    "seen": 1795721446.9816341,
+    "ast_hash": "20683bb2cd1da0a7fbadcd0543d7fb51",
+    "semantic_hash": "20683bb2cd1da0a7fbadcd0543d7fb51"
+  },
+  "src/engine/quickSim.ts": {
+    "mtime": 1795604171.052116,
+    "seen": 1795721446.9816341,
+    "ast_hash": "7a1b8618db1eda93dcc179ee7ff5a3f5",
+    "semantic_hash": "7a1b8618db1eda93dcc179ee7ff5a3f5"
+  },
+  "src/engine/rivalryEngine.ts": {
+    "mtime": 1795564125.9432125,
+    "seen": 1795721446.9816341,
+    "ast_hash": "1dd2c8475029fba252b70ccbb700af36",
+    "semantic_hash": "1dd2c8475029fba252b70ccbb700af36"
+  },
+  "src/engine/scoringEngine.ts": {
+    "mtime": 1795564125.9432125,
+    "seen": 1795721446.9816341,
+    "ast_hash": "8014018c976e282139a6e6e4601fb215",
+    "semantic_hash": "8014018c976e282139a6e6e4601fb215"
+  },
+  "src/engine/seasonEnd.ts": {
+    "mtime": 1795604172.3453546,
+    "seen": 1795721446.9816341,
+    "ast_hash": "573f9f36126f330629fbc24504d1bc76",
+    "semantic_hash": "573f9f36126f330629fbc24504d1bc76"
+  },
+  "src/engine/specialEventsEngine.ts": {
+    "mtime": 1795564125.9432125,
+    "seen": 1795721446.9816341,
+    "ast_hash": "c98734f373866598060c200f50290bda",
+    "semantic_hash": "c98734f373866598060c200f50290bda"
+  },
+  "src/engine/streakEngine.ts": {
+    "mtime": 1795564125.9432125,
+    "seen": 1795721446.9816341,
+    "ast_hash": "efdc2f7ad1446a0ed1b7fde8f28bf99a",
+    "semantic_hash": "efdc2f7ad1446a0ed1b7fde8f28bf99a"
+  },
+  "src/engine/torcidaGenerator.ts": {
+    "mtime": 1795564125.9432125,
+    "seen": 1795721446.9816341,
+    "ast_hash": "6a6d02193e28454eea2bcd666c0e65b8",
+    "semantic_hash": "6a6d02193e28454eea2bcd666c0e65b8"
+  },
+  "src/hooks/useIsMounted.ts": {
+    "mtime": 1795604298.8796554,
+    "seen": 1795721446.9816341,
+    "ast_hash": "a7b1ad61c8c9f22c1c92820d94966cd5",
+    "semantic_hash": "a7b1ad61c8c9f22c1c92820d94966cd5"
+  },
+  "src/hooks/usePWAInstall.ts": {
+    "mtime": 1795604475.7330077,
+    "seen": 1795721446.9816341,
+    "ast_hash": "b8aaa75888d5731b2731ec5e8a9c3809",
+    "semantic_hash": "b8aaa75888d5731b2731ec5e8a9c3809"
+  },
+  "src/lib/calculations.ts": {
+    "mtime": 1795564125.9457195,
+    "seen": 1795721446.9816341,
+    "ast_hash": "0aae50c75d7d46a4c2d30eefdd48e1d0",
+    "semantic_hash": "0aae50c75d7d46a4c2d30eefdd48e1d0"
+  },
+  "src/lib/minigameCanvas.ts": {
+    "mtime": 1795567353.5008576,
+    "seen": 1795721446.9816341,
+    "ast_hash": "d7530f8823ad2432e8508e95b304eab8",
+    "semantic_hash": "d7530f8823ad2432e8508e95b304eab8"
+  },
+  "src/lib/soundEffects.ts": {
+    "mtime": 1795604603.2456224,
+    "seen": 1795721446.9816341,
+    "ast_hash": "088795a258a5eb5a49d22935c4060e41",
+    "semantic_hash": "088795a258a5eb5a49d22935c4060e41"
+  },
+  "src/lib/supabase/client.ts": {
+    "mtime": 1795564125.9457195,
+    "seen": 1795721446.9816341,
+    "ast_hash": "9aff016172289a4f6b5e73490df3270d",
+    "semantic_hash": "9aff016172289a4f6b5e73490df3270d"
+  },
+  "src/store/gameStore.ts": {
+    "mtime": 1795604496.9077098,
+    "seen": 1795721446.9816341,
+    "ast_hash": "ded009e924511f15053aded0e963e992",
+    "semantic_hash": "ded009e924511f15053aded0e963e992"
+  },
+  "src/types/game.ts": {
+    "mtime": 1795564125.9493918,
+    "seen": 1795721446.9816341,
+    "ast_hash": "4791ecd175af3482b01db726ee802198",
+    "semantic_hash": "4791ecd175af3482b01db726ee802198"
+  },
+  "src/types/supabase.ts": {
+    "mtime": 1795564125.9493918,
+    "seen": 1795721446.9816341,
+    "ast_hash": "c0828fb759d811104d8e1930b63ecd7b",
+    "semantic_hash": "c0828fb759d811104d8e1930b63ecd7b"
+  },
+  "tsconfig.json": {
+    "mtime": 1795564125.9514012,
+    "seen": 1795721446.9816341,
+    "ast_hash": "0a2f4ed9289b65cd3feb4fb4ab3a4fcd",
+    "semantic_hash": "0a2f4ed9289b65cd3feb4fb4ab3a4fcd"
+  },
+  "vercel.json": {
+    "mtime": 1795564125.9514012,
+    "seen": 1795721446.9816341,
+    "ast_hash": "1260755dbc3b45829cf838cc625c5463",
+    "semantic_hash": "1260755dbc3b45829cf838cc625c5463"
+  },
+  "public/videos/hero-loop.mp4": {
+    "mtime": 1795564125.8821,
+    "seen": 1795721446.9816341,
+    "ast_hash": "ec714f43f4382a9aebaf91435fed8c2e",
+    "semantic_hash": "ec714f43f4382a9aebaf91435fed8c2e"
+  },
+  "public/videos/hero-loop.webm": {
+    "mtime": 1795564125.8881223,
+    "seen": 1795721446.9816341,
+    "ast_hash": "bd6bfdad72ccaf549e432088b406e0bd",
+    "semantic_hash": "bd6bfdad72ccaf549e432088b406e0bd"
+  },
+  "public/videos/news/drible-loop.mp4": {
+    "mtime": 1795564125.8901324,
+    "seen": 1795721446.9816341,
+    "ast_hash": "e69de29a4b21623cc6bf647fb815468a",
+    "semantic_hash": "e69de29a4b21623cc6bf647fb815468a"
+  },
+  "public/videos/news/gol-loop.mp4": {
+    "mtime": 1795564125.8921435,
+    "seen": 1795721446.9816341,
+    "ast_hash": "15a7743a033ad590c8c7be70631ff87a",
+    "semantic_hash": "15a7743a033ad590c8c7be70631ff87a"
+  }
+}

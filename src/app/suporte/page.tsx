@@ -34,14 +34,15 @@ export default function SuportePage() {
   const [tickets, setTickets] = useState<TicketItem[]>([]);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('bnr_support_tickets');
-      if (saved) {
-        try {
-          setTickets(JSON.parse(saved));
-        } catch {}
-      }
-    }
+    if (typeof window === 'undefined') return;
+    const saved = localStorage.getItem('bnr_support_tickets');
+    if (!saved) return;
+    const timer = setTimeout(() => {
+      try {
+        setTickets(JSON.parse(saved) as TicketItem[]);
+      } catch {}
+    }, 0);
+    return () => clearTimeout(timer);
   }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -110,7 +111,7 @@ export default function SuportePage() {
                   <label className="block text-zinc-300 font-semibold mb-1.5">Categoria do Problema</label>
                   <select
                     value={category}
-                    onChange={(e) => setCategory(e.target.value as any)}
+                    onChange={(e) => setCategory(e.target.value as 'pix_vip' | 'bug' | 'sugestao')}
                     className="w-full p-3 rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-200 focus:border-emerald-500 focus:outline-none"
                   >
                     <option value="pix_vip">Dúvida ou Problema com Pix / VIP</option>

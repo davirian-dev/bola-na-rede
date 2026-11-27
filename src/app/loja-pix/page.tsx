@@ -76,22 +76,41 @@ const PACKAGES: ShopPackage[] = [
   },
 ];
 
+interface PixOrder {
+  id: string;
+  packageName: string;
+  price: string;
+  createdAt: string;
+  status: string;
+}
+
+function buildPixOrder(pkg: ShopPackage): PixOrder {
+  return {
+    id: `PIX-${Date.now().toString().slice(-6)}`,
+    packageName: pkg.name,
+    price: pkg.price,
+    createdAt: new Date().toLocaleDateString('pt-BR'),
+    status: 'pendente',
+  };
+}
+
 export default function LojaPixPage() {
   const [selectedPkg, setSelectedPkg] = useState<ShopPackage | null>(null);
   const [copied, setCopied] = useState(false);
-  const [orders, setOrders] = useState<any[]>([]);
+  const [orders, setOrders] = useState<PixOrder[]>([]);
   const [verifying, setVerifying] = useState(false);
   const [verifySuccess, setVerifySuccess] = useState<string | null>(null);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const savedOrders = localStorage.getItem('bnr_pix_orders');
-      if (savedOrders) {
-        try {
-          setOrders(JSON.parse(savedOrders));
-        } catch {}
-      }
-    }
+    if (typeof window === 'undefined') return;
+    const savedOrders = localStorage.getItem('bnr_pix_orders');
+    if (!savedOrders) return;
+    const timer = setTimeout(() => {
+      try {
+        setOrders(JSON.parse(savedOrders) as PixOrder[]);
+      } catch {}
+    }, 0);
+    return () => clearTimeout(timer);
   }, []);
 
   const handleGeneratePix = (pkg: ShopPackage) => {
@@ -99,13 +118,7 @@ export default function LojaPixPage() {
     setCopied(false);
 
     // Salvar pedido no histórico local
-    const newOrder = {
-      id: `PIX-${Date.now().toString().slice(-6)}`,
-      packageName: pkg.name,
-      price: pkg.price,
-      createdAt: new Date().toLocaleDateString('pt-BR'),
-      status: 'pendente',
-    };
+    const newOrder = buildPixOrder(pkg);
 
     const updated = [newOrder, ...orders.slice(0, 4)];
     setOrders(updated);

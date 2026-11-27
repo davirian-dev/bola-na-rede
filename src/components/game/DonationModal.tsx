@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useGameStore } from '@/store/gameStore';
+import { useIsMounted } from '@/hooks/useIsMounted';
 import { 
   Heart, 
   Copy, 
@@ -34,13 +35,9 @@ export function DonationModal({ isOpen, onClose }: DonationModalProps) {
   const [copiedKey, setCopiedKey] = useState(false);
   const [selectedAmount, setSelectedAmount] = useState<number>(10);
   const [successActivated, setSuccessActivated] = useState(false);
-  const [mounted, setMounted] = useState(false);
+  const mounted = useIsMounted();
 
   const PIX_KEY = process.env.NEXT_PUBLIC_PIX_KEY || 'elisantos157h@gmail.com';
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   useEffect(() => {
     if (isOpen) {

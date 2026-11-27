@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google';
 import './globals.css';
 import { ThemeProvider } from '@/components/layout/ThemeProvider';
 import { PWARegistration } from '@/components/layout/PWARegistration';
+import { LgpdBanner } from '@/components/layout/LgpdBanner';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -100,6 +101,7 @@ export default function RootLayout({
         >
           <PWARegistration />
           {children}
+          <LgpdBanner />
         </ThemeProvider>
       </body>
     </html>

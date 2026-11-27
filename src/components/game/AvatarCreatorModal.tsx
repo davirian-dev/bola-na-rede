@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import { CharacterAvatar } from '@/types/game';
 import { AvatarDisplay } from './AvatarDisplay';
 import { useGameStore } from '@/store/gameStore';
+import { useIsMounted } from '@/hooks/useIsMounted';
 import { Sparkles, Check, X, User } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -86,14 +87,10 @@ export function AvatarCreatorModal({
     }
   );
 
-  const [mounted, setMounted] = useState(false);
+  const mounted = useIsMounted();
   const [previewAge, setPreviewAge] = useState<number>(
     mode === 'player' ? (playerProfile?.age || 18) : (managerProfile?.age || 42)
   );
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   // Trava scroll da página ao abrir modal
   useEffect(() => {
@@ -109,9 +106,11 @@ export function AvatarCreatorModal({
 
   // Sincroniza quando initialAvatar ou isOpen mudar
   useEffect(() => {
-    if (initialAvatar) {
+    if (!initialAvatar) return;
+    const rafId = requestAnimationFrame(() => {
       setAvatar(initialAvatar);
-    }
+    });
+    return () => cancelAnimationFrame(rafId);
   }, [initialAvatar, isOpen]);
 
   if (!isOpen || !mounted) return null;

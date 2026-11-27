@@ -10,16 +10,17 @@ import {
   BallPhysicsState, 
   applyScreenShake 
 } from '@/engine/ballPhysics';
+import { drawCartoonPlayer } from '@/lib/minigameCanvas';
+import { Division } from '@/types/game';
+import { useMinigameBalance } from '@/engine/minigameBalance';
+import { DifficultyBadge } from '@/components/game/DifficultyBadge';
 import { 
   Zap, 
-  Sparkles, 
-  Flame, 
   ArrowRight, 
   CheckCircle2, 
   XCircle, 
   RotateCcw,
-  ShieldAlert,
-  Crown
+  ShieldAlert
 } from 'lucide-react';
 
 export type DribbleActionType = 'elastic' | 'nutmeg' | 'lob' | 'stepover';
@@ -32,6 +33,8 @@ interface DribbleMinigameProps {
   mode?: 'training' | 'match_clutch';
   defenderName?: string;
   defenderRating?: number;
+  divisionOverride?: Division;
+  opponentOverall?: number;
 }
 
 export function DribbleMinigame({
@@ -42,9 +45,19 @@ export function DribbleMinigame({
   mode = 'training',
   defenderName = 'Zagueiro',
   defenderRating = 72,
+  divisionOverride,
+  opponentOverall,
 }: DribbleMinigameProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const playerProfile = useGameStore((s) => s.playerProfile);
+  const balance = useMinigameBalance({
+    division: divisionOverride,
+    opponentOverall: opponentOverall ?? defenderRating,
+  });
+  const balanceRef = useRef(balance);
+  useEffect(() => {
+    balanceRef.current = balance;
+  }, [balance]);
 
   const actorName = playerProfile?.nickname || playerProfile?.name || 'Craque';
   const dribbleSkill = playerProfile?.attributes.dribbling || 70;
@@ -52,18 +65,14 @@ export function DribbleMinigame({
 
   // Estados do Jogo
   const [gameState, setGameState] = useState<'approaching' | 'success' | 'failed_tackle' | 'failed_foul'>('approaching');
-  const [chosenDribble, setChosenDribble] = useState<DribbleActionType | null>(null);
   const [feedbackText, setFeedbackText] = useState('O zagueiro está vindo dar o bote! Escolha o momento e a finta certa!');
   const [commentaryText, setCommentaryText] = useState<string>('');
   const [screenShakeIntensity, setScreenShakeIntensity] = useState<number>(0);
   const [attempts, setAttempts] = useState(0);
   const [successfulDribbles, setSuccessfulDribbles] = useState(0);
 
-  // Janela de Timing calculada pelo Drible e Ritmo do jogador (em pixels de aproximação)
-  // Quanto maior o Drible do jogador, maior a janela de acerto ideal (zona verde)
-  const timingWindowBonus = (dribbleSkill - 60) * 0.45;
-  const sweetSpotYMin = 210 - timingWindowBonus;
-  const sweetSpotYMax = 270 + timingWindowBonus;
+  // Janela de Timing calculada pelo Drible/Ritmo e Balanceamento (OVR × Liga)
+  const timingWindowBonus = (dribbleSkill - 60) * 0.45 + (balance.sweetSpotScale - 1) * 30;
 
   // Estado Físico em Refs para 60 FPS
   const simRef = useRef({
@@ -99,6 +108,9 @@ export function DribbleMinigame({
     executionTime: 0,
   });
 
+  const executeDribbleRef = useRef<(type: DribbleActionType) => void>(() => {});
+  const touchSwipeRef = useRef<{ x: number; y: number } | null>(null);
+
   // Reinicia a jogada para treino ou nova tentativa
   const resetDribble = useCallback(() => {
     const s = simRef.current;
@@ -133,7 +145,6 @@ export function DribbleMinigame({
     s.actionExecuted = false;
     s.executionTime = 0;
     setGameState('approaching');
-    setChosenDribble(null);
     setFeedbackText('O zagueiro está vindo dar o bote! Escolha o momento e a finta certa!');
     setCommentaryText('');
     setScreenShakeIntensity(0);
@@ -146,7 +157,6 @@ export function DribbleMinigame({
 
     s.actionExecuted = true;
     s.executionTime = Date.now();
-    setChosenDribble(type);
     setAttempts((prev) => prev + 1);
 
     const distance = Math.abs(s.player.y - s.defender.y);
@@ -227,14 +237,18 @@ export function DribbleMinigame({
     }
   };
 
+  useEffect(() => {
+    executeDribbleRef.current = executeDribble;
+  });
+
   // Suporte a Atalhos de Teclado
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (gameState !== 'approaching') return;
-      if (e.key === '1' || e.key === 'a' || e.key === 'A') executeDribble('elastic');
-      if (e.key === '2' || e.key === 'w' || e.key === 'W') executeDribble('nutmeg');
-      if (e.key === '3' || e.key === ' ') executeDribble('lob');
-      if (e.key === '4' || e.key === 'd' || e.key === 'D') executeDribble('stepover');
+      if (e.key === '1' || e.key === 'a' || e.key === 'A') executeDribbleRef.current('elastic');
+      if (e.key === '2' || e.key === 'w' || e.key === 'W') executeDribbleRef.current('nutmeg');
+      if (e.key === '3' || e.key === ' ') executeDribbleRef.current('lob');
+      if (e.key === '4' || e.key === 'd' || e.key === 'D') executeDribbleRef.current('stepover');
     };
 
     window.addEventListener('keydown', handleKeyDown);
@@ -295,14 +309,14 @@ export function DribbleMinigame({
         s.ball.y = s.player.y - 14;
         s.ball.x = s.player.x;
 
-        // Marcador avança para dar o bote
+        // Marcador avança para dar o bote (calibrado por OVR × Liga)
         if (s.defender.state === 'charging') {
-          s.defender.y += s.defender.vy;
+          s.defender.y += s.defender.vy * balanceRef.current.defenderSpeedMult;
         }
 
         // Se passarem um pelo outro sem drible, é desarme por choque
         if (s.player.y <= s.defender.y + 12 && !s.actionExecuted) {
-          executeDribble('elastic'); // Dispara desarme automático por hesitação
+          executeDribbleRef.current('elastic'); // Dispara desarme automático por hesitação
         }
       } else if (gameState === 'success') {
         // Atacante avança livre após o drible
@@ -318,52 +332,24 @@ export function DribbleMinigame({
         if (s.ball.z < 0) s.ball.z = 0;
       }
 
-      // 3. Renderiza o Marcador Adversário (Uniforme Vermelho/Escuro)
-      // Sombra
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
-      ctx.beginPath();
-      ctx.ellipse(s.defender.x, s.defender.y + 8, s.defender.radius, 6, 0, 0, Math.PI * 2);
-      ctx.fill();
+      // 3. Renderiza o Marcador Adversário (Bonequinho Vermelho)
+      drawCartoonPlayer(ctx, s.defender.x, s.defender.y, {
+        jerseyColor: s.defender.state === 'slide' ? '#b91c1c' : '#ef4444',
+        shortsColor: '#ffffff',
+        label: `${defenderName} (${defenderRating})`,
+        labelColor: '#fca5a5',
+        scale: 1.08,
+        sliding: s.defender.state === 'slide',
+      });
 
-      // Corpo
-      ctx.fillStyle = s.defender.state === 'slide' ? '#dc2626' : '#ef4444';
-      ctx.beginPath();
-      ctx.arc(s.defender.x, s.defender.y, s.defender.radius, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Faixa / Número
-      ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 9px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText(s.defender.state === 'slide' ? '⚡' : 'DEF', s.defender.x, s.defender.y + 3);
-
-      // Nome do Marcador acima
-      ctx.fillStyle = '#fca5a5';
-      ctx.font = 'bold 10px sans-serif';
-      ctx.fillText(`${defenderName} (${defenderRating})`, s.defender.x, s.defender.y - 18);
-
-      // 4. Renderiza o Atacante (Jogador do Usuário - Camisa Verde/Dourada)
-      // Sombra
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
-      ctx.beginPath();
-      ctx.ellipse(s.player.x, s.player.y + 8, s.player.radius, 6, 0, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Corpo do Atacante
-      ctx.fillStyle = '#10b981'; // Verde Oficial
-      ctx.beginPath();
-      ctx.arc(s.player.x, s.player.y, s.player.radius, 0, Math.PI * 2);
-      ctx.fill();
-
-      ctx.fillStyle = '#09090b';
-      ctx.font = 'bold 10px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('VOCÊ', s.player.x, s.player.y + 3);
-
-      // Nome do Atacante abaixo
-      ctx.fillStyle = '#6ee7b7';
-      ctx.font = 'bold 10px sans-serif';
-      ctx.fillText(actorName, s.player.x, s.player.y + 26);
+      // 4. Renderiza o Atacante (Você - Bonequinho Verde)
+      drawCartoonPlayer(ctx, s.player.x, s.player.y, {
+        jerseyColor: '#10b981',
+        shortsColor: '#0f172a',
+        label: actorName,
+        labelColor: '#6ee7b7',
+        scale: 1.12,
+      });
 
       // 5. Renderiza a Bola com Sombra e Efeito de Altura Z (Chapéu/Passe)
       renderBallWithShadow(ctx, s.ball);
@@ -399,16 +385,19 @@ export function DribbleMinigame({
           </div>
         </div>
 
-        {mode === 'training' && (
-          <div className="text-right">
-            <span className="text-xs font-mono font-black text-emerald-400">
-              {successfulDribbles}/{attempts}
-            </span>
-            <span className="text-[9px] text-muted-foreground block uppercase font-bold">
-              Acertos
-            </span>
-          </div>
-        )}
+        <div className="flex items-center gap-2 shrink-0">
+          <DifficultyBadge balance={balance} compact />
+          {mode === 'training' && (
+            <div className="text-right">
+              <span className="text-xs font-mono font-black text-emerald-400">
+                {successfulDribbles}/{attempts}
+              </span>
+              <span className="text-[9px] text-muted-foreground block uppercase font-bold">
+                Acertos
+              </span>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Canvas 2D Interativo */}
@@ -424,6 +413,29 @@ export function DribbleMinigame({
           onTouchStart={(e) => {
             if (e.touches && e.touches.length > 0 && gameState === 'approaching') {
               e.preventDefault();
+              touchSwipeRef.current = {
+                x: e.touches[0].clientX,
+                y: e.touches[0].clientY,
+              };
+            }
+          }}
+          onTouchEnd={(e) => {
+            if (gameState !== 'approaching' || !touchSwipeRef.current) return;
+            const touch = e.changedTouches?.[0];
+            if (!touch) {
+              executeDribble('stepover');
+              return;
+            }
+            const dx = touch.clientX - touchSwipeRef.current.x;
+            const dy = touch.clientY - touchSwipeRef.current.y;
+            touchSwipeRef.current = null;
+            if (Math.abs(dx) > 28 && Math.abs(dx) > Math.abs(dy)) {
+              executeDribble('elastic');
+            } else if (dy < -28) {
+              executeDribble('lob');
+            } else if (dy > 28) {
+              executeDribble('nutmeg');
+            } else {
               executeDribble('stepover');
             }
           }}

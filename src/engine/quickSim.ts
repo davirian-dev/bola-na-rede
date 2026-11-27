@@ -19,7 +19,6 @@ import {
   OnFireStreak,
   SpecialMatchEvent
 } from '@/types/game';
-import { calculatePositionPenalty } from '@/engine/positionEngine';
 
 interface MatchSimResult {
   homeGoals: number;
@@ -51,9 +50,9 @@ export function simulateMatch(
   const homeRoster = isYouth ? homeClub.youthRoster : homeClub.roster;
   const awayRoster = isYouth ? awayClub.youthRoster : awayClub.roster;
 
-  // Seleciona os 11 titulares (ordenados por Overall)
-  let homeLineup = [...homeRoster].sort((a, b) => b.overall - a.overall).slice(0, 11);
-  let awayLineup = [...awayRoster].sort((a, b) => b.overall - a.overall).slice(0, 11);
+  // Seleciona os 11 titulares preservando a organização tática do elenco
+  const homeLineup = homeRoster.slice(0, 11);
+  const awayLineup = awayRoster.slice(0, 11);
 
   // Garante que o atleta do usuário esteja no time titular do seu clube se for sua partida
   const userProfile = userState?.playerProfile;
@@ -445,7 +444,11 @@ export function simulateWeekMatches(
       const formattedScorers: GoalEvent[] = (customUserMatchResult.scorers || []).map((s) => {
         const isUserScorer = s.playerId === state.playerProfile?.id;
         const isTeammateScorer = s.playerId === 'teammate-scorer';
-        const scorerClubId = (isUserScorer || isTeammateScorer) ? myClub.id : (s.playerId === oppClub.id ? oppClub.id : myClub.id);
+        const isMyTeammateInRoster =
+          myClub.roster?.some((p) => p.id === s.playerId) ||
+          myClub.youthRoster?.some((p) => p.id === s.playerId);
+        const isOppScorer = !isUserScorer && !isTeammateScorer && !isMyTeammateInRoster;
+        const scorerClubId = isOppScorer ? oppClub.id : myClub.id;
         const scorerName: string = s.playerName || (isUserScorer ? (state.playerProfile?.nickname || state.playerProfile?.name || 'Craque') : 'Atacante');
         const isUserAssist = s.assistPlayerId === state.playerProfile?.id;
         const assistName: string | undefined = isUserAssist 
@@ -503,9 +506,17 @@ export function simulateWeekMatches(
 
     simulatedMatchesCount++;
 
-    // Atualiza tabela da competição correspondente (Séries A-D e Champions League / Europa)
-    if (fixture.competition.startsWith('serie_') || fixture.competition === 'champions_league') {
-      const div: Division = (fixture.division || (fixture.competition === 'champions_league' ? 'EUROPA' : fixture.competition.split('_')[1].toUpperCase())) as Division;
+    // Atualiza tabela da competição correspondente (Todas as ligas nacionais, internacionais e Champions)
+    const isLeagueCompetition =
+      fixture.competition !== 'sub_20' &&
+      fixture.competition !== 'copa_brasil';
+    if (isLeagueCompetition) {
+      const div: Division = (fixture.division ||
+        (fixture.competition === 'champions_league'
+          ? 'EUROPA'
+          : fixture.competition.startsWith('serie_') && fixture.competition.length === 7
+          ? fixture.competition.split('_')[1].toUpperCase()
+          : fixture.competition.toUpperCase())) as Division;
       if (updatedLeagues[div]) {
         const standingsCopy = [...updatedLeagues[div].standings];
         updateStanding(standingsCopy, homeClub.id, result.homeGoals, result.awayGoals);

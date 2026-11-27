@@ -1,16 +1,28 @@
 'use client';
 
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, useCallback } from 'react';
 import confetti from 'canvas-confetti';
-import { useGameStore } from '@/store/gameStore';
-import { Flame, CheckCircle2, XCircle, ShieldAlert } from 'lucide-react';
+import { Flame, CheckCircle2, XCircle, ShieldAlert, RotateCcw } from 'lucide-react';
 import { sound } from '@/lib/soundEffects';
 import { BallImpactSelector, BallImpact } from './BallImpactSelector';
+import {
+  drawPitchBackground,
+  drawGoalWithNet,
+  drawCartoonPlayer,
+  drawStyledBall,
+  getCanvasPointerCoords,
+} from '@/lib/minigameCanvas';
+import { applyScreenShake } from '@/engine/ballPhysics';
+import { Division } from '@/types/game';
+import { useMinigameBalance } from '@/engine/minigameBalance';
+import { DifficultyBadge } from './DifficultyBadge';
 
 interface NSSLongShotMinigameProps {
   onScoreGoal?: (ratingBonus: number) => void;
   onMiss?: () => void;
   onClose?: () => void;
+  divisionOverride?: Division;
+  opponentOverall?: number;
   matchInfo?: {
     minute: number;
     oppClubName: string;
@@ -22,31 +34,67 @@ export function NSSLongShotMinigame({
   onScoreGoal,
   onMiss,
   onClose,
+  divisionOverride,
+  opponentOverall,
   matchInfo,
 }: NSSLongShotMinigameProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const playerProfile = useGameStore((s) => s.playerProfile);
+  const balance = useMinigameBalance({
+    division: divisionOverride,
+    opponentOverall,
+  });
+  const balanceRef = useRef(balance);
+  useEffect(() => {
+    balanceRef.current = balance;
+  }, [balance]);
 
   const [shotResult, setShotResult] = useState<'aiming' | 'shooting' | 'goal' | 'saved' | 'blocked' | 'out'>('aiming');
-  const [feedbackText, setFeedbackText] = useState('Os zagueiros estão chegando! Mire rápido e solte a bomba!');
-  const [power, setPower] = useState<number>(65);
-  const [impact, setImpact] = useState<BallImpact>({ x: 0, y: -0.2 }); // Pancada seca rasteira/meia altura
-  const [targetAim, setTargetAim] = useState<{ x: number; y: number }>({ x: 380, y: 110 });
+  const [feedbackText, setFeedbackText] = useState('Os zagueiros estão fechando! Mire no gol e solte a bomba!');
+  const [power, setPower] = useState<number>(72);
+  const [impact, setImpact] = useState<BallImpact>({ x: 0, y: -0.2 });
 
-  // Posição dos Zagueiros Fechando em Ângulo
-  const defender1Ref = useRef<{ x: number; y: number; speed: number }>({ x: 150, y: 220, speed: 2.2 });
-  const defender2Ref = useRef<{ x: number; y: number; speed: number }>({ x: 410, y: 220, speed: 2.4 });
+  const onGoalRef = useRef(onScoreGoal);
+  const onMissRef = useRef(onMiss);
 
-  const ballPosRef = useRef<{ x: number; y: number; z: number; vx: number; vy: number; vz: number }>({
-    x: 280,
-    y: 340,
-    z: 0,
-    vx: 0,
-    vy: 0,
-    vz: 0,
+  useEffect(() => {
+    onGoalRef.current = onScoreGoal;
+    onMissRef.current = onMiss;
+  }, [onScoreGoal, onMiss]);
+
+  const simRef = useRef({
+    state: 'aiming' as 'aiming' | 'shooting' | 'goal' | 'saved' | 'blocked' | 'out',
+    aim: { x: 375, y: 74 },
+    impact: { x: 0, y: -0.2 },
+    def1: { x: 145, y: 215, speed: 1.55 },
+    def2: { x: 415, y: 215, speed: 1.65 },
+    gk: { x: 280, tilt: 0 },
+    ball: { x: 280, y: 335, z: 0, vx: 0, vy: 0, vz: 0 },
+    trail: [] as { x: number; y: number; z: number }[],
+    shake: 0,
+    netStretch: 0,
   });
 
-  // Loop de animação dos defensores fechando enquanto você mira
+  useEffect(() => {
+    simRef.current.impact = impact;
+  }, [impact]);
+
+  const resetPlay = useCallback(() => {
+    simRef.current = {
+      state: 'aiming',
+      aim: { x: 375, y: 74 },
+      impact,
+      def1: { x: 145, y: 215, speed: 1.55 },
+      def2: { x: 415, y: 215, speed: 1.65 },
+      gk: { x: 280, tilt: 0 },
+      ball: { x: 280, y: 335, z: 0, vx: 0, vy: 0, vz: 0 },
+      trail: [],
+      shake: 0,
+      netStretch: 0,
+    };
+    setShotResult('aiming');
+    setFeedbackText('Os zagueiros estão fechando! Mire no gol e solte a bomba!');
+  }, [impact]);
+
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -56,171 +104,220 @@ export function NSSLongShotMinigame({
     let animId: number;
 
     const render = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      // Gramado
-      const grassGrad = ctx.createLinearGradient(0, 0, 0, canvas.height);
-      grassGrad.addColorStop(0, '#15803d');
-      grassGrad.addColorStop(1, '#14532d');
-      ctx.fillStyle = grassGrad;
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-      // Gol ao fundo
+      const s = simRef.current;
+      const w = canvas.width;
+      const h = canvas.height;
       const goalLeft = 140;
       const goalRight = 420;
-      const goalTop = 60;
-      const goalBottom = 160;
+      const goalTop = 24;
+      const goalBottom = 106; // Linha do gol!
 
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
-      ctx.fillRect(goalLeft, goalTop, goalRight - goalLeft, goalBottom - goalTop);
-      ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = 5;
-      ctx.strokeRect(goalLeft, goalTop, goalRight - goalLeft, goalBottom - goalTop);
+      ctx.save();
+      if (s.shake > 0) {
+        applyScreenShake(ctx, s.shake);
+        s.shake = Math.max(0, s.shake - 0.45);
+      }
 
-      // Goleiro
-      ctx.fillStyle = '#f59e0b';
-      ctx.beginPath();
-      ctx.arc(280, 135, 11, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillRect(270, 145, 20, 24);
+      if (s.state === 'aiming') {
+        const gkSpd = 0.0035 * balanceRef.current.keeperSpeedMult;
+        const gkAmp = 32 * Math.max(0.78, Math.min(1.25, balanceRef.current.keeperSpeedMult));
+        s.gk.x = 280 + Math.sin(Date.now() * gkSpd) * gkAmp;
 
-      // Movimentação dos zagueiros fechando em direção à bola
-      const def1 = defender1Ref.current;
-      const def2 = defender2Ref.current;
+        const defSpdMult = balanceRef.current.defenderSpeedMult;
+        const a1 = Math.atan2(335 - s.def1.y, 280 - s.def1.x);
+        s.def1.x += Math.cos(a1) * s.def1.speed * defSpdMult;
+        s.def1.y += Math.sin(a1) * s.def1.speed * defSpdMult;
 
-      if (shotResult === 'aiming') {
-        // Zagueiro 1 corre em diagonal
-        const angle1 = Math.atan2(340 - def1.y, 280 - def1.x);
-        def1.x += Math.cos(angle1) * def1.speed;
-        def1.y += Math.sin(angle1) * def1.speed;
+        const a2 = Math.atan2(335 - s.def2.y, 280 - s.def2.x);
+        s.def2.x += Math.cos(a2) * s.def2.speed * defSpdMult;
+        s.def2.y += Math.sin(a2) * s.def2.speed * defSpdMult;
 
-        // Zagueiro 2 corre em diagonal
-        const angle2 = Math.atan2(340 - def2.y, 280 - def2.x);
-        def2.x += Math.cos(angle2) * def2.speed;
-        def2.y += Math.sin(angle2) * def2.speed;
-
-        // Se algum zagueiro chegar na bola antes do chute
-        const dist1 = Math.hypot(def1.x - 280, def1.y - 340);
-        const dist2 = Math.hypot(def2.x - 280, def2.y - 340);
-
-        if (dist1 < 25 || dist2 < 25) {
+        if (
+          Math.hypot(s.def1.x - 280, s.def1.y - 335) < 26 ||
+          Math.hypot(s.def2.x - 280, s.def2.y - 335) < 26
+        ) {
+          s.state = 'blocked';
           setShotResult('blocked');
-          setFeedbackText('DESARMADO! O zagueiro chegou de carrinho antes do seu chute!');
-          sound.play('whistle');
-          if (onMiss) onMiss();
-          return;
+          setFeedbackText('DESARMADO! O zagueiro travou na hora H!');
+          sound.playWhistle();
+          onMissRef.current?.();
         }
-      }
+      } else if (s.state === 'shooting') {
+        s.ball.x += s.ball.vx;
+        s.ball.y += s.ball.vy;
+        s.ball.z = Math.max(0, s.ball.z + s.ball.vz);
+        s.ball.vz -= 0.2;
+        s.ball.vx += s.impact.x * 0.25;
 
-      // Desenha Zagueiro 1
-      ctx.fillStyle = '#dc2626';
-      ctx.beginPath();
-      ctx.arc(def1.x, def1.y - 20, 9, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillRect(def1.x - 8, def1.y - 10, 16, 24);
+        const gkDir = s.aim.x < s.gk.x ? -1 : 1;
+        s.gk.x += gkDir * 2.4;
+        s.gk.tilt = gkDir * 0.45;
 
-      // Desenha Zagueiro 2
-      ctx.fillStyle = '#dc2626';
-      ctx.beginPath();
-      ctx.arc(def2.x, def2.y - 20, 9, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillRect(def2.x - 8, def2.y - 10, 16, 24);
+        s.trail.push({ x: s.ball.x, y: s.ball.y, z: s.ball.z });
+        if (s.trail.length > 10) s.trail.shift();
 
-      // Mira
-      if (shotResult === 'aiming') {
-        ctx.strokeStyle = '#ef4444';
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.arc(targetAim.x, targetAim.y, 14, 0, Math.PI * 2);
-        ctx.stroke();
+        // Bloqueio no caminho pelos zagueiros
+        if (
+          Math.hypot(s.ball.x - s.def1.x, s.ball.y - s.def1.y) < 18 && s.ball.z < 26 ||
+          Math.hypot(s.ball.x - s.def2.x, s.ball.y - s.def2.y) < 18 && s.ball.z < 26
+        ) {
+          s.state = 'blocked';
+          s.shake = 5;
+          setShotResult('blocked');
+          setFeedbackText('BLOQUEADO! A bomba explodiu na marcação!');
+          sound.playWoodwork();
+          onMissRef.current?.();
+        } else if (s.ball.y <= goalBottom) {
+          const hitPost =
+            Math.abs(s.ball.x - goalLeft) < 10 || Math.abs(s.ball.x - goalRight) < 10;
+          const distToGk = Math.abs(s.ball.x - s.gk.x);
+          const isInsideWidth = s.ball.x >= goalLeft + 8 && s.ball.x <= goalRight - 8;
+          const isInsideHeight = s.ball.z >= 0 && s.ball.z <= 66;
 
-        ctx.setLineDash([4, 4]);
-        ctx.strokeStyle = 'rgba(239, 68, 68, 0.6)';
-        ctx.beginPath();
-        ctx.moveTo(280, 340);
-        ctx.lineTo(targetAim.x, targetAim.y);
-        ctx.stroke();
-        ctx.setLineDash([]);
-      }
-
-      // Bola em Voo
-      const ball = ballPosRef.current;
-      if (shotResult === 'shooting') {
-        ball.x += ball.vx;
-        ball.y += ball.vy;
-        ball.z += ball.vz;
-        ball.vz -= 0.22;
-
-        // Checagem de Trave e Gol (Y <= 160)
-        if (ball.y <= 160) {
-          const isInsideWidth = ball.x >= goalLeft + 6 && ball.x <= goalRight - 6;
-          const isInsideHeight = ball.y >= goalTop && ball.z >= 0 && ball.z <= 65;
-
-          if (isInsideWidth && isInsideHeight) {
+          if (hitPost) {
+            s.state = 'out';
+            s.shake = 9;
+            setShotResult('out');
+            setFeedbackText('NO TRAVESSÃO / TRAVE! Quase um golaço histórico!');
+            sound.playWoodwork();
+            onMissRef.current?.();
+          } else if (distToGk < 22 * Math.max(0.75, Math.min(1.28, balanceRef.current.keeperSpeedMult)) && s.ball.z < 40) {
+            s.state = 'saved';
+            s.shake = 4;
+            setShotResult('saved');
+            setFeedbackText('DEFESAÇA! O goleiro voou para espalmar o foguete!');
+            sound.playWoodwork();
+            onMissRef.current?.();
+          } else if (isInsideWidth && isInsideHeight) {
+            s.state = 'goal';
+            s.netStretch = 12;
+            s.shake = 8;
             setShotResult('goal');
-            setFeedbackText('POMBO SEM ASA! Uma verdadeira bomba indefensável no ângulo! 🔥');
-            sound.play('goal');
+            setFeedbackText('POMBO SEM ASA! Bomba indefensável no ângulo! 🔥');
+            sound.playGoal();
             confetti({
               particleCount: 85,
               spread: 90,
               origin: { y: 0.6 },
               colors: ['#10b981', '#ef4444', '#ffffff'],
             });
-            if (onScoreGoal) onScoreGoal(0.5);
+            onGoalRef.current?.(0.5);
           } else {
+            s.state = 'out';
             setShotResult('out');
-            setFeedbackText('Subiu demais! O chute explodiu na arquibancada!');
-            sound.play('whistle');
-            if (onMiss) onMiss();
+            setFeedbackText('Subiu demais! A bomba foi parar na arquibancada!');
+            sound.playWhistle();
+            onMissRef.current?.();
           }
-          return;
         }
+      } else if (s.netStretch > 0) {
+        s.netStretch = Math.max(0, s.netStretch - 0.35);
       }
 
-      // Desenha Bola
+      drawPitchBackground(ctx, w, h, 32);
+
+      // Linha de fundo/gol, grande área e meia-lua
+      ctx.strokeStyle = 'rgba(255,255,255,0.45)';
+      ctx.lineWidth = 2.5;
       ctx.beginPath();
-      ctx.arc(ball.x, ball.y - ball.z, 9, 0, Math.PI * 2);
-      ctx.fillStyle = '#ffffff';
-      ctx.fill();
-      ctx.strokeStyle = '#18181b';
-      ctx.lineWidth = 2;
+      ctx.moveTo(12, goalBottom);
+      ctx.lineTo(w - 12, goalBottom);
+      ctx.stroke();
+      ctx.strokeRect(90, goalBottom, 380, 144);
+      ctx.beginPath();
+      ctx.arc(280, goalBottom + 144, 48, 0, Math.PI);
       ctx.stroke();
 
-      if (shotResult === 'aiming' || shotResult === 'shooting') {
-        animId = requestAnimationFrame(render);
+      drawGoalWithNet(ctx, goalLeft, goalTop, goalRight - goalLeft, goalBottom - goalTop, s.netStretch);
+
+      // Goleiro em cima da linha do gol
+      drawCartoonPlayer(ctx, s.gk.x, goalBottom - 8, {
+        jerseyColor: '#f59e0b',
+        shortsColor: '#0f172a',
+        gloveColor: '#22c55e',
+        label: 'GOL',
+        labelColor: '#fde68a',
+        divingTilt: s.gk.tilt,
+      });
+
+      // Zagueiros fechando
+      drawCartoonPlayer(ctx, s.def1.x, s.def1.y, {
+        jerseyColor: '#dc2626',
+        shortsColor: '#ffffff',
+        label: 'ZAG',
+        labelColor: '#fca5a5',
+      });
+      drawCartoonPlayer(ctx, s.def2.x, s.def2.y, {
+        jerseyColor: '#dc2626',
+        shortsColor: '#ffffff',
+        label: 'ZAG',
+        labelColor: '#fca5a5',
+      });
+
+      // Atacante atrás da bola
+      drawCartoonPlayer(ctx, 258, 344, {
+        jerseyColor: '#10b981',
+        shortsColor: '#0f172a',
+        label: 'VOCÊ',
+        labelColor: '#6ee7b7',
+        scale: 1.05,
+      });
+
+      // Mira & prévia de curva
+      if (s.state === 'aiming') {
+        ctx.save();
+        ctx.strokeStyle = '#ef4444';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.arc(s.aim.x, s.aim.y, 13, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.setLineDash([5, 4]);
+        ctx.strokeStyle = 'rgba(250, 204, 21, 0.75)';
+        ctx.beginPath();
+        ctx.moveTo(s.ball.x, s.ball.y);
+        const midX = (s.ball.x + s.aim.x) / 2 + s.impact.x * 40;
+        const midY = (s.ball.y + s.aim.y) / 2;
+        ctx.quadraticCurveTo(midX, midY, s.aim.x, s.aim.y);
+        ctx.stroke();
+        ctx.restore();
       }
+
+      drawStyledBall(ctx, s.ball.x, s.ball.y, 9, s.ball.z, s.trail, '239, 68, 68');
+
+      ctx.restore();
+      animId = requestAnimationFrame(render);
     };
 
-    render();
+    animId = requestAnimationFrame(render);
     return () => cancelAnimationFrame(animId);
-  }, [shotResult, targetAim, onScoreGoal, onMiss]);
+  }, []);
 
-  const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (shotResult !== 'aiming') return;
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const rect = canvas.getBoundingClientRect();
-    const x = ((e.clientX - rect.left) / rect.width) * canvas.width;
-    const y = ((e.clientY - rect.top) / rect.height) * canvas.height;
-
-    setTargetAim({
-      x: Math.max(130, Math.min(430, x)),
-      y: Math.max(55, Math.min(170, y)),
-    });
+  const updateAim = (clientX: number, clientY: number) => {
+    const s = simRef.current;
+    if (s.state !== 'aiming' || !canvasRef.current) return;
+    const { x, y } = getCanvasPointerCoords(canvasRef.current, clientX, clientY);
+    s.aim = {
+      x: Math.max(135, Math.min(425, x)),
+      y: Math.max(28, Math.min(110, y)),
+    };
   };
 
   const handleShoot = () => {
-    if (shotResult !== 'aiming') return;
+    const s = simRef.current;
+    if (s.state !== 'aiming') return;
+    s.state = 'shooting';
+    s.trail = [];
     setShotResult('shooting');
-    sound.play('kick');
+    sound.playKickPower(power);
 
-    const dx = (targetAim.x - 280) / 16;
-    const dy = -11.5 * (power / 55);
-    const dz = 3.8 + impact.y * 2.5;
+    const dx = (s.aim.x - 280) / 16;
+    const dy = -11.5 * (power / 58);
+    const dz = 3.5 + impact.y * 2.5;
 
-    ballPosRef.current = {
+    s.ball = {
       x: 280,
-      y: 340,
+      y: 335,
       z: 0,
       vx: dx,
       vy: dy,
@@ -243,16 +340,19 @@ export function NSSLongShotMinigame({
               </span>
             </h3>
             <span className="text-[10px] font-bold text-muted-foreground">
-              Mire e solte a pancada antes que os zagueiros travem o chute!
+              Arraste ou toque no gol para mirar e solte a bomba!
             </span>
           </div>
         </div>
 
-        {matchInfo && (
-          <span className="text-[11px] font-black px-2.5 py-1 rounded-lg bg-secondary text-foreground">
-            {matchInfo.oppClubName} • {matchInfo.minute}'
-          </span>
-        )}
+        <div className="flex items-center gap-2 flex-wrap justify-end">
+          <DifficultyBadge balance={balance} compact />
+          {matchInfo && (
+            <span className="text-[11px] font-black px-2.5 py-1 rounded-lg bg-secondary text-foreground">
+              {matchInfo.oppClubName} • {matchInfo.minute}&apos;
+            </span>
+          )}
+        </div>
       </div>
 
       <div className="relative w-full aspect-[560/380] bg-zinc-950 rounded-2xl overflow-hidden border border-border/60 shadow-inner">
@@ -260,7 +360,19 @@ export function NSSLongShotMinigame({
           ref={canvasRef}
           width={560}
           height={380}
-          onClick={handleCanvasClick}
+          onClick={(e) => updateAim(e.clientX, e.clientY)}
+          onTouchStart={(e) => {
+            if (e.touches[0]) {
+              e.preventDefault();
+              updateAim(e.touches[0].clientX, e.touches[0].clientY);
+            }
+          }}
+          onTouchMove={(e) => {
+            if (e.touches[0]) {
+              e.preventDefault();
+              updateAim(e.touches[0].clientX, e.touches[0].clientY);
+            }
+          }}
           className="w-full h-full cursor-crosshair touch-none"
         />
 
@@ -275,20 +387,31 @@ export function NSSLongShotMinigame({
             ) : (
               <div className="flex flex-col items-center">
                 <XCircle className="w-14 h-14 text-rose-500 mb-2" />
-                <h4 className="text-xl font-black text-rose-500 uppercase tracking-wide">Chute Bloqueado</h4>
+                <h4 className="text-xl font-black text-rose-500 uppercase tracking-wide">Lance Desperdiçado</h4>
                 <p className="text-xs text-zinc-300 mt-1 max-w-sm">{feedbackText}</p>
               </div>
             )}
 
-            {onClose && (
-              <button
-                type="button"
-                onClick={onClose}
-                className="mt-4 px-6 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-black text-xs transition-all shadow-lg cursor-pointer"
-              >
-                Voltar à Partida
-              </button>
-            )}
+            <div className="mt-4 flex gap-2">
+              {!matchInfo && (
+                <button
+                  type="button"
+                  onClick={resetPlay}
+                  className="px-4 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" /> Novo Chute
+                </button>
+              )}
+              {onClose && (
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="px-6 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-black text-xs transition-all shadow-lg cursor-pointer"
+                >
+                  Voltar à Partida
+                </button>
+              )}
+            </div>
           </div>
         )}
       </div>
@@ -298,7 +421,7 @@ export function NSSLongShotMinigame({
           <BallImpactSelector value={impact} onChange={setImpact} disabled={shotResult !== 'aiming'} size="sm" />
         </div>
 
-        <div className="flex flex-col justify-between">
+        <div className="flex flex-col justify-between gap-3">
           <div>
             <div className="flex items-center justify-between text-xs font-black mb-1.5">
               <span className="text-muted-foreground uppercase text-[10px]">Força da Pancada:</span>
@@ -306,12 +429,12 @@ export function NSSLongShotMinigame({
             </div>
             <input
               type="range"
-              min="40"
+              min="45"
               max="100"
               value={power}
               onChange={(e) => setPower(Number(e.target.value))}
               disabled={shotResult !== 'aiming'}
-              className="w-full accent-rose-500"
+              className="w-full accent-rose-500 cursor-pointer"
             />
           </div>
 

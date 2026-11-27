@@ -206,7 +206,7 @@ export default function NoticiasPage() {
                         {mainHighlight.quote && (
                           <div className="p-3.5 rounded-xl bg-secondary/80 border border-border text-xs italic text-foreground flex items-start gap-2">
                             <MessageSquareQuote className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
-                            <span>"{mainHighlight.quote}"</span>
+                            <span>&quot;{mainHighlight.quote}&quot;</span>
                           </div>
                         )}
                       </div>
@@ -303,7 +303,7 @@ export default function NoticiasPage() {
                         {news.quote && (
                           <div className="p-3 rounded-xl bg-secondary/80 border border-border text-xs italic text-foreground flex items-start gap-2">
                             <MessageSquareQuote className="w-3.5 h-3.5 text-rose-500 shrink-0 mt-0.5" />
-                            <span className="line-clamp-2">"{news.quote}"</span>
+                            <span className="line-clamp-2">&quot;{news.quote}&quot;</span>
                           </div>
                         )}
                       </div>

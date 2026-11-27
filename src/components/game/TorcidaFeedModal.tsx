@@ -178,7 +178,7 @@ export function TorcidaFeedModal({ isOpen, onClose }: TorcidaFeedModalProps) {
               >
                 <span className="font-bold text-[11px] text-foreground block">🙏 Humilde</span>
                 <span className="text-[9px] text-muted-foreground block leading-tight mt-0.5">
-                  "O mérito é do grupo todo, pés no chão."
+                  &quot;O mérito é do grupo todo, pés no chão.&quot;
                 </span>
               </button>
 
@@ -189,7 +189,7 @@ export function TorcidaFeedModal({ isOpen, onClose }: TorcidaFeedModalProps) {
               >
                 <span className="font-bold text-[11px] text-amber-400 block">⚡ Confiante</span>
                 <span className="text-[9px] text-muted-foreground block leading-tight mt-0.5">
-                  "Trabalho duro todo dia, ninguém segura!"
+                  &quot;Trabalho duro todo dia, ninguém segura!&quot;
                 </span>
               </button>
 
@@ -200,7 +200,7 @@ export function TorcidaFeedModal({ isOpen, onClose }: TorcidaFeedModalProps) {
               >
                 <span className="font-bold text-[11px] text-emerald-400 block">🎯 Foco Total</span>
                 <span className="text-[9px] text-muted-foreground block leading-tight mt-0.5">
-                  "Já pensando na próxima rodada, foco na taça."
+                  &quot;Já pensando na próxima rodada, foco na taça.&quot;
                 </span>
               </button>
             </div>

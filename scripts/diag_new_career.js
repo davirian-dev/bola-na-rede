@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 const puppeteer = require('puppeteer-core');
 
 const CHROME_PATH = '/usr/bin/google-chrome';

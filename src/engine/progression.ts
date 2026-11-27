@@ -2,7 +2,7 @@
 // BOLA NA REDE: CARREIRA - ATTRIBUTE PROGRESSION & PROMOTION (src/engine/progression.ts)
 // ==============================================================================
 
-import { PlayerCareerProfile, TrainingFocus } from '@/types/game';
+import { PlayerCareerProfile } from '@/types/game';
 import { calculateOverall } from '@/lib/calculations';
 
 /**
@@ -43,7 +43,7 @@ export function progressPlayerAttributes(
 
     if (current < maxPotential) {
       const gain = Math.min(maxPotential - current, Number(amount.toFixed(2)));
-      attrs[attrKey] = Math.min(99, Math.round(current + gain)) as any;
+      (attrs as Record<string, number | undefined>)[attrKey] = Math.min(99, Math.round(current + gain));
       changes[attrKey] = gain;
     }
   };

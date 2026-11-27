@@ -5,6 +5,7 @@
 
 import { Club, Player, Position, PlayerAttributes } from '@/types/game';
 import { calculateOverall, calculateMarketValue, calculateWeeklyWage } from '@/lib/calculations';
+import { organizeRosterForFormation } from '@/engine/positionEngine';
 
 export interface RosterMove {
   playerName: string;
@@ -26,9 +27,9 @@ export interface RosterDeparture {
 }
 
 export const ROSTER_PATCH_2026 = {
-  version: "2026.11-official-v2",
-  updatedAt: "2026-11-22",
-  description: "Patch Oficial Novembro/2026: Neymar, Gabigol e Coutinho no Santos; Paulinho no Palmeiras; Cauly no São Paulo; Cancelo no Barça; Laporte no Athletic; e Despedidas/Aposentadorias",
+  version: "2026.11-official-v5",
+  updatedAt: "2026-11-25",
+  description: "Patch Oficial Novembro/2026: Calibração de Overall das Ligas Internacionais & Escalação por Setor/Posição Real sem improvisar atacantes na zaga",
   
   // ============================================================================
   // TRANSFERÊNCIAS ATIVAS (NOVEMBRO / 2026)
@@ -776,6 +777,41 @@ export function applyRosterPatch2026(clubs: Record<string, Club>): Record<string
       }
     }
 
+    // Recalibra atletas genéricos de ligas internacionais/Série A que caíram na faixa baixa (OVR < esperado)
+    const minDivisionOvr =
+      ['EUROPA'].includes(club.division) ? 80 :
+      ['PL', 'LALIGA', 'SERIE_A_ITA', 'BUNDESLIGA', 'LIGUE_1'].includes(club.division) ? 74 :
+      ['A', 'MLS', 'SAUDI_PRO', 'CHAMPIONSHIP', 'SEGUNDA_ESP', 'SERIE_B_ITA', 'BUNDESLIGA_2', 'LIGUE_2'].includes(club.division) ? 68 :
+      0;
+
+    if (minDivisionOvr > 0) {
+      const targetBase = club.reputation >= 90 ? Math.max(minDivisionOvr + 5, 79) : club.reputation >= 84 ? minDivisionOvr + 3 : minDivisionOvr;
+      roster = roster.map((p, idx) => {
+        const isGeneric = !p.id.includes('-star-') && !p.id.startsWith('player-user-') && !p.id.startsWith('patch2026-');
+        if (isGeneric && p.overall < minDivisionOvr) {
+          const boost = targetBase + ((idx * 3) % 6) - p.overall;
+          const boostedAttrs = { ...p.attributes };
+          (Object.keys(boostedAttrs) as (keyof PlayerAttributes)[]).forEach((k) => {
+            const val = boostedAttrs[k];
+            if (typeof val === 'number') {
+              boostedAttrs[k] = Math.min(92, Math.max(40, val + boost));
+            }
+          });
+          const newOvr = calculateOverall(p.position, boostedAttrs);
+          const newPot = Math.max(p.potential, Math.min(94, newOvr + 4));
+          return {
+            ...p,
+            attributes: boostedAttrs,
+            overall: newOvr,
+            potential: newPot,
+            marketValue: calculateMarketValue(newOvr, newPot, p.age),
+            wage: calculateWeeklyWage(newOvr, p.isYouth),
+          };
+        }
+        return p;
+      });
+    }
+
     // Garante que haja pelo menos um goleiro no elenco e no lineup
     const hasGk = roster.some((p) => p.position === 'GOL');
     if (!hasGk && roster.length > 0) {
@@ -784,33 +820,18 @@ export function applyRosterPatch2026(clubs: Record<string, Club>): Record<string
       roster[0].attributes.defending = 75;
     }
 
-    let lineup = [...(club.lineup || [])];
-    // Se o lineup não tiver 11 jogadores, completa com os primeiros do roster
-    if (lineup.length < 11) {
-      roster.forEach((p) => {
-        if (lineup.length < 11 && !lineup.includes(p.id)) {
-          lineup.push(p.id);
-        }
-      });
-    }
-
-    // Garante que o primeiro jogador do lineup seja um Goleiro
-    const gkInLineup = lineup.find((pid) => {
-      const p = roster.find((pl) => pl.id === pid);
-      return p && p.position === 'GOL';
-    });
-
-    if (!gkInLineup) {
-      const firstGk = roster.find((p) => p.position === 'GOL');
-      if (firstGk) {
-        lineup[0] = firstGk.id;
-      }
-    }
+    // Organiza os 11 titulares em suas posições táticas ideais e mantém os melhores reservas no banco
+    const formation = club.tactics?.formation || '4-3-3';
+    const organizedRoster = organizeRosterForFormation(roster, formation);
+    const lineup = organizedRoster.slice(0, 11).map((p) => p.id);
 
     patchedClubs[clubId] = {
       ...club,
-      roster,
+      roster: organizedRoster,
       lineup,
+      captainPlayerId: club.captainPlayerId && lineup.includes(club.captainPlayerId) ? club.captainPlayerId : organizedRoster[2]?.id || organizedRoster[0]?.id,
+      penaltyTakerPlayerId: club.penaltyTakerPlayerId && lineup.includes(club.penaltyTakerPlayerId) ? club.penaltyTakerPlayerId : organizedRoster[9]?.id || organizedRoster[0]?.id,
+      freeKickTakerPlayerId: club.freeKickTakerPlayerId && lineup.includes(club.freeKickTakerPlayerId) ? club.freeKickTakerPlayerId : organizedRoster[7]?.id || organizedRoster[0]?.id,
     };
   });
 

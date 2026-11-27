@@ -120,8 +120,10 @@ export function calculatePositionPenalty(
   ) {
     rawPenalty = 4;
   }
-  // Setores Adjacentes (ex: Lateral no Meio, Volante na Zaga, Ponta de Centroavante)
+  // Setores Adjacentes (ex: Lateral na Zaga, Lateral no Meio, Volante na Zaga, Ponta de Centroavante)
   else if (
+    (natSector === 'defense_center' && roleSector === 'defense_flank') ||
+    (natSector === 'defense_flank' && roleSector === 'defense_center') ||
     (natSector === 'defense_center' && roleSector === 'mid_def') ||
     (natSector === 'mid_def' && roleSector === 'defense_center') ||
     (natSector === 'attack_flank' && roleSector === 'attack_center') ||
@@ -173,4 +175,158 @@ export function progressPositionTraining(
     newProgress,
     isCompleted: newProgress >= 100,
   };
+}
+
+/**
+ * Retorna os 11 papéis táticos (na ordem exata da prancheta) para uma formação.
+ */
+export function getFormationRoles(formation: TacticalFormation = '4-3-3'): string[] {
+  switch (formation) {
+    case '4-4-2':
+      return ['GOL', 'LD', 'ZAG', 'ZAG', 'LE', 'MD', 'MC', 'MC', 'ME', 'ATA', 'ATA'];
+    case '4-2-3-1':
+      return ['GOL', 'LD', 'ZAG', 'ZAG', 'LE', 'VOL', 'VOL', 'MD', 'MEI', 'ME', 'CA'];
+    case '3-5-2':
+      return ['GOL', 'ZAG', 'ZAG', 'ZAG', 'ALD', 'VOL', 'MC', 'MC', 'ALE', 'ATA', 'ATA'];
+    case '5-3-2':
+      return ['GOL', 'ALD', 'ZAG', 'ZAG', 'ZAG', 'ALE', 'MC', 'MC', 'MC', 'ATA', 'ATA'];
+    case '4-1-4-1':
+      return ['GOL', 'LD', 'ZAG', 'ZAG', 'LE', 'VOL', 'MD', 'MC', 'MC', 'ME', 'CA'];
+    case '4-3-3':
+    default:
+      return ['GOL', 'LD', 'ZAG', 'ZAG', 'LE', 'VOL', 'MC', 'MEI', 'PD', 'CA', 'PE'];
+  }
+}
+
+export interface OrganizeRosterOptions {
+  reservePlayerId?: string;
+  forceStarterId?: string;
+  userSecondaryPositions?: Position[];
+  userAdaptability?: Partial<Record<Position, number>>;
+}
+
+/**
+ * Organiza o elenco para que os 11 primeiros índices (0..10) correspondam aos 11 titulares
+ * em suas posições corretas na formação, priorizando maior Overall efetivo e mantendo reservas no banco.
+ */
+export function organizeRosterForFormation(
+  roster: Player[],
+  formation: TacticalFormation = '4-3-3',
+  options: OrganizeRosterOptions = {}
+): Player[] {
+  if (!roster || roster.length === 0) return roster;
+
+  const { reservePlayerId, forceStarterId, userSecondaryPositions, userAdaptability } = options;
+  const roles = getFormationRoles(formation);
+
+  // Pool principal para os 11 titulares (respeitando quem está no banco/lesionado quando houver opções suficientes)
+  const healthyOthers = roster.filter(
+    (p) => p.id !== reservePlayerId && !p.isInjured && !p.isSuspended
+  );
+  const nonReservePool = roster.filter((p) => p.id !== reservePlayerId);
+  const starterPool =
+    healthyOthers.length >= 11
+      ? [...healthyOthers]
+      : nonReservePool.length >= 11
+      ? [...nonReservePool]
+      : [...roster];
+
+  const slots: (Player | null)[] = new Array(roles.length).fill(null);
+  const usedIds = new Set<string>();
+
+  const evalPlayerForRole = (p: Player, role: string) =>
+    calculatePositionPenalty(
+      p.position,
+      role,
+      p.overall,
+      p.id === forceStarterId ? userSecondaryPositions : undefined,
+      p.id === forceStarterId ? userAdaptability : undefined
+    );
+
+  // 1. Se o jogador do usuário é titular garantido, aloca primeiro na melhor vaga da sua posição
+  if (forceStarterId) {
+    const forcedPlayer = roster.find((p) => p.id === forceStarterId);
+    if (forcedPlayer) {
+      let bestSlot = -1;
+      let bestScore = -1;
+      roles.forEach((role, idx) => {
+        const evalRes = evalPlayerForRole(forcedPlayer, role);
+        const score = evalRes.effectiveOverall * 10 - evalRes.penalty * 15;
+        if (score > bestScore) {
+          bestScore = score;
+          bestSlot = idx;
+        }
+      });
+      if (bestSlot !== -1) {
+        slots[bestSlot] = forcedPlayer;
+        usedIds.add(forcedPlayer.id);
+      }
+    }
+  }
+
+  // 2. Prioriza Goleiro natural no slot 0 (GOL)
+  if (!slots[0]) {
+    const gks = starterPool
+      .filter((p) => !usedIds.has(p.id) && p.position === 'GOL')
+      .sort((a, b) => b.overall - a.overall);
+    if (gks[0]) {
+      slots[0] = gks[0];
+      usedIds.add(gks[0].id);
+    }
+  }
+
+  // 3. Seleção Global Otimizada em 2 Passos:
+  // Passo 3A: Preenche apenas com jogadores do mesmo setor ou setor adjacente (penalty <= 8),
+  // impedindo que atacantes (ex: Endrick) sejam colocados na defesa (LD/ZAG) à frente de defensores reais.
+  const assignSlots = (maxPenalty: number) => {
+    while (slots.some((s) => s === null)) {
+      let bestSlot = -1;
+      let bestPlayer: Player | null = null;
+      let bestScore = -Infinity;
+
+      for (let idx = 0; idx < roles.length; idx++) {
+        if (slots[idx] !== null) continue;
+        const role = roles[idx];
+
+        for (const p of starterPool) {
+          if (usedIds.has(p.id)) continue;
+          const hasOutfieldLeft = starterPool.some((c) => !usedIds.has(c.id) && c.position !== 'GOL');
+          if (role !== 'GOL' && p.position === 'GOL' && hasOutfieldLeft) continue;
+
+          const evalRes = evalPlayerForRole(p, role);
+          if (evalRes.penalty > maxPenalty) continue;
+
+          const score = evalRes.effectiveOverall * 100 - evalRes.penalty * 15;
+          if (score > bestScore) {
+            bestScore = score;
+            bestSlot = idx;
+            bestPlayer = p;
+          }
+        }
+      }
+
+      if (bestSlot === -1 || !bestPlayer) break;
+      slots[bestSlot] = bestPlayer;
+      usedIds.add(bestPlayer.id);
+    }
+  };
+
+  assignSlots(8);
+  // Passo 3B (fallback): só preenche com improviso de outro setor se realmente faltar jogador no setor
+  assignSlots(99);
+
+  const starters = slots.filter((p): p is Player => p !== null);
+
+  // 5. Banco de reservas: coloca reservePlayerId primeiro (se existir), depois melhor GOL reserva e demais por OVR
+  const remaining = roster
+    .filter((p) => !usedIds.has(p.id))
+    .sort((a, b) => {
+      if (a.id === reservePlayerId) return -1;
+      if (b.id === reservePlayerId) return 1;
+      if (a.position === 'GOL' && b.position !== 'GOL') return -1;
+      if (b.position === 'GOL' && a.position !== 'GOL') return 1;
+      return b.overall - a.overall;
+    });
+
+  return [...starters, ...remaining];
 }

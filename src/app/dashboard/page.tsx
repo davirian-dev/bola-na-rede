@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useGameStore } from '@/store/gameStore';
-import { TrainingFocus } from '@/types/game';
+import { CustomUserMatchResult, TrainingFocus } from '@/types/game';
+import { useIsMounted } from '@/hooks/useIsMounted';
 import { AppHeader } from '@/components/layout/AppHeader';
 import { DesktopSidebar } from '@/components/layout/DesktopSidebar';
 import { MobileBottomNav } from '@/components/layout/MobileBottomNav';
@@ -18,8 +19,16 @@ import { TransferOfferModal } from '@/components/game/TransferOfferModal';
 import { LiveMatchModal } from '@/components/game/LiveMatchModal';
 import { NSSPlayerShopModal } from '@/components/game/NSSPlayerShopModal';
 import { NSSPenaltyMinigame } from '@/components/game/NSSPenaltyMinigame';
+import { NSSFreeKickMinigame } from '@/components/game/NSSFreeKickMinigame';
+import { NSSLongShotMinigame } from '@/components/game/NSSLongShotMinigame';
+import { NSSInsideBoxMinigame } from '@/components/game/NSSInsideBoxMinigame';
+import { NSSHeaderMinigame } from '@/components/game/NSSHeaderMinigame';
+import { NSSDefenseMinigame } from '@/components/game/NSSDefenseMinigame';
 import { NSSPassMinigame } from '@/components/game/NSSPassMinigame';
 import { DribbleMinigame } from '@/components/match/DribbleMinigame';
+import { DefenseMinigame, DefenseVariant } from '@/components/match/DefenseMinigame';
+import { GoalkeeperMinigame, GoalkeeperVariant } from '@/components/match/GoalkeeperMinigame';
+import PhaserPitchMinigame from '@/components/match/PhaserPitchMinigame';
 import { CareerShareCardModal } from '@/components/game/CareerShareCardModal';
 import { TorcidaFeedModal } from '@/components/game/TorcidaFeedModal';
 import { AchievementsModal } from '@/components/game/AchievementsModal';
@@ -127,7 +136,7 @@ export default function DashboardPage() {
   const setTrainingSecondaryPosition = useGameStore((s) => s.setTrainingSecondaryPosition);
   const fullState = useGameStore();
 
-  const [mounted, setMounted] = useState(false);
+  const mounted = useIsMounted();
   const [activeTab, setActiveTab] = useState<'overview' | 'roster' | 'table' | 'life'>('overview');
   const [advancing, setAdvancing] = useState(false);
   const [meetingToast, setMeetingToast] = useState<{ message: string; success: boolean } | null>(null);
@@ -136,7 +145,21 @@ export default function DashboardPage() {
   const [isLiveMatchOpen, setIsLiveMatchOpen] = useState(false);
   const [isShopModalOpen, setIsShopModalOpen] = useState(false);
   const [isTrainingModalOpen, setIsTrainingModalOpen] = useState(false);
-  const [trainingType, setTrainingType] = useState<'penalty' | 'pass' | 'dribble'>('penalty');
+  const [trainingType, setTrainingType] = useState<
+    | 'arena2d'
+    | 'penalty'
+    | 'free_kick'
+    | 'long_shot'
+    | 'inside_box'
+    | 'header'
+    | 'pass'
+    | 'dribble'
+    | 'nss_defense'
+    | 'defense_pro'
+    | 'goalkeeper_pro'
+  >('arena2d');
+  const [activeDefensePro, setActiveDefensePro] = useState<DefenseVariant | null>(null);
+  const [activeGkPro, setActiveGkPro] = useState<GoalkeeperVariant | null>(null);
   const [nrgToast, setNrgToast] = useState<string | null>(null);
   const [roleToast, setRoleToast] = useState<string | null>(null);
   const [lifestyleFeedback, setLifestyleFeedback] = useState<{ message: string; success: boolean } | null>(null);
@@ -161,10 +184,6 @@ export default function DashboardPage() {
   const [isStadiumModalOpen, setIsStadiumModalOpen] = useState(false);
   const [isCardGeneratorOpen, setIsCardGeneratorOpen] = useState(false);
   const [isTutorialOpen, setIsTutorialOpen] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   useEffect(() => {
     if (!mounted) return;
@@ -248,7 +267,7 @@ export default function DashboardPage() {
     setTimeout(() => setRoleToast(null), 3500);
   };
 
-  const handleFinishLiveMatch = (matchResult?: any) => {
+  const handleFinishLiveMatch = (matchResult?: CustomUserMatchResult) => {
     setIsLiveMatchOpen(false);
     playWhistle();
     advanceWeek(matchResult);
@@ -277,7 +296,7 @@ export default function DashboardPage() {
     }, 350);
   };
 
-  const trainingOptions: { id: TrainingFocus; label: string; desc: string; icon: any }[] = [
+  const trainingOptions: { id: TrainingFocus; label: string; desc: string; icon: React.ComponentType<{ className?: string }> }[] = [
     { id: 'finishing', label: 'Finalização & Frieza', desc: '+Chute e Compostura', icon: Target },
     { id: 'pace', label: 'Velocidade & Drible', desc: '+Ritmo e Controle', icon: Zap },
     { id: 'passing', label: 'Passe & Visão', desc: '+Passe e Assistências', icon: Sparkles },
@@ -2001,19 +2020,20 @@ export default function DashboardPage() {
                   {(() => {
                     const activeBoot = getBootById(playerProfile.equippedBootId || 'classic_black');
                     const bootBonus = activeBoot?.bonusAttributes || {};
+                    const extraBootBonus = bootBonus as Partial<Record<string, number>>;
 
                     const attributesList = [
                       { name: 'Velocidade', val: playerProfile.attributes.pace, bonus: bootBonus.pace || 0, icon: '⚡', highlight: playerProfile.position === 'PE' || playerProfile.position === 'PD' },
                       { name: 'Drible', val: playerProfile.attributes.dribbling, bonus: bootBonus.dribbling || 0, icon: '⚽', highlight: playerProfile.position === 'PE' || playerProfile.position === 'PD' },
                       { name: 'Desarme', val: playerProfile.attributes.tackling ?? playerProfile.attributes.defending, bonus: bootBonus.defending || 0, icon: '🛡️', highlight: playerProfile.position === 'ZAG' || playerProfile.position === 'VOL' },
                       { name: 'Defesa', val: playerProfile.attributes.defending, bonus: bootBonus.defending || 0, icon: '🧱', highlight: playerProfile.position === 'ZAG' || playerProfile.position === 'VOL' },
-                      { name: 'Ataque', val: playerProfile.attributes.attacking ?? playerProfile.attributes.shooting, bonus: (bootBonus.finishing || 0) + ((bootBonus as any).shotPower || bootBonus.shooting || 0), icon: '⚔️', highlight: playerProfile.position === 'ATA' },
+                      { name: 'Ataque', val: playerProfile.attributes.attacking ?? playerProfile.attributes.shooting, bonus: (bootBonus.finishing || 0) + (extraBootBonus.shotPower || bootBonus.shooting || 0), icon: '⚔️', highlight: playerProfile.position === 'ATA' },
                       { name: 'Finalização', val: playerProfile.attributes.finishing ?? playerProfile.attributes.shooting, bonus: bootBonus.finishing || 0, icon: '🎯', highlight: playerProfile.position === 'ATA' || playerProfile.position === 'PE' || playerProfile.position === 'PD' },
                       { name: 'Passe', val: playerProfile.attributes.passing, bonus: bootBonus.passing || 0, icon: '👟', highlight: playerProfile.position === 'MC' || playerProfile.position === 'MEI' },
                       { name: 'Posicionamento', val: playerProfile.attributes.positioning ?? 50, bonus: bootBonus.positioning || 0, icon: '📍', highlight: playerProfile.position === 'ATA' || playerProfile.position === 'GOL' },
                       { name: 'Cabeceio', val: playerProfile.attributes.heading ?? playerProfile.attributes.physical ?? 50, bonus: bootBonus.physical || 0, icon: '👤', highlight: playerProfile.position === 'ATA' || playerProfile.position === 'ZAG' },
                       { name: 'Cruzamento', val: playerProfile.attributes.crossing ?? playerProfile.attributes.passing, bonus: bootBonus.passing || 0, icon: '↗️', highlight: playerProfile.position === 'PE' || playerProfile.position === 'PD' || playerProfile.position === 'LE' || playerProfile.position === 'LD' },
-                      { name: 'Chute', val: playerProfile.attributes.shooting, bonus: (bootBonus as any).shotPower || bootBonus.shooting || 0, icon: '🚀', highlight: playerProfile.position === 'ATA' || playerProfile.position === 'MEI' },
+                      { name: 'Chute', val: playerProfile.attributes.shooting, bonus: extraBootBonus.shotPower || bootBonus.shooting || 0, icon: '🚀', highlight: playerProfile.position === 'ATA' || playerProfile.position === 'MEI' },
                       { name: 'Salto', val: playerProfile.attributes.jumping ?? playerProfile.attributes.physical ?? 50, bonus: bootBonus.physical || 0, icon: '🦘', highlight: playerProfile.position === 'ZAG' || playerProfile.position === 'GOL' },
                       { name: 'Armador', val: playerProfile.attributes.playmaker ?? playerProfile.attributes.vision ?? 50, bonus: bootBonus.vision || 0, icon: '🪄', highlight: playerProfile.position === 'MEI' || playerProfile.position === 'MC' },
                       { 
@@ -2929,80 +2949,227 @@ export default function DashboardPage() {
       {/* MODAL 5: MINIGAMES LIVRES DE TREINO (NSS) */}
       {/* ============================================================ */}
       {isTrainingModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-200">
-          <div className="bg-card border border-emerald-500/40 rounded-3xl max-w-xl w-full p-5 sm:p-7 shadow-2xl relative">
-            <div className="flex items-center justify-between mb-4 border-b border-border pb-3">
-              <div className="flex items-center gap-2">
-                <span className="text-xl">⚽</span>
-                <div>
-                  <h3 className="font-display text-lg font-black text-foreground">
-                    Centro de Treinamento • Minigames
-                  </h3>
-                  <span className="text-[10px] text-muted-foreground uppercase font-bold">
-                    Pratique seus fundamentos e ganhe notas bônus
-                  </span>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="bg-card border border-emerald-500/40 rounded-3xl max-w-2xl w-full max-h-[92vh] overflow-y-auto p-4 sm:p-6 shadow-2xl relative space-y-4">
+            <div className="flex flex-col gap-3 border-b border-border pb-3">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-xl">⚽</span>
+                  <div>
+                    <h3 className="font-display text-base sm:text-lg font-black text-foreground">
+                      Centro de Treinamento • Todos os Minigames
+                    </h3>
+                    <span className="text-[10px] text-muted-foreground uppercase font-bold">
+                      Pratique os 13 fundamentos e ganhe notas bônus
+                    </span>
+                  </div>
                 </div>
-              </div>
-
-              <div className="flex items-center gap-1.5 sm:gap-2">
-                <button
-                  type="button"
-                  onClick={() => setTrainingType('dribble')}
-                  className={`px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                    trainingType === 'dribble' ? 'bg-emerald-500 text-zinc-950 font-black' : 'bg-secondary text-muted-foreground'
-                  }`}
-                >
-                  ⚡ Drible 1v1
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setTrainingType('penalty')}
-                  className={`px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                    trainingType === 'penalty' ? 'bg-emerald-500 text-zinc-950 font-black' : 'bg-secondary text-muted-foreground'
-                  }`}
-                >
-                  🎯 Pênalti & Chute
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setTrainingType('pass')}
-                  className={`px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                    trainingType === 'pass' ? 'bg-emerald-500 text-zinc-950 font-black' : 'bg-secondary text-muted-foreground'
-                  }`}
-                >
-                  👟 Passe Decisivo
-                </button>
                 <button
                   type="button"
                   onClick={() => setIsTrainingModalOpen(false)}
-                  className="p-1 rounded-full hover:bg-secondary text-muted-foreground hover:text-foreground text-xs cursor-pointer ml-1"
+                  className="p-1.5 rounded-full hover:bg-secondary text-muted-foreground hover:text-foreground text-xs cursor-pointer"
                 >
                   ✕
                 </button>
               </div>
+
+              <div className="flex flex-wrap items-center gap-1.5">
+                {[
+                  { id: 'arena2d', label: '🏟️ Arena 2D' },
+                  { id: 'penalty', label: '🎯 Pênalti' },
+                  { id: 'free_kick', label: '🎯 Falta' },
+                  { id: 'long_shot', label: '💥 Bomba 26m' },
+                  { id: 'inside_box', label: '⚡ Cara a Cara' },
+                  { id: 'header', label: '👤 Cabeceio' },
+                  { id: 'pass', label: '👟 Passe' },
+                  { id: 'dribble', label: '🕺 Drible 1v1' },
+                  { id: 'nss_defense', label: '🛡️ Desarme NSS' },
+                  { id: 'defense_pro', label: '🛡️ Defesa Pro' },
+                  { id: 'goalkeeper_pro', label: '🧤 Goleiro Pro' },
+                ].map((tab) => (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => setTrainingType(tab.id as typeof trainingType)}
+                    className={`px-2.5 py-1.5 rounded-xl text-[11px] font-bold transition-all cursor-pointer ${
+                      trainingType === tab.id
+                        ? 'bg-emerald-500 text-zinc-950 font-black shadow-sm'
+                        : 'bg-secondary text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => setIsTacticalBoardOpen(true)}
+                  className="px-2.5 py-1.5 rounded-xl text-[11px] font-bold bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 hover:bg-cyan-500/25 transition-all cursor-pointer"
+                >
+                  📋 Prancheta
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsManagerSpeechOpen(true)}
+                  className="px-2.5 py-1.5 rounded-xl text-[11px] font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30 hover:bg-amber-500/25 transition-all cursor-pointer"
+                >
+                  🎙️ Preleção
+                </button>
+              </div>
             </div>
 
-            {trainingType === 'dribble' ? (
-              <DribbleMinigame
-                mode="training"
-                onDribbleSuccess={(_type, bonus) => applyMinigameResult({ goalsScored: 0, ratingBonus: bonus, trainingSkill: 'dribbling' })}
-                onClose={() => setIsTrainingModalOpen(false)}
-              />
+            {trainingType === 'arena2d' ? (
+              <div className="flex justify-center">
+                <PhaserPitchMinigame
+                  mode="training"
+                  title="Treino Arena 2D (Phaser 3)"
+                  onGoal={(viaPass) =>
+                    applyMinigameResult({
+                      goalsScored: viaPass ? 0 : 1,
+                      assistsProvided: viaPass ? 1 : 0,
+                      ratingBonus: 0.4,
+                      trainingSkill: viaPass ? 'passing' : 'shooting',
+                    })
+                  }
+                  onClose={() => setIsTrainingModalOpen(false)}
+                />
+              </div>
             ) : trainingType === 'penalty' ? (
               <NSSPenaltyMinigame
                 mode="training"
                 onScoreGoal={() => applyMinigameResult({ goalsScored: 1, ratingBonus: 0.3, trainingSkill: 'shooting' })}
                 onClose={() => setIsTrainingModalOpen(false)}
               />
-            ) : (
+            ) : trainingType === 'free_kick' ? (
+              <NSSFreeKickMinigame
+                mode="training"
+                onScoreGoal={() => applyMinigameResult({ goalsScored: 1, ratingBonus: 0.5, trainingSkill: 'shooting' })}
+                onClose={() => setIsTrainingModalOpen(false)}
+              />
+            ) : trainingType === 'long_shot' ? (
+              <NSSLongShotMinigame
+                onScoreGoal={() => applyMinigameResult({ goalsScored: 1, ratingBonus: 0.4, trainingSkill: 'shooting' })}
+                onClose={() => setIsTrainingModalOpen(false)}
+              />
+            ) : trainingType === 'inside_box' ? (
+              <NSSInsideBoxMinigame
+                onScoreGoal={() => applyMinigameResult({ goalsScored: 1, ratingBonus: 0.4, trainingSkill: 'shooting' })}
+                onClose={() => setIsTrainingModalOpen(false)}
+              />
+            ) : trainingType === 'header' ? (
+              <NSSHeaderMinigame
+                onScoreGoal={() => applyMinigameResult({ goalsScored: 1, ratingBonus: 0.4, trainingSkill: 'shooting' })}
+                onClose={() => setIsTrainingModalOpen(false)}
+              />
+            ) : trainingType === 'pass' ? (
               <NSSPassMinigame
                 mode="training"
                 onCompletePass={() => applyMinigameResult({ goalsScored: 0, assistsProvided: 1, ratingBonus: 0.2, trainingSkill: 'passing' })}
                 onClose={() => setIsTrainingModalOpen(false)}
               />
+            ) : trainingType === 'dribble' ? (
+              <DribbleMinigame
+                mode="training"
+                onDribbleSuccess={(_type, bonus) => applyMinigameResult({ goalsScored: 0, ratingBonus: bonus, trainingSkill: 'dribbling' })}
+                onClose={() => setIsTrainingModalOpen(false)}
+              />
+            ) : trainingType === 'nss_defense' ? (
+              <NSSDefenseMinigame
+                onDefendSuccess={(bonus) => applyMinigameResult({ goalsScored: 0, ratingBonus: bonus, trainingSkill: 'physical' })}
+                onClose={() => setIsTrainingModalOpen(false)}
+              />
+            ) : trainingType === 'defense_pro' ? (
+              <div className="p-4 rounded-2xl bg-secondary/40 border border-border text-center space-y-3">
+                <h4 className="font-display text-base font-black text-foreground">🛡️ Treino Defensivo Pro</h4>
+                <p className="text-xs text-muted-foreground">Escolha qual fundamento defensivo deseja treinar agora:</p>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setActiveDefensePro('tackle_1v1')}
+                    className="py-3 px-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-black text-xs cursor-pointer"
+                  >
+                    ⚡ Desarme 1x1
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveDefensePro('interception')}
+                    className="py-3 px-3 rounded-xl bg-blue-500 hover:bg-blue-400 text-white font-black text-xs cursor-pointer"
+                  >
+                    👁️ Interceptação
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveDefensePro('aerial_duel')}
+                    className="py-3 px-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 font-black text-xs cursor-pointer"
+                  >
+                    ✈️ Duelo Aéreo
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="p-4 rounded-2xl bg-secondary/40 border border-border text-center space-y-3">
+                <h4 className="font-display text-base font-black text-foreground">🧤 Treino de Goleiro Pro</h4>
+                <p className="text-xs text-muted-foreground">Escolha o tipo de defesa para praticar:</p>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setActiveGkPro('shot_save')}
+                    className="py-3 px-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-black text-xs cursor-pointer"
+                  >
+                    🥅 Defesa de Chute
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveGkPro('rush_1v1')}
+                    className="py-3 px-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 font-black text-xs cursor-pointer"
+                  >
+                    ⚡ Saída 1x1
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveGkPro('cross_catch')}
+                    className="py-3 px-3 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-zinc-950 font-black text-xs cursor-pointer"
+                  >
+                    ☁️ Cruzamento
+                  </button>
+                </div>
+              </div>
             )}
           </div>
         </div>
+      )}
+
+      {activeDefensePro && (
+        <DefenseMinigame
+          variant={activeDefensePro}
+          playerName={playerProfile?.nickname || playerProfile?.name || 'Craque'}
+          playerTackling={playerProfile?.attributes?.tackling || 75}
+          playerHeading={playerProfile?.attributes?.heading || 75}
+          playerJumping={playerProfile?.attributes?.jumping || 75}
+          playerPositioning={playerProfile?.attributes?.positioning || 75}
+          onResult={(res) => {
+            setActiveDefensePro(null);
+            if (res.success) {
+              applyMinigameResult({ goalsScored: 0, ratingBonus: 0.35, trainingSkill: 'physical' });
+            }
+          }}
+          onCancel={() => setActiveDefensePro(null)}
+        />
+      )}
+
+      {activeGkPro && (
+        <GoalkeeperMinigame
+          variant={activeGkPro}
+          playerName={playerProfile?.nickname || playerProfile?.name || 'Goleiro'}
+          playerReflexes={playerProfile?.attributes?.gkReflexes || playerProfile?.attributes?.elasticity || 75}
+          playerPositioning={playerProfile?.attributes?.positioning || 75}
+          onResult={(res) => {
+            setActiveGkPro(null);
+            if (res.success) {
+              applyMinigameResult({ goalsScored: 0, ratingBonus: 0.4, trainingSkill: 'physical' });
+            }
+          }}
+          onCancel={() => setActiveGkPro(null)}
+        />
       )}
 
       {/* Modal de Resultados da Rodada (Simulação Rápida / Pós-Jogo) */}

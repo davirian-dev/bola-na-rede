@@ -3,7 +3,7 @@
 // Motor Anti-Tédio: Narrativa Contextualizada, Clássicos Reais, Sequência "Em Chamas" e Cooldown de 10 Eventos
 // ==============================================================================
 
-import { Fixture, NewsItem, Club, GameState, Division } from '@/types/game';
+import { Fixture, NewsItem, GameState, Division } from '@/types/game';
 
 const PORTAIS = ['GE Globo Esporte', 'UOL Esporte', 'Lance!', 'ESPN Brasil', 'Gazeta Esportiva'] as const;
 const AUTORES = ['Redação GE', 'André Rizek', 'Mauro Cezar', 'Ana Thaís Matos', 'Fábio Sormani', 'PVC'] as const;

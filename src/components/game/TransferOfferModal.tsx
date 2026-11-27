@@ -106,7 +106,7 @@ export function TransferOfferModal({ isOpen, onClose }: TransferOfferModalProps)
             Motivo do Interesse
           </span>
           <p className="text-xs font-semibold text-foreground leading-relaxed">
-            "{pendingTransferOffer.reason}"
+            &quot;{pendingTransferOffer.reason}&quot;
           </p>
         </div>
 

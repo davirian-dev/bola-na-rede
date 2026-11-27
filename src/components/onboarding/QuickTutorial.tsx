@@ -49,11 +49,11 @@ export function QuickTutorial({ forceOpen = false, onClose }: QuickTutorialProps
   const [currentStep, setCurrentStep] = useState(0);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const seen = localStorage.getItem('bnr_tutorial_seen');
-      if (!seen || forceOpen) {
-        setIsOpen(true);
-      }
+    if (typeof window === 'undefined') return;
+    const seen = localStorage.getItem('bnr_tutorial_seen');
+    if (!seen || forceOpen) {
+      const timer = setTimeout(() => setIsOpen(true), 0);
+      return () => clearTimeout(timer);
     }
   }, [forceOpen]);
 

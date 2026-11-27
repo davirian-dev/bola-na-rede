@@ -102,16 +102,16 @@ export function AchievementsModal({ isOpen, onClose }: AchievementsModalProps) {
 
         {/* Filtros de Tiers */}
         <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-2 mb-2">
-          {[
+          {([
             { id: 'all', label: `Todas (${tieredAchievements.length})` },
             { id: 'bronze', label: 'Bronze 🥉' },
             { id: 'silver', label: 'Prata 🥈' },
             { id: 'gold', label: 'Ouro 🥇' },
             { id: 'legendary', label: 'Lendário 💎' },
-          ].map((tab) => (
+          ] as { id: 'all' | AchievementTier; label: string }[]).map((tab) => (
             <button
               key={tab.id}
-              onClick={() => setActiveTier(tab.id as any)}
+              onClick={() => setActiveTier(tab.id)}
               className={`py-1.5 px-3 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
                 activeTier === tab.id
                   ? 'bg-emerald-500 text-zinc-950 shadow-md font-black'

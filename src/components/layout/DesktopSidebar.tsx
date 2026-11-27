@@ -22,7 +22,8 @@ import {
   ArrowLeftRight,
   Swords,
   Globe,
-  Heart
+  Heart,
+  Target
 } from 'lucide-react';
 
 export function DesktopSidebar() {
@@ -44,6 +45,12 @@ export function DesktopSidebar() {
       href: '/online',
       icon: Swords,
       badge: 'ONLINE',
+    },
+    {
+      label: 'Arena 2D (Phaser)',
+      href: '/arena-2d',
+      icon: Target,
+      badge: 'NOVO',
     },
     {
       label: 'Mercado da Bola',
@@ -144,9 +151,9 @@ export function DesktopSidebar() {
               {!collapsed && (
                 <div className="flex items-center justify-between flex-1 truncate">
                   <span className="truncate">{item.label}</span>
-                  {(item as any).badge && (
+                  {(item as { badge?: string }).badge && (
                     <span className="text-[9px] font-black uppercase px-1.5 py-0.2 rounded-full bg-emerald-500 text-zinc-950 ml-1.5 animate-pulse">
-                      {(item as any).badge}
+                      {(item as { badge?: string }).badge}
                     </span>
                   )}
                 </div>

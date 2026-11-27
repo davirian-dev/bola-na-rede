@@ -16,6 +16,7 @@ import {
   QrCode 
 } from 'lucide-react';
 import { usePWAInstall } from '@/hooks/usePWAInstall';
+import { useIsMounted } from '@/hooks/useIsMounted';
 
 interface InstallAppModalProps {
   isOpen: boolean;
@@ -24,13 +25,8 @@ interface InstallAppModalProps {
 
 export function InstallAppModal({ isOpen, onClose }: InstallAppModalProps) {
   const { isInstallable, isInstalled, isIOS, isStandalone, promptInstall } = usePWAInstall();
-  const [appUrl, setAppUrl] = React.useState('https://bola-na-rede-psi.vercel.app');
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      setAppUrl(window.location.origin);
-    }
-  }, []);
+  const mounted = useIsMounted();
+  const appUrl = mounted ? window.location.origin : 'https://bola-na-rede-psi.vercel.app';
 
   useEffect(() => {
     if (isOpen) {

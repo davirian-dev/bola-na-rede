@@ -4,31 +4,29 @@ import React, { useRef, useEffect, useState, useCallback } from 'react';
 import confetti from 'canvas-confetti';
 import { useGameStore } from '@/store/gameStore';
 import { 
-  Trophy, 
   RotateCcw, 
-  Sparkles, 
-  Flame, 
-  CheckCircle2, 
-  XCircle, 
-  ArrowRight,
-  Info,
   Zap,
   Target
 } from 'lucide-react';
 import { sound } from '@/lib/soundEffects';
-import { getCommentary, CommentaryCategory } from '@/engine/commentary';
+import { getCommentary } from '@/engine/commentary';
 import { 
   renderBallWithShadow, 
   applyScreenShake,
-  calculateShotPhysics,
-  BallPhysicsState 
+  calculateShotPhysics
 } from '@/engine/ballPhysics';
+import { drawCartoonPlayer } from '@/lib/minigameCanvas';
+import { Division } from '@/types/game';
+import { useMinigameBalance } from '@/engine/minigameBalance';
+import { DifficultyBadge } from './DifficultyBadge';
 
 interface NSSPenaltyMinigameProps {
   onScoreGoal?: (ratingBonus: number) => void;
   onMiss?: () => void;
   onClose?: () => void;
   mode?: 'training' | 'match_clutch';
+  divisionOverride?: Division;
+  opponentOverall?: number;
   matchInfo?: {
     minute: number;
     oppClubName: string;
@@ -41,10 +39,20 @@ export function NSSPenaltyMinigame({
   onMiss,
   onClose,
   mode = 'training',
+  divisionOverride,
+  opponentOverall,
   matchInfo,
 }: NSSPenaltyMinigameProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const playerProfile = useGameStore((s) => s.playerProfile);
+  const balance = useMinigameBalance({
+    division: divisionOverride,
+    opponentOverall,
+  });
+  const balanceRef = useRef(balance);
+  useEffect(() => {
+    balanceRef.current = balance;
+  }, [balance]);
 
   // Estados do Jogo
   const [attempts, setAttempts] = useState(0);
@@ -53,7 +61,6 @@ export function NSSPenaltyMinigame({
   const [feedbackText, setFeedbackText] = useState('Toque na bola para escolher onde chutar, mire no gol e trave a força!');
   const [curve, setCurve] = useState<number>(0); // -1 (curva esquerda) a +1 (curva direita)
   const [power, setPower] = useState<number>(50); // Barra de Força 0 a 100%
-  const [powerLocked, setPowerLocked] = useState<boolean>(false);
 
   // Ponto de Impacto da Chuteira na Bola (New Star Soccer / Score Hero style)
   // x: -1 (lateral esquerda) a +1 (lateral direita)
@@ -61,14 +68,50 @@ export function NSSPenaltyMinigame({
   const [impactPoint, setImpactPoint] = useState<{ x: number; y: number }>({ x: 0, y: 0.35 });
   const [isDraggingBall, setIsDraggingBall] = useState<boolean>(false);
 
+  // Referências físicas (declaradas antes dos effects)
+  const gameStateRef = useRef({
+    ball: { 
+      x: 200, 
+      y: 258, 
+      z: 0, 
+      vx: 0, 
+      vy: 0, 
+      vz: 0, 
+      radius: 10,
+      baseRadius: 10,
+      spinCurve: 0,
+      rotationSpeed: 0,
+      rotationAngle: 0,
+      friction: 0.985,
+      gravity: 0.25,
+      shotType: 'medium' as 'weak' | 'medium' | 'power' | 'lob',
+      hasMotionTrail: false,
+      trailPoints: [] as { x: number; y: number; z: number; alpha: number }[],
+      screenShake: 0,
+      isOffTarget: false,
+      offTargetReason: undefined as 'high' | 'wide_left' | 'wide_right' | undefined,
+      inFlight: false,
+      bouncedCount: 0,
+      ballId: 'classic_capotao',
+    },
+    goal: { x: 55, y: 26, width: 290, height: 86 },
+    keeper: { x: 200, y: 100, targetX: 200, width: 44, height: 50, diving: false, diveVx: 0 },
+    kicker: { x: 176, y: 274 },
+    netStretch: 0,
+    aim: { active: false, startX: 200, startY: 258, targetX: 200, targetY: 72, power: 0 },
+    inPlay: false,
+    particles: [] as { x: number; y: number; vx: number; vy: number; color: string; life: number }[],
+  });
+
   // Oscilação Contínua da Barra de Força estilo New Star Soccer
   useEffect(() => {
-    if (shotResult === 'shooting' || gameStateRef.current.inPlay) return;
+    if (shotResult === 'shooting') return;
 
     let dir = 1;
     const interval = setInterval(() => {
+      if (gameStateRef.current.inPlay) return;
       setPower((p) => {
-        let next = p + dir * 3.5;
+        let next = p + dir * (3.5 * balanceRef.current.powerBarSpeedMult);
         if (next >= 100) {
           next = 100;
           dir = -1;
@@ -84,8 +127,6 @@ export function NSSPenaltyMinigame({
   }, [shotResult]);
 
   // Calibrações Físicas do Jogador
-  const isTall = (playerProfile?.height || 178) >= 188;
-  const isShort = (playerProfile?.height || 178) <= 172;
   const foot = playerProfile?.preferredFoot || 'right';
 
   // Manipulação do Ponto de Impacto na Bola (New Star Soccer style)
@@ -119,50 +160,37 @@ export function NSSPenaltyMinigame({
     setFeedbackText(`🎯 Ponto Definido: ${name}`);
   };
 
-  // Referências físicas
-  const gameStateRef = useRef({
-    ball: { 
-      x: 200, 
-      y: 310, 
-      z: 0, 
-      vx: 0, 
-      vy: 0, 
-      vz: 0, 
-      radius: 10,
-      baseRadius: 10,
-      shotType: 'medium' as 'weak' | 'medium' | 'power' | 'lob',
-      hasMotionTrail: false,
-      trailPoints: [] as { x: number; y: number; z: number; alpha: number }[],
-      screenShake: 0,
-      isOffTarget: false,
-      offTargetReason: undefined as 'high' | 'wide_left' | 'wide_right' | undefined,
-    },
-    goal: { x: 50, y: 55, width: 300, height: 110 },
-    keeper: { x: 200, y: 140, targetX: 200, width: 44, height: 50, diving: false, diveVx: 0 },
-    aim: { active: false, startX: 200, startY: 310, targetX: 200, targetY: 100, power: 0 },
-    inPlay: false,
-    particles: [] as { x: number; y: number; vx: number; vy: number; color: string; life: number }[],
-  });
+  // Referências físicas já declaradas acima
 
   const resetBall = useCallback(() => {
     const s = gameStateRef.current;
     s.ball = { 
       x: 200, 
-      y: 310, 
+      y: 258, 
       z: 0, 
       vx: 0, 
       vy: 0, 
       vz: 0, 
       radius: 10,
       baseRadius: 10,
+      spinCurve: 0,
+      rotationSpeed: 0,
+      rotationAngle: 0,
+      friction: 0.985,
+      gravity: 0.25,
       shotType: 'medium',
       hasMotionTrail: false,
       trailPoints: [],
       screenShake: 0,
       isOffTarget: false,
       offTargetReason: undefined,
+      inFlight: false,
+      bouncedCount: 0,
+      ballId: 'classic_capotao',
     };
-    s.keeper = { x: 200, y: 140, targetX: 200, width: 44, height: 50, diving: false, diveVx: 0 };
+    s.keeper = { x: 200, y: 100, targetX: 200, width: 44, height: 50, diving: false, diveVx: 0 };
+    s.kicker = { x: 176, y: 274 };
+    s.netStretch = 0;
     s.aim.active = false;
     s.inPlay = false;
     setShotResult('idle');
@@ -200,29 +228,42 @@ export function NSSPenaltyMinigame({
         ctx.fillRect(0, y, width, stripeHeight);
       }
 
-      // Pequena área / Linha da Grande Área
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
-      ctx.lineWidth = 3;
-      ctx.strokeRect(30, 40, width - 60, 160);
-      ctx.beginPath();
-      ctx.arc(width / 2, 200, 45, 0, Math.PI);
-      ctx.stroke();
-
-      // Ponto do Pênalti
-      ctx.fillStyle = '#ffffff';
-      ctx.beginPath();
-      ctx.arc(width / 2, 310, 4, 0, Math.PI * 2);
-      ctx.fill();
-
-      // 2. Trave e Rede (Visual New Star Soccer)
       const gx = s.goal.x;
       const gy = s.goal.y;
       const gw = s.goal.width;
       const gh = s.goal.height;
+      const goalLineY = gy + gh; // Linha de fundo/gol (y = 112)
 
-      // Fundo e Rede do Gol
+      // Linha de fundo do campo + Pequena Área + Grande Área partindo da linha do gol!
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.48)';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.moveTo(10, goalLineY);
+      ctx.lineTo(width - 10, goalLineY);
+      ctx.stroke();
+
+      // Pequena Área
+      ctx.strokeRect(105, goalLineY, 190, 56);
+      // Grande Área
+      ctx.strokeRect(24, goalLineY, width - 48, 188);
+      // Meia-lua da Grande Área
+      ctx.beginPath();
+      ctx.arc(width / 2, goalLineY + 188, 40, 0, Math.PI);
+      ctx.stroke();
+
+      // Ponto do Pênalti (dentro da grande área)
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(width / 2, 258, 4, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 2. Trave e Rede (Visual New Star Soccer) atrás da linha do gol
+
+      // Fundo e Rede do Gol (com balanço no gol)
+      const stretch = s.netStretch || 0;
+      if (s.netStretch > 0) s.netStretch = Math.max(0, s.netStretch - 0.35);
       ctx.fillStyle = 'rgba(10, 30, 20, 0.7)';
-      ctx.fillRect(gx, gy, gw, gh);
+      ctx.fillRect(gx, gy - stretch, gw, gh + stretch);
 
       // Malha da Rede
       ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
@@ -260,36 +301,25 @@ export function NSSPenaltyMinigame({
         k.x += k.diveVx;
       }
 
-      // Desenha o Goleiro em 2D
-      // Sombra
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
-      ctx.beginPath();
-      ctx.ellipse(k.x, k.y + 18, 18, 6, 0, 0, Math.PI * 2);
-      ctx.fill();
+      // Desenha o Goleiro com inclinação de salto
+      drawCartoonPlayer(ctx, k.x, k.y + 4, {
+        jerseyColor: '#eab308',
+        shortsColor: '#18181b',
+        gloveColor: '#ffffff',
+        scale: 1.15,
+        divingTilt: k.diving ? Math.sign(k.diveVx) * 0.55 : 0,
+      });
 
-      // Corpo / Uniforme do Goleiro
-      ctx.fillStyle = '#eab308'; // Camisa amarela clássica de goleiro
-      ctx.beginPath();
-      ctx.roundRect(k.x - 14, k.y - 12, 28, 26, 6);
-      ctx.fill();
-
-      // Cabeça
-      ctx.fillStyle = '#fbcfe8';
-      ctx.beginPath();
-      ctx.arc(k.x, k.y - 18, 8, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Luvas
-      ctx.fillStyle = '#ffffff';
-      const armSpread = k.diving ? 24 : 16;
-      ctx.beginPath();
-      ctx.arc(k.x - armSpread, k.y - 4, 6, 0, Math.PI * 2);
-      ctx.arc(k.x + armSpread, k.y - 4, 6, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Calção
-      ctx.fillStyle = '#18181b';
-      ctx.fillRect(k.x - 10, k.y + 14, 20, 10);
+      // Desenha o Batedor (Você) atrás da bola
+      if (s.inPlay && Math.hypot(s.kicker.x - 192, s.kicker.y - 262) > 3) {
+        s.kicker.x += (192 - s.kicker.x) * 0.25;
+        s.kicker.y += (262 - s.kicker.y) * 0.25;
+      }
+      drawCartoonPlayer(ctx, s.kicker.x, s.kicker.y, {
+        jerseyColor: '#10b981',
+        shortsColor: '#0f172a',
+        scale: 1.05,
+      });
 
       // 4. Linha de Mira do Chute (Se o jogador estiver mirando)
       if (s.aim.active) {
@@ -338,17 +368,17 @@ export function NSSPenaltyMinigame({
           for (const p of b.trailPoints) p.alpha = Math.max(0, p.alpha - 0.14);
         }
 
-        // Checagem de Colisão com a Linha do Gol
+        // Checagem de Colisão com a Linha do Gol (goalLineY = 112)
         const distToKeeper = Math.hypot(b.x - k.x, b.y - k.y);
         const inGoalX = b.x >= gx + 8 && b.x <= gx + gw - 8;
-        const inGoalY = b.y >= gy && b.y <= gy + gh;
+        const inGoalY = b.y >= gy && b.y <= goalLineY;
         const hitsWoodwork = (
-          (Math.abs(b.x - gx) < 14 && b.y <= gy + gh + 10 && b.y >= gy - 10) || 
-          (Math.abs(b.x - (gx + gw)) < 14 && b.y <= gy + gh + 10 && b.y >= gy - 10) || 
-          (Math.abs(b.y - gy) < 14 && b.x >= gx - 10 && b.x <= gx + gw + 10)
+          (Math.abs(b.x - gx) < 12 && b.y <= goalLineY + 6 && b.y >= gy - 6) || 
+          (Math.abs(b.x - (gx + gw)) < 12 && b.y <= goalLineY + 6 && b.y >= gy - 6) || 
+          (Math.abs(b.y - gy) < 12 && b.x >= gx - 8 && b.x <= gx + gw + 8)
         );
 
-        if (distToKeeper < 26 && b.y <= gy + 25) {
+        if (distToKeeper < 28 && b.y <= goalLineY + 12 && b.y >= gy) {
           // Defesa do Goleiro!
           s.inPlay = false;
           setShotResult('saved');
@@ -360,7 +390,7 @@ export function NSSPenaltyMinigame({
             setFeedbackText('🧤 DEFESAÇA DO GOLEIRO! O paredão buscou no canto!');
           }
           onMiss?.();
-        } else if (hitsWoodwork && b.y <= gy + 20) {
+        } else if (hitsWoodwork && b.y <= goalLineY + 6) {
           // Na Trave!
           s.inPlay = false;
           setShotResult('woodwork');
@@ -368,9 +398,10 @@ export function NSSPenaltyMinigame({
           setFeedbackText(getCommentary('shot_woodwork', actorName, oppClub));
           sound.playWoodwork();
           onMiss?.();
-        } else if (inGoalX && inGoalY && b.y <= gy + 20 && b.z < 35) {
+        } else if (inGoalX && inGoalY && b.z < 40) {
           // GOL!
           s.inPlay = false;
+          s.netStretch = 12;
           setShotResult('goal');
           setGoals((prev) => prev + 1);
           b.screenShake = b.shotType === 'power' ? 6 : 2;
@@ -382,7 +413,7 @@ export function NSSPenaltyMinigame({
           confetti({ particleCount: 75, spread: 65, origin: { y: 0.6 } });
           sound.playGoal();
           onScoreGoal?.(1.5);
-        } else if (b.y <= -30 || b.x < -30 || b.x > width + 30) {
+        } else if (b.y <= 8 || b.x < -20 || b.x > width + 20) {
           // Pra Fora! Animação contínua até sair pela linha de fundo
           s.inPlay = false;
           setShotResult('out');
@@ -396,7 +427,7 @@ export function NSSPenaltyMinigame({
       }
 
       // Renderiza a Bola com Sombra e Efeito de Altura 3D Realista
-      renderBallWithShadow(ctx, b as any, { 
+      renderBallWithShadow(ctx, b, { 
         perspectiveProgress: Math.max(0.4, (b.y - 40) / 270) 
       });
 
@@ -408,7 +439,7 @@ export function NSSPenaltyMinigame({
     render();
 
     return () => cancelAnimationFrame(animId);
-  }, [curve, onScoreGoal, onMiss]);
+  }, [curve, onScoreGoal, onMiss, matchInfo?.oppClubName, playerProfile?.name, playerProfile?.nickname]);
 
   // Controles de Mira do Chute (Touch ou Mouse)
   const handleAimStart = (clientX: number, clientY: number) => {
@@ -421,8 +452,8 @@ export function NSSPenaltyMinigame({
     const y = ((clientY - rect.top) / rect.height) * canvas.height;
 
     gameStateRef.current.aim.active = true;
-    gameStateRef.current.aim.targetX = Math.max(40, Math.min(360, x));
-    gameStateRef.current.aim.targetY = Math.max(50, Math.min(180, y));
+    gameStateRef.current.aim.targetX = Math.max(45, Math.min(355, x));
+    gameStateRef.current.aim.targetY = Math.max(28, Math.min(114, y));
     setShotResult('aiming');
   };
 
@@ -434,8 +465,8 @@ export function NSSPenaltyMinigame({
     const x = ((clientX - rect.left) / rect.width) * canvas.width;
     const y = ((clientY - rect.top) / rect.height) * canvas.height;
 
-    gameStateRef.current.aim.targetX = Math.max(40, Math.min(360, x));
-    gameStateRef.current.aim.targetY = Math.max(50, Math.min(180, y));
+    gameStateRef.current.aim.targetX = Math.max(45, Math.min(355, x));
+    gameStateRef.current.aim.targetY = Math.max(28, Math.min(114, y));
   };
 
   const handleAimRelease = () => {
@@ -444,8 +475,8 @@ export function NSSPenaltyMinigame({
 
     // Se o usuário não mirou arrastando, mira no canto superior oposto
     if (!s.aim.active) {
-      s.aim.targetX = Math.random() > 0.5 ? 90 : 310;
-      s.aim.targetY = 90;
+      s.aim.targetX = Math.random() > 0.5 ? 92 : 308;
+      s.aim.targetY = 66;
     }
 
     s.aim.active = false;
@@ -453,11 +484,6 @@ export function NSSPenaltyMinigame({
     setShotResult('shooting');
     setAttempts((prev) => prev + 1);
     sound.playKick();
-
-    // Calcula vetor de mira e distância
-    const dx = s.aim.targetX - s.ball.x;
-    const dy = s.aim.targetY - s.ball.y;
-    const dist = Math.hypot(dx, dy) || 1;
 
     // Calcula física do chute realista com base nos atributos do atleta, barra de força e bola oficial equipada
     const currentBallId = playerProfile?.equippedBallId || (useGameStore.getState().equippedBallId) || 'classic_capotao';
@@ -483,10 +509,10 @@ export function NSSPenaltyMinigame({
     s.ball.screenShake = physics.ball.screenShake;
     s.ball.isOffTarget = physics.ball.isOffTarget;
     s.ball.offTargetReason = physics.ball.offTargetReason;
-    (s.ball as any).spinCurve = physics.ball.spinCurve;
-    (s.ball as any).rotationSpeed = physics.ball.rotationSpeed;
-    (s.ball as any).rotationAngle = 0;
-    (s.ball as any).ballId = physics.ball.ballId;
+    s.ball.spinCurve = physics.ball.spinCurve;
+    s.ball.rotationSpeed = physics.ball.rotationSpeed || 0;
+    s.ball.rotationAngle = 0;
+    s.ball.ballId = physics.ball.ballId || currentBallId;
 
     if (physics.shotType === 'power') {
       setFeedbackText(`💣 BOMBAÇO! ${physics.impactLabel} (${power}% de força)!`);
@@ -496,11 +522,13 @@ export function NSSPenaltyMinigame({
       setFeedbackText(`🎯 ${physics.impactLabel} (${power}% de força)!`);
     }
 
-    // Goleiro decide o lado do pulo (70% de chance de adivinhar o lado aproximado)
+    // Goleiro decide o lado do pulo calibrado pela dificuldade (OVR × Liga)
     const jumpLeft = s.aim.targetX < 200;
-    const guessRight = Math.random() < (power < 38 ? 0.85 : power >= 60 && power <= 85 ? 0.45 : 0.65);
+    const baseGuess = power < 38 ? 0.85 : power >= 60 && power <= 85 ? 0.45 : 0.65;
+    const guessChance = Math.min(0.92, Math.max(0.25, baseGuess + balance.aiReactionBonus));
+    const guessRight = Math.random() < guessChance;
     s.keeper.diving = true;
-    s.keeper.diveVx = (jumpLeft ? (guessRight ? -3.2 : 2.5) : (guessRight ? 3.2 : -2.5));
+    s.keeper.diveVx = (jumpLeft ? (guessRight ? -3.2 : 2.5) : (guessRight ? 3.2 : -2.5)) * balance.keeperSpeedMult;
   };
 
   return (
@@ -523,7 +551,8 @@ export function NSSPenaltyMinigame({
           </div>
         </div>
 
-        <div className="flex items-center gap-2 text-xs font-bold">
+        <div className="flex items-center gap-2 text-xs font-bold flex-wrap justify-end">
+          <DifficultyBadge balance={balance} compact />
           <span className="px-2 py-0.5 rounded-md bg-secondary text-foreground font-mono">
             {goals}/{attempts} Gols
           </span>

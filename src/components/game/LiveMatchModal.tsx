@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import confetti from 'canvas-confetti';
 import { useGameStore } from '@/store/gameStore';
-import { Club, Fixture, TacticalFormation } from '@/types/game';
+import { Club, Division, Fixture, PlayerAttributes, Position, TacticalFormation } from '@/types/game';
 import { ClubBadge } from '@/components/game/ClubBadge';
 import { NSSPenaltyMinigame } from '@/components/game/NSSPenaltyMinigame';
 import { NSSFreeKickMinigame } from '@/components/game/NSSFreeKickMinigame';
@@ -15,6 +15,7 @@ import { NSSPassMinigame } from '@/components/game/NSSPassMinigame';
 import { DribbleMinigame } from '@/components/match/DribbleMinigame';
 import { GoalkeeperMinigame } from '@/components/match/GoalkeeperMinigame';
 import { DefenseMinigame } from '@/components/match/DefenseMinigame';
+import PhaserPitchMinigame from '@/components/match/PhaserPitchMinigame';
 import { TacticalBoardMinigame } from '@/components/manager/TacticalBoardMinigame';
 import { ManagerSpeechMinigame } from '@/components/manager/ManagerSpeechMinigame';
 import { 
@@ -55,6 +56,26 @@ interface MatchComment {
   text: string;
   type: 'goal' | 'chance' | 'card' | 'normal';
 }
+
+const DEFAULT_SUB_ATTRIBUTES: PlayerAttributes = {
+  pace: 65,
+  dribbling: 65,
+  tackling: 60,
+  defending: 60,
+  attacking: 60,
+  finishing: 60,
+  passing: 65,
+  positioning: 65,
+  heading: 60,
+  crossing: 60,
+  shooting: 60,
+  jumping: 60,
+  playmaker: 60,
+  elasticity: 55,
+  physical: 65,
+  vision: 65,
+  composure: 65,
+};
 
 export function LiveMatchModal({
   isOpen,
@@ -98,6 +119,7 @@ export function LiveMatchModal({
     | 'defense_tackle'
     | 'defense_interception'
     | 'defense_aerial'
+    | 'phaser_arena'
     | 'rpg_decision'
   >('none');
   const [momentResolved, setMomentResolved] = useState(false);
@@ -134,7 +156,7 @@ export function LiveMatchModal({
   const [halfTimeActionDone, setHalfTimeActionDone] = useState(false);
 
   // Estatísticas Globais da Partida para o Pós-Jogo
-  const [matchStats] = useState({
+  const [matchStats] = useState(() => ({
     possessionHome: Math.floor(Math.random() * 12) + 48,
     shotsHome: Math.floor(Math.random() * 8) + 9,
     shotsAway: Math.floor(Math.random() * 7) + 6,
@@ -146,7 +168,7 @@ export function LiveMatchModal({
     foulsAway: Math.floor(Math.random() * 6) + 9,
     cornersHome: Math.floor(Math.random() * 5) + 3,
     cornersAway: Math.floor(Math.random() * 4) + 2,
-  });
+  }));
 
   const isUserHome = mode === 'player' 
     ? playerProfile?.clubId === homeClub.id 
@@ -161,14 +183,22 @@ export function LiveMatchModal({
     : (managerProfile?.name || 'Professor');
 
   const userClub = isUserHome ? homeClub : awayClub;
+  const oppClub = isUserHome ? awayClub : homeClub;
 
   // Escalações Titulares 11x11 e Banco de Reservas
   const isYouthMatch = fixture.competition === 'sub_20';
+  const oppRosterForBalance = (isYouthMatch ? oppClub.youthRoster : oppClub.roster) || [];
+  const oppTop11 = oppRosterForBalance.slice(0, 11);
+  const oppOverallAvg = oppTop11.length > 0
+    ? Math.round(oppTop11.reduce((acc, p) => acc + p.overall, 0) / oppTop11.length)
+    : Math.round(52 + (oppClub.reputation || 70) * 0.4);
+  const matchDivision = (fixture.division || oppClub.division || userClub.division) as Division;
   const rawHomeRoster = (isYouthMatch ? homeClub.youthRoster : homeClub.roster) || [];
   const rawAwayRoster = (isYouthMatch ? awayClub.youthRoster : awayClub.roster) || [];
 
   const initialHomeStarters = rawHomeRoster.slice(0, 11).map((p, idx) => {
-    if (mode === 'player' && playerProfile && isUserHome && idx === 10) {
+    const isMe = mode === 'player' && playerProfile && isUserHome && p.id === playerProfile.id;
+    if (isMe && playerProfile) {
       return {
         id: playerProfile.id,
         name: playerProfile.name,
@@ -195,7 +225,8 @@ export function LiveMatchModal({
   });
 
   const initialAwayStarters = rawAwayRoster.slice(0, 11).map((p, idx) => {
-    if (mode === 'player' && playerProfile && isUserAway && idx === 10) {
+    const isMe = mode === 'player' && playerProfile && isUserAway && p.id === playerProfile.id;
+    if (isMe && playerProfile) {
       return {
         id: playerProfile.id,
         name: playerProfile.name,
@@ -225,90 +256,6 @@ export function LiveMatchModal({
   const [awayLineup, setAwayLineup] = useState(initialAwayStarters);
   const [homeBench, setHomeBench] = useState(rawHomeRoster.slice(11, 22));
   const [awayBench, setAwayBench] = useState(rawAwayRoster.slice(11, 22));
-
-  // Loop do Cronômetro da Partida
-  useEffect(() => {
-    if (!isOpen || !isPlaying || isFinished || activeMoment !== 'none') return;
-
-    const timer = setInterval(() => {
-      setMinute((prev) => {
-        const nextMin = prev + 1;
-
-        // Disparo do Momento Decisivo no Modo Jogador baseado no Nível de Esforço
-        const triggerMinutes = effortLevel === 1 
-          ? [62] 
-          : effortLevel === 2 
-          ? [35, 74] 
-          : [20, 38, 64, 82];
-
-        if (mode === 'player' && !userInjuredInMatch && triggerMinutes.includes(nextMin)) {
-          setIsPlaying(false);
-
-          // Risco de Lesão Muscular no Esforço 3 (Intensidade Máxima)
-          if (effortLevel === 3 && Math.random() < 0.12) {
-            setUserInjuredInMatch(true);
-            setComments((c) => [
-              { minute: nextMin, text: `🏥 LESÃO MUSCULAR! A intensidade extrema causou uma fisgada forte na coxa de ${userActorName}! O atleta sai de maca!`, type: 'card' },
-              ...c,
-            ]);
-            if (playerProfile) {
-              useGameStore.setState({
-                playerProfile: {
-                  ...playerProfile,
-                  energy: Math.max(10, playerProfile.energy - 40),
-                  isInjured: true,
-                  injuryWeeks: Math.floor(Math.random() * 3) + 2,
-                },
-              });
-            }
-            return nextMin;
-          }
-
-          // Abre a Decisão Tática do Craque (RPG Choice)
-          setActiveMoment('rpg_decision');
-          setComments((c) => [
-            { minute: nextMin, text: `🚨 OPORTUNIDADE DECISIVA! A bola chega limpa para ${userActorName}! Qual será a sua decisão?`, type: 'chance' },
-            ...c,
-          ]);
-          return nextMin;
-        }
-
-        // Lances e Gols Automáticos baseados na força dos elencos
-        if (Math.random() < 0.08) {
-          generateRandomMatchEvent(nextMin);
-        }
-
-        // Intervalo do Jogo aos 45' com liderança do Capitão ou Treinador
-        if (nextMin === 45 && prev === 44) {
-          const captainNote = playerProfile?.isCaptain 
-            ? ` ©️ O Capitão ${userActorName} reúne os companheiros, inflama o vestiário e cobra reação!` 
-            : '';
-          setComments((c) => [
-            { minute: 45, text: `⏸️ Fim do primeiro tempo! Equipes descem para os vestiários.${captainNote}`, type: 'normal' },
-            ...c
-          ]);
-          if (mode === 'manager') {
-            setIsPlaying(false);
-          }
-        }
-
-        // Apito Final aos 90'
-        if (nextMin >= 90) {
-          setIsPlaying(false);
-          setIsFinished(true);
-          setComments((c) => [
-            { minute: 90, text: 'APITA O ÁRBITRO! Fim de jogo emocionante!', type: 'normal' },
-            ...c
-          ]);
-          return 90;
-        }
-
-        return nextMin;
-      });
-    }, simSpeed);
-
-    return () => clearInterval(timer);
-  }, [isOpen, isPlaying, isFinished, activeMoment, simSpeed, mode, momentResolved, userActorName]);
 
   // Geração de Eventos e Gols durante a Simulação
   const generateRandomMatchEvent = (currentMin: number) => {
@@ -420,6 +367,90 @@ export function LiveMatchModal({
     }
   };
 
+  // Loop do Cronômetro da Partida
+  useEffect(() => {
+    if (!isOpen || !isPlaying || isFinished || activeMoment !== 'none') return;
+
+    const timer = setInterval(() => {
+      setMinute((prev) => {
+        const nextMin = prev + 1;
+
+        // Disparo do Momento Decisivo no Modo Jogador baseado no Nível de Esforço
+        const triggerMinutes = effortLevel === 1 
+          ? [62] 
+          : effortLevel === 2 
+          ? [35, 74] 
+          : [20, 38, 64, 82];
+
+        if (mode === 'player' && !userInjuredInMatch && triggerMinutes.includes(nextMin)) {
+          setIsPlaying(false);
+
+          // Risco de Lesão Muscular no Esforço 3 (Intensidade Máxima)
+          if (effortLevel === 3 && Math.random() < 0.12) {
+            setUserInjuredInMatch(true);
+            setComments((c) => [
+              { minute: nextMin, text: `🏥 LESÃO MUSCULAR! A intensidade extrema causou uma fisgada forte na coxa de ${userActorName}! O atleta sai de maca!`, type: 'card' },
+              ...c,
+            ]);
+            if (playerProfile) {
+              useGameStore.setState({
+                playerProfile: {
+                  ...playerProfile,
+                  energy: Math.max(10, playerProfile.energy - 40),
+                  isInjured: true,
+                  injuryWeeks: Math.floor(Math.random() * 3) + 2,
+                },
+              });
+            }
+            return nextMin;
+          }
+
+          // Abre a Decisão Tática do Craque (RPG Choice)
+          setActiveMoment('rpg_decision');
+          setComments((c) => [
+            { minute: nextMin, text: `🚨 OPORTUNIDADE DECISIVA! A bola chega limpa para ${userActorName}! Qual será a sua decisão?`, type: 'chance' },
+            ...c,
+          ]);
+          return nextMin;
+        }
+
+        // Lances e Gols Automáticos baseados na força dos elencos
+        if (Math.random() < 0.08) {
+          generateRandomMatchEvent(nextMin);
+        }
+
+        // Intervalo do Jogo aos 45' com liderança do Capitão ou Treinador
+        if (nextMin === 45 && prev === 44) {
+          const captainNote = playerProfile?.isCaptain 
+            ? ` ©️ O Capitão ${userActorName} reúne os companheiros, inflama o vestiário e cobra reação!` 
+            : '';
+          setComments((c) => [
+            { minute: 45, text: `⏸️ Fim do primeiro tempo! Equipes descem para os vestiários.${captainNote}`, type: 'normal' },
+            ...c
+          ]);
+          if (mode === 'manager') {
+            setIsPlaying(false);
+          }
+        }
+
+        // Apito Final aos 90'
+        if (nextMin >= 90) {
+          setIsPlaying(false);
+          setIsFinished(true);
+          setComments((c) => [
+            { minute: 90, text: 'APITA O ÁRBITRO! Fim de jogo emocionante!', type: 'normal' },
+            ...c
+          ]);
+          return 90;
+        }
+
+        return nextMin;
+      });
+    }, simSpeed);
+
+    return () => clearInterval(timer);
+  }, [isOpen, isPlaying, isFinished, activeMoment, simSpeed, mode, momentResolved, userActorName]);
+
   // Executar Substituição de Jogador (Até 5 por jogo)
   const handleExecuteSubstitution = () => {
     if (!subOutPlayerId || !subInPlayerId || subsLeft <= 0) return;
@@ -448,7 +479,7 @@ export function LiveMatchModal({
         newBench.push({
           id: outPlayer.id,
           name: outPlayer.name,
-          position: outPlayer.position as any,
+          position: outPlayer.position as Position,
           overall: outPlayer.overall,
           potential: outPlayer.overall + 3,
           age: 24,
@@ -458,7 +489,7 @@ export function LiveMatchModal({
           morale: 85,
           contractWeeks: 52,
           isYouth: isYouthMatch,
-          attributes: {} as any,
+          attributes: DEFAULT_SUB_ATTRIBUTES,
         });
 
         setHomeLineup(newStarters);
@@ -862,6 +893,21 @@ export function LiveMatchModal({
     ]);
   };
 
+  const handlePhaserOffside = () => {
+    setActiveMoment('none');
+    setMomentResolved(true);
+    setIsPlaying(true);
+    if (isUserHome) {
+      setHomeOffsides((s) => s + 1);
+    } else {
+      setAwayOffsides((s) => s + 1);
+    }
+    setComments((c) => [
+      { minute, text: `🚩 IMPEDIMENTO! ${userActorName} fez o passe, mas o companheiro estava além da linha defensiva!`, type: 'chance' },
+      ...c
+    ]);
+  };
+
   // Finalização da Partida
   const handleFinishMatchClick = () => {
     const ratings: Record<string, number> = {};
@@ -958,7 +1004,7 @@ export function LiveMatchModal({
           {/* Placar Central e Minuto */}
           <div className="text-center px-4 flex flex-col items-center">
             <span className="font-mono text-xs sm:text-sm font-black text-emerald-400 bg-emerald-950/80 px-3 py-0.5 rounded-full border border-emerald-500/30 mb-1">
-              {minute}' {minute >= 90 ? 'FIM' : ''}
+              {minute}&apos; {minute >= 90 ? 'FIM' : ''}
             </span>
             <div className="font-display text-3xl sm:text-5xl font-black tracking-wider text-foreground">
               {homeScore} <span className="text-muted-foreground text-2xl sm:text-3xl">-</span> {awayScore}
@@ -1079,7 +1125,7 @@ export function LiveMatchModal({
               <div className="flex-1 flex flex-col justify-center items-center p-6 bg-gradient-to-b from-zinc-950 via-zinc-900 to-zinc-950 rounded-2xl border-2 border-amber-500/50 shadow-2xl space-y-4 animate-in zoom-in-95 duration-200">
                 <div className="text-center space-y-1">
                   <span className="text-[10px] font-black uppercase tracking-widest text-amber-400 bg-amber-500/15 border border-amber-500/30 px-3 py-1 rounded-full">
-                    ⚡ Decisão do Craque ({minute}') • Postura: {playerProfile?.tacticalStance === 'defend' ? '🛡️ Defender' : playerProfile?.tacticalStance === 'hold' ? '⚖️ Segurar' : '⚔️ Atacar'}
+                    ⚡ Decisão do Craque ({minute}&apos;) • Postura: {playerProfile?.tacticalStance === 'defend' ? '🛡️ Defender' : playerProfile?.tacticalStance === 'hold' ? '⚖️ Segurar' : '⚔️ Atacar'}
                   </span>
                   <h3 className="font-display text-xl sm:text-2xl font-black text-white mt-1">
                     A bola é sua, {userActorName}!
@@ -1224,6 +1270,26 @@ export function LiveMatchModal({
                     </>
                   ) : (
                     <>
+                      {/* Destaque Arena 2D Phaser (Chutar ou Tocar com Impedimento) */}
+                      <button
+                        type="button"
+                        onClick={() => setActiveMoment('phaser_arena')}
+                        className="col-span-2 sm:col-span-4 p-3 rounded-xl bg-gradient-to-r from-emerald-950 via-teal-950/90 to-cyan-950/80 border-2 border-emerald-400/70 hover:border-emerald-300 hover:scale-[1.01] transition flex items-center justify-between gap-3 cursor-pointer shadow-lg group"
+                      >
+                        <div className="flex items-center gap-3 text-left">
+                          <span className="text-2xl p-2 rounded-xl bg-emerald-500/20 group-hover:scale-110 transition">🏟️</span>
+                          <div>
+                            <h4 className="text-xs sm:text-sm font-black text-white">Arena 2D Jogável (Phaser 3)</h4>
+                            <p className="text-[10px] sm:text-xs text-emerald-200/80">
+                              Chute direto ou toque para o parceiro respeitando a linha de impedimento
+                            </p>
+                          </div>
+                        </div>
+                        <span className="text-[9px] font-black uppercase text-zinc-950 bg-emerald-400 px-2.5 py-1 rounded-full shrink-0">
+                          Jogar 2D
+                        </span>
+                      </button>
+
                       {/* Atacante Opção 1: Cara a cara no gol */}
                       <button
                         type="button"
@@ -1297,10 +1363,30 @@ export function LiveMatchModal({
                   )}
                 </div>
               </div>
+            ) : activeMoment === 'phaser_arena' ? (
+              <div className="flex-1 flex flex-col items-center justify-center overflow-y-auto py-1">
+                <PhaserPitchMinigame
+                  mode="match_clutch"
+                  title="Lance Decisivo — Arena 2D"
+                  divisionOverride={matchDivision}
+                  opponentOverall={oppOverallAvg}
+                  onGoal={(viaPass) => (viaPass ? handleCompletePassMinigame(0.4) : handleScoreGoalMinigame(0.4))}
+                  onMiss={handleMissMinigame}
+                  onOffside={handlePhaserOffside}
+                  onClose={() => { setActiveMoment('none'); setIsPlaying(true); }}
+                  matchInfo={{
+                    minute,
+                    oppClubName: isUserHome ? awayClub.name : homeClub.name,
+                    currentScore: `${homeScore} x ${awayScore}`,
+                  }}
+                />
+              </div>
             ) : activeMoment === 'free_kick_minigame' ? (
               <div className="flex-1 flex flex-col justify-center">
                 <NSSFreeKickMinigame
                   mode="match_clutch"
+                  divisionOverride={matchDivision}
+                  opponentOverall={oppOverallAvg}
                   onScoreGoal={handleScoreGoalMinigame}
                   onMiss={handleMissMinigame}
                   matchInfo={{
@@ -1313,6 +1399,8 @@ export function LiveMatchModal({
             ) : activeMoment === 'long_shot_minigame' ? (
               <div className="flex-1 flex flex-col justify-center">
                 <NSSLongShotMinigame
+                  divisionOverride={matchDivision}
+                  opponentOverall={oppOverallAvg}
                   onScoreGoal={handleScoreGoalMinigame}
                   onMiss={handleMissMinigame}
                   matchInfo={{
@@ -1325,6 +1413,8 @@ export function LiveMatchModal({
             ) : activeMoment === 'header_minigame' ? (
               <div className="flex-1 flex flex-col justify-center">
                 <NSSHeaderMinigame
+                  divisionOverride={matchDivision}
+                  opponentOverall={oppOverallAvg}
                   onScoreGoal={handleScoreGoalMinigame}
                   onMiss={handleMissMinigame}
                   matchInfo={{
@@ -1337,6 +1427,8 @@ export function LiveMatchModal({
             ) : activeMoment === 'inside_box_minigame' ? (
               <div className="flex-1 flex flex-col justify-center">
                 <NSSInsideBoxMinigame
+                  divisionOverride={matchDivision}
+                  opponentOverall={oppOverallAvg}
                   onScoreGoal={handleScoreGoalMinigame}
                   onMiss={handleMissMinigame}
                   matchInfo={{
@@ -1349,6 +1441,8 @@ export function LiveMatchModal({
             ) : activeMoment === 'defense_minigame' ? (
               <div className="flex-1 flex flex-col justify-center">
                 <NSSDefenseMinigame
+                  divisionOverride={matchDivision}
+                  opponentOverall={oppOverallAvg}
                   onDefendSuccess={handleDefendSuccessMinigame}
                   onDefendFail={handleDefendFailMinigame}
                   matchInfo={{
@@ -1362,6 +1456,8 @@ export function LiveMatchModal({
               <div className="flex-1 flex flex-col justify-center">
                 <NSSPenaltyMinigame
                   mode="match_clutch"
+                  divisionOverride={matchDivision}
+                  opponentOverall={oppOverallAvg}
                   onScoreGoal={handleScoreGoalMinigame}
                   onMiss={handleMissMinigame}
                   matchInfo={{
@@ -1375,6 +1471,8 @@ export function LiveMatchModal({
               <div className="flex-1 flex flex-col justify-center">
                 <NSSPassMinigame
                   mode="match_clutch"
+                  divisionOverride={matchDivision}
+                  opponentOverall={oppOverallAvg}
                   onCompletePass={handleCompletePassMinigame}
                   onInterception={handleMissMinigame}
                   teammateName="Atacante"
@@ -1384,6 +1482,8 @@ export function LiveMatchModal({
               <div className="flex-1 flex flex-col justify-center">
                 <DribbleMinigame
                   mode="match_clutch"
+                  divisionOverride={matchDivision}
+                  opponentOverall={oppOverallAvg}
                   onDribbleSuccess={handleDribbleSuccessMinigame}
                   onDribbleFail={handleDribbleFailMinigame}
                   onAdvanceToShot={handleAdvanceFromDribbleToShot}
@@ -1395,6 +1495,8 @@ export function LiveMatchModal({
               <div className="flex-1 flex flex-col justify-center">
                 <GoalkeeperMinigame
                   variant={activeMoment === 'goalkeeper_shot' ? 'shot_save' : activeMoment === 'goalkeeper_rush' ? 'rush_1v1' : 'cross_catch'}
+                  divisionOverride={matchDivision}
+                  opponentOverall={oppOverallAvg}
                   playerName={userActorName}
                   playerReflexes={playerProfile?.attributes?.elasticity || playerProfile?.attributes?.gkReflexes || 75}
                   playerPositioning={playerProfile?.attributes?.positioning || 75}
@@ -1406,6 +1508,8 @@ export function LiveMatchModal({
               <div className="flex-1 flex flex-col justify-center">
                 <DefenseMinigame
                   variant={activeMoment === 'defense_tackle' ? 'tackle_1v1' : activeMoment === 'defense_interception' ? 'interception' : 'aerial_duel'}
+                  divisionOverride={matchDivision}
+                  opponentOverall={oppOverallAvg}
                   playerName={userActorName}
                   playerTackling={playerProfile?.attributes?.tackling || 75}
                   playerHeading={playerProfile?.attributes?.heading || 75}
@@ -1698,7 +1802,7 @@ export function LiveMatchModal({
                 >
                   <div className="flex items-center gap-1.5 mb-0.5">
                     <span className="font-mono text-[10px] font-bold text-muted-foreground">
-                      {comm.minute}'
+                      {comm.minute}&apos;
                     </span>
                     {comm.type === 'goal' && <span className="text-emerald-400">⚽ Gol!</span>}
                     {comm.type === 'chance' && <span className="text-amber-400">⚠️ Lance Perigoso</span>}

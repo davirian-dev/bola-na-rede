@@ -8,11 +8,8 @@ import {
   SeasonAwards, 
   AwardCandidate, 
   ClubRankingItem, 
-  Club, 
-  Player, 
-  Division 
+  Club
 } from '@/types/game';
-import { EPIC_SKILLS_CATALOG } from '@/data/epicSkillsSeed';
 
 /**
  * Pontos atribuídos no Ranking Nacional de Clubes estilo Brasfoot / CBF

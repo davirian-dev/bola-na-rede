@@ -6,6 +6,7 @@ import { Club, Division, Player, Position, League, LeagueStanding, Fixture, Comp
 import { calculateOverall, calculateMarketValue, calculateWeeklyWage } from '@/lib/calculations';
 import { injectFamousStars } from './famousStarRosters';
 import { applyRosterPatch2026 } from './rosterPatch2026';
+import { organizeRosterForFormation } from '@/engine/positionEngine';
 
 // Nomes e Sobrenomes para geração brasileira autêntica
 const FIRST_NAMES = [
@@ -47,12 +48,9 @@ const ROSTER_POSITIONS: Position[] = [
 ];
 
 const YOUTH_POSITIONS: Position[] = [
-  'GOL',
-  'ZAG', 'ZAG',
-  'LD', 'LE',
+  'GOL', 'LD', 'ZAG', 'ZAG', 'LE',
   'VOL', 'MC', 'MEI',
-  'PD', 'PE',
-  'ATA'
+  'PD', 'ATA', 'PE'
 ];
 
 function getRandomInt(min: number, max: number, seed: number): number {
@@ -69,7 +67,9 @@ export function generatePlayer(
 ): Player {
   const seed = (clubId.charCodeAt(0) * 1000) + (index * 77) + (isYouth ? 9999 : 123);
   
-  const isEuropa = division === 'EUROPA';
+  const isEuroTop = ['EUROPA', 'PL', 'LALIGA', 'SERIE_A_ITA', 'BUNDESLIGA', 'LIGUE_1'].includes(division);
+  const isEuroSecond = ['CHAMPIONSHIP', 'SEGUNDA_ESP', 'SERIE_B_ITA', 'BUNDESLIGA_2', 'LIGUE_2'].includes(division);
+  const isEuropa = isEuroTop || isEuroSecond;
   const firstNamesPool = isEuropa ? FIRST_NAMES_EUROPA : FIRST_NAMES;
   const lastNamesPool = isEuropa ? LAST_NAMES_EUROPA : LAST_NAMES;
 
@@ -86,7 +86,10 @@ export function generatePlayer(
   let minAttr = 48;
   let maxAttr = 58;
 
-  if (division === 'EUROPA') { minAttr = 81; maxAttr = 93; }
+  if (division === 'EUROPA') { minAttr = 81; maxAttr = 92; }
+  else if (isEuroTop) { minAttr = 76; maxAttr = 85; }
+  else if (division === 'SAUDI_PRO' || division === 'MLS') { minAttr = 69; maxAttr = 79; }
+  else if (isEuroSecond) { minAttr = 68; maxAttr = 77; }
   else if (division === 'A') { minAttr = 72; maxAttr = 84; }
   else if (division === 'B') { minAttr = 64; maxAttr = 74; }
   else if (division === 'C') { minAttr = 56; maxAttr = 65; }
@@ -282,8 +285,8 @@ export function generateBrazilDatabase(): {
       generatePlayer(raw.id, idx + 1, pos, raw.division, false)
     );
 
-    // Injeta os craques reais atualizados
-    roster = injectFamousStars(raw.id, roster);
+    // Injeta os craques reais atualizados e organiza os 11 titulares no esquema 4-3-3
+    roster = organizeRosterForFormation(injectFamousStars(raw.id, roster), '4-3-3');
 
     // 11 jogadores no elenco Sub-20
     const youthRoster: Player[] = YOUTH_POSITIONS.map((pos, idx) => 

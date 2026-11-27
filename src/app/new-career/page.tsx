@@ -288,9 +288,10 @@ export default function NewCareerPage() {
     // Boost do PlayStyle de Ouro Selecionado
     const gold = PLAYSTYLES_GOLD.find(g => g.id === selectedGoldPlayStyle);
     if (gold?.initialBoost) {
+      const attrsMap = attrs as unknown as Record<string, number>;
       for (const [key, val] of Object.entries(gold.initialBoost)) {
-        if (key in attrs) {
-          (attrs as any)[key] = Math.min(99, ((attrs as any)[key] || 50) + val);
+        if (key in attrsMap && typeof val === 'number') {
+          attrsMap[key] = Math.min(99, (attrsMap[key] || 50) + val);
         }
       }
     }
@@ -1217,9 +1218,11 @@ export default function NewCareerPage() {
 
                       <div className="grid grid-cols-2 gap-1.5">
                         {ATTRIBUTES_CONFIG.map((attr) => {
-                          const val = (livePlayerAttributes as any)[attr.key] || 50;
+                          const attrsMap = livePlayerAttributes as unknown as Record<string, number | undefined>;
+                          const val = attrsMap[attr.key] || 50;
                           const isGkAttr = attr.key === 'elasticity';
-                          const goldBoost = (PLAYSTYLES_GOLD.find(g => g.id === selectedGoldPlayStyle)?.initialBoost as any)?.[attr.key];
+                          const goldBoostMap = PLAYSTYLES_GOLD.find(g => g.id === selectedGoldPlayStyle)?.initialBoost as Record<string, number | undefined> | undefined;
+                          const goldBoost = goldBoostMap?.[attr.key];
 
                           return (
                             <div

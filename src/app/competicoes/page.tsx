@@ -94,10 +94,15 @@ export default function CompeticoesPage() {
               { id: 'C', label: 'Série C' },
               { id: 'D', label: 'Série D' },
               { id: 'PL', label: '🏴󠁧󠁢󠁥󠁮󠁧󠁿 Premier League' },
+              { id: 'CHAMPIONSHIP', label: '🏴󠁧󠁢󠁥󠁮󠁧󠁿 Championship' },
               { id: 'LALIGA', label: '🇪🇸 La Liga' },
+              { id: 'SEGUNDA_ESP', label: '🇪🇸 La Liga 2' },
               { id: 'SERIE_A_ITA', label: '🇮🇹 Serie A' },
+              { id: 'SERIE_B_ITA', label: '🇮🇹 Serie B' },
               { id: 'BUNDESLIGA', label: '🇩🇪 Bundesliga' },
+              { id: 'BUNDESLIGA_2', label: '🇩🇪 2. Bundesliga' },
               { id: 'LIGUE_1', label: '🇫🇷 Ligue 1' },
+              { id: 'LIGUE_2', label: '🇫🇷 Ligue 2' },
               { id: 'MLS', label: '🇺🇸 MLS (Messi)' },
               { id: 'SAUDI_PRO', label: '🇸🇦 Saudita (CR7)' },
               { id: 'EUROPA', label: '👑 Champions' },
@@ -194,9 +199,15 @@ export default function CompeticoesPage() {
                   <div className="flex items-center gap-3 text-[11px] text-muted-foreground mt-0.5">
                     <span className="flex items-center gap-1">
                       <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                      {activeTab === 'A' ? 'G4 (Libertadores/Título)' : activeTab === 'EUROPA' ? 'G4 (Semifinais Champions)' : 'G4 (Acesso)'}
+                      {['A', 'PL', 'LALIGA', 'SERIE_A_ITA', 'BUNDESLIGA', 'LIGUE_1'].includes(activeTab)
+                        ? 'G4 (Continental / Título)'
+                        : activeTab === 'EUROPA' || activeTab === 'sub_20'
+                        ? 'G4 (Mata-Mata / Semifinais)'
+                        : activeTab === 'MLS' || activeTab === 'SAUDI_PRO'
+                        ? 'G4 (Playoffs / Título)'
+                        : 'G4 (Acesso)'}
                     </span>
-                    {activeTab !== 'D' && activeTab !== 'sub_20' && activeTab !== 'EUROPA' && (
+                    {['A', 'B', 'C', 'PL', 'LALIGA', 'SERIE_A_ITA', 'BUNDESLIGA', 'LIGUE_1'].includes(activeTab) && (
                       <span className="flex items-center gap-1">
                         <span className="w-2 h-2 rounded-full bg-destructive" />
                         Z4 (Rebaixamento)
@@ -227,7 +238,7 @@ export default function CompeticoesPage() {
                       const isMyTeam = team.clubId === userClubId;
                       const isG4 = idx < 4;
                       const totalTeams = (activeTab === 'sub_20' ? sub20Tournament?.standings : leagues[activeTab]?.standings)?.length || 20;
-                      const isZ4 = activeTab !== 'D' && activeTab !== 'sub_20' && activeTab !== 'EUROPA' && idx >= totalTeams - 4;
+                      const isZ4 = ['A', 'B', 'C', 'PL', 'LALIGA', 'SERIE_A_ITA', 'BUNDESLIGA', 'LIGUE_1'].includes(activeTab) && idx >= totalTeams - 4;
 
                       return (
                         <tr

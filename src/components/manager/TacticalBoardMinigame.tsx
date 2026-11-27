@@ -2,12 +2,18 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useGameStore } from '@/store/gameStore';
-import { X, Play, RotateCcw, Award, CheckCircle2, AlertTriangle, Sparkles, Trophy } from 'lucide-react';
+import { X, Play, RotateCcw, CheckCircle2, AlertTriangle } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { sound } from '@/lib/soundEffects';
+import { Division } from '@/types/game';
+import { useMinigameBalance } from '@/engine/minigameBalance';
+import { DifficultyBadge } from '@/components/game/DifficultyBadge';
 
 interface TacticalBoardMinigameProps {
   isOpen: boolean;
   onClose: () => void;
+  divisionOverride?: Division;
+  opponentOverall?: number;
   onCompleted?: (result: { score: number; entrosamentoBonus: number; success: boolean }) => void;
 }
 
@@ -73,20 +79,61 @@ const DRILLS: TacticalDrill[] = [
       { id: 4, label: 'LAT Rival', x: 75, y: 18, isOpponent: true },
     ],
   },
+  {
+    id: 'drill-4',
+    title: 'Quebra da Linha de Impedimento',
+    category: 'Linha de Impedimento',
+    description: 'Os 3 zagueiros subiram juntos para deixar seu centroavante impedido. Ache quem vem de trás em posição legal!',
+    instruction: 'Toque no meia que está entrando vindo de trás em posição 100% legal!',
+    targetNode: 3,
+    threatWindowMs: 3600,
+    nodes: [
+      { id: 0, label: 'MC (Com Bola)', x: 28, y: 50 },
+      { id: 1, label: 'CA (Impedido 🚩)', x: 76, y: 48 },
+      { id: 2, label: 'Linha Zaga Rival', x: 64, y: 36, isOpponent: true },
+      { id: 3, label: 'PD (Vindo de Trás ✓)', x: 56, y: 74, isFree: true },
+      { id: 4, label: 'ZAG 2 Rival', x: 65, y: 60, isOpponent: true },
+    ],
+  },
+  {
+    id: 'drill-5',
+    title: 'Contra-Ataque Relâmpago 3x2',
+    category: 'Triangulação',
+    description: 'Recuperamos a bola na defesa! O lateral adversário deixou a avenida aberta nas costas.',
+    instruction: 'Acione o ponta na velocidade máxima pelo corredor livre!',
+    targetNode: 4,
+    threatWindowMs: 3200,
+    nodes: [
+      { id: 0, label: 'VOL (Você)', x: 22, y: 45 },
+      { id: 1, label: 'VOL Rival', x: 38, y: 42, isOpponent: true },
+      { id: 2, label: 'ZAG Rival', x: 62, y: 52, isOpponent: true },
+      { id: 3, label: 'CA (Marcado)', x: 66, y: 46 },
+      { id: 4, label: 'PE (Avenida Livre!)', x: 78, y: 18, isFree: true },
+    ],
+  },
 ];
 
 export const TacticalBoardMinigame: React.FC<TacticalBoardMinigameProps> = ({
   isOpen,
   onClose,
+  divisionOverride,
+  opponentOverall,
   onCompleted,
 }) => {
-  const { managerProfile, updateManagerTacticalFamiliarity } = useGameStore() as any;
+  const { updateManagerTacticalFamiliarity } = useGameStore() as {
+    updateManagerTacticalFamiliarity?: (bonus: number) => void;
+  };
+  const balance = useMinigameBalance({
+    division: divisionOverride,
+    opponentOverall,
+  });
 
   const [currentStep, setCurrentStep] = useState<number>(0);
   const [score, setScore] = useState<number>(0);
   const [roundStatus, setRoundStatus] = useState<'idle' | 'playing' | 'success' | 'failed'>('idle');
   const [feedbackText, setFeedbackText] = useState<string>('');
   const [timeLeftMs, setTimeLeftMs] = useState<number>(4000);
+  const [selectedNodeId, setSelectedNodeId] = useState<number | null>(null);
   const [isCompleted, setIsCompleted] = useState<boolean>(false);
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
@@ -94,23 +141,21 @@ export const TacticalBoardMinigame: React.FC<TacticalBoardMinigameProps> = ({
 
   // Inicia o timer da rodada
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen || roundStatus !== 'playing') return;
 
-    if (roundStatus === 'playing') {
-      const stepInterval = 50;
-      setTimeLeftMs(drill.threatWindowMs);
-
-      timerRef.current = setInterval(() => {
-        setTimeLeftMs((prev) => {
-          if (prev <= stepInterval) {
-            clearInterval(timerRef.current!);
-            handleTimeOut();
-            return 0;
-          }
-          return prev - stepInterval;
-        });
-      }, stepInterval);
-    }
+    const stepInterval = 50;
+    timerRef.current = setInterval(() => {
+      setTimeLeftMs((prev) => {
+        if (prev <= stepInterval) {
+          if (timerRef.current) clearInterval(timerRef.current);
+          setRoundStatus('failed');
+          setFeedbackText('⏰ Tempo esgotado! O adversário interceptou o passe e armou contra-ataque.');
+          sound.playCardSound();
+          return 0;
+        }
+        return prev - stepInterval;
+      });
+    }, stepInterval);
 
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
@@ -118,26 +163,28 @@ export const TacticalBoardMinigame: React.FC<TacticalBoardMinigameProps> = ({
   }, [isOpen, roundStatus, currentStep]);
 
   const handleStartRound = () => {
+    setSelectedNodeId(null);
+    setTimeLeftMs(Math.max(1800, Math.round(drill.threatWindowMs * balance.sweetSpotScale)));
     setRoundStatus('playing');
     setFeedbackText('');
-  };
-
-  const handleTimeOut = () => {
-    setRoundStatus('failed');
-    setFeedbackText('⏰ Tempo esgotado! O adversário interceptou o passe e armou contra-ataque.');
+    sound.playWhistle();
   };
 
   const handleSelectNode = (nodeId: number) => {
     if (roundStatus !== 'playing') return;
 
     if (timerRef.current) clearInterval(timerRef.current);
+    setSelectedNodeId(nodeId);
+    sound.playKick();
 
     if (nodeId === drill.targetNode) {
       setRoundStatus('success');
-      setScore((s) => s + 33);
+      setScore((s) => Math.min(100, s + 20));
+      sound.playCheer();
       setFeedbackText('✨ Golaço tático! Jogada ensaiada executada com perfeição milimétrica.');
     } else {
       setRoundStatus('failed');
+      sound.playWhistle();
       setFeedbackText('❌ Passe errado! A linha de passe estava bloqueada pelo defensor.');
     }
   };
@@ -145,13 +192,14 @@ export const TacticalBoardMinigame: React.FC<TacticalBoardMinigameProps> = ({
   const handleNextOrFinish = () => {
     if (currentStep < DRILLS.length - 1) {
       setCurrentStep((c) => c + 1);
+      setSelectedNodeId(null);
       setRoundStatus('idle');
       setFeedbackText('');
     } else {
-      // Concluiu os 3 desafios
+      // Concluiu todos os desafios
       setIsCompleted(true);
-      const finalScore = Math.min(100, score + (roundStatus === 'success' ? 1 : 0));
-      const entrosamentoGain = finalScore >= 66 ? 10 : finalScore >= 33 ? 5 : 2;
+      const finalScore = Math.min(100, score);
+      const entrosamentoGain = finalScore >= 60 ? 12 : finalScore >= 40 ? 6 : 2;
 
       // Dispara confetes se foi bem
       if (finalScore >= 66) {
@@ -211,12 +259,15 @@ export const TacticalBoardMinigame: React.FC<TacticalBoardMinigameProps> = ({
             </div>
           </div>
 
-          <button
-            onClick={onClose}
-            className="p-2 rounded-xl bg-zinc-800/80 hover:bg-zinc-700 text-zinc-400 hover:text-white transition cursor-pointer"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-2">
+            <DifficultyBadge balance={balance} compact />
+            <button
+              onClick={onClose}
+              className="p-2 rounded-xl bg-zinc-800/80 hover:bg-zinc-700 text-zinc-400 hover:text-white transition cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* Content Body */}
@@ -279,6 +330,26 @@ export const TacticalBoardMinigame: React.FC<TacticalBoardMinigameProps> = ({
                   {/* Grande área direita */}
                   <rect x="80" y="25" width="18" height="50" fill="none" stroke="#ffffff" strokeWidth="0.8" />
                 </svg>
+
+                {/* Linha animada da jogada selecionada */}
+                {selectedNodeId !== null && (() => {
+                  const origin = drill.nodes[0];
+                  const target = drill.nodes.find((n) => n.id === selectedNodeId);
+                  if (!origin || !target) return null;
+                  return (
+                    <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 100 100" preserveAspectRatio="none">
+                      <line
+                        x1={origin.x}
+                        y1={origin.y}
+                        x2={target.x}
+                        y2={target.y}
+                        stroke={roundStatus === 'success' ? '#34d399' : '#fb7185'}
+                        strokeWidth="1.8"
+                        strokeDasharray="3 2"
+                      />
+                    </svg>
+                  );
+                })()}
 
                 {/* Nós / Jogadores no Campinho */}
                 {drill.nodes.map((node) => {

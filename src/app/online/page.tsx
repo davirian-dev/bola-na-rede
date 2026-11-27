@@ -8,7 +8,7 @@ import { DesktopSidebar } from '@/components/layout/DesktopSidebar';
 import { MobileBottomNav } from '@/components/layout/MobileBottomNav';
 import { GuestBanner } from '@/components/layout/GuestBanner';
 import { OnlinePvPArena } from '@/components/online/OnlinePvPArena';
-import { OnlineLeaderboardEntry } from '@/types/game';
+import { Club, OnlineLeaderboardEntry } from '@/types/game';
 import { isSupabaseConfigured } from '@/lib/supabase/client';
 import { 
   Globe, 
@@ -79,13 +79,6 @@ export default function OnlineModePage() {
     ? (playerProfile?.clubId ? clubs[playerProfile.clubId] : clubs['fla'])
     : (managerProfile?.clubId ? clubs[managerProfile.clubId] : clubs['pal']);
 
-  // Carrega ranking ao abrir a aba
-  useEffect(() => {
-    if (activeTab === 'ranking') {
-      loadRankings();
-    }
-  }, [activeTab]);
-
   const loadRankings = async () => {
     setIsLoadingRankings(true);
     try {
@@ -95,6 +88,15 @@ export default function OnlineModePage() {
       setIsLoadingRankings(false);
     }
   };
+
+  // Carrega ranking ao abrir a aba
+  useEffect(() => {
+    if (activeTab !== 'ranking') return;
+    const timer = setTimeout(() => {
+      void loadRankings();
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [activeTab]);
 
   const handleSyncCareer = async () => {
     setIsSyncing(true);
@@ -169,7 +171,7 @@ export default function OnlineModePage() {
   ];
 
   const handleInstallPack = (pack: typeof COMMUNITY_PACKS[0]) => {
-    const { updatedCount } = applyCommunityPack(pack.data as any);
+    const { updatedCount } = applyCommunityPack(pack.data as unknown as Record<string, Partial<Club>>);
     setPackFeedback(`🎉 Pacote "${pack.title}" instalado com sucesso! ${updatedCount} clubes atualizados.`);
     confetti({ particleCount: 70, spread: 50, origin: { y: 0.6 } });
     setTimeout(() => setPackFeedback(null), 4000);

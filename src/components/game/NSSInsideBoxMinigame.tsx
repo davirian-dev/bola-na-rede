@@ -1,16 +1,27 @@
 'use client';
 
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, useCallback } from 'react';
 import confetti from 'canvas-confetti';
 import { useGameStore } from '@/store/gameStore';
-import { Sparkles, CheckCircle2, XCircle, Zap, Flame } from 'lucide-react';
+import { CheckCircle2, XCircle, Flame, RotateCcw } from 'lucide-react';
 import { sound } from '@/lib/soundEffects';
-import { BallImpactSelector, BallImpact } from './BallImpactSelector';
+import {
+  drawPitchBackground,
+  drawGoalWithNet,
+  drawCartoonPlayer,
+  drawStyledBall,
+  getCanvasPointerCoords,
+} from '@/lib/minigameCanvas';
+import { Division } from '@/types/game';
+import { useMinigameBalance } from '@/engine/minigameBalance';
+import { DifficultyBadge } from './DifficultyBadge';
 
 interface NSSInsideBoxMinigameProps {
   onScoreGoal?: (ratingBonus: number) => void;
   onMiss?: () => void;
   onClose?: () => void;
+  divisionOverride?: Division;
+  opponentOverall?: number;
   matchInfo?: {
     minute: number;
     oppClubName: string;
@@ -22,157 +33,254 @@ export function NSSInsideBoxMinigame({
   onScoreGoal,
   onMiss,
   onClose,
+  divisionOverride,
+  opponentOverall,
   matchInfo,
 }: NSSInsideBoxMinigameProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const playerProfile = useGameStore((s) => s.playerProfile);
+  const balance = useMinigameBalance({
+    division: divisionOverride,
+    opponentOverall,
+  });
+  const balanceRef = useRef(balance);
+  useEffect(() => {
+    balanceRef.current = balance;
+  }, [balance]);
 
-  const [boxState, setBoxState] = useState<'aiming' | 'resolving' | 'goal' | 'saved' | 'out'>('aiming');
-  const [feedbackText, setFeedbackText] = useState('O goleiro está saindo desesperado! Escolha como definir o lance!');
-  const [impact, setImpact] = useState<BallImpact>({ x: 0, y: 0.5 }); // Padrão cavadinha leve
+  const [boxState, setBoxState] = useState<'aiming' | 'resolving' | 'goal' | 'saved'>('aiming');
+  const [feedbackText, setFeedbackText] = useState('O goleiro está saindo! Escolha a jogada ou toque no canto do gol!');
   const [chosenOption, setChosenOption] = useState<'chip' | 'corner' | 'dribble_gk'>('corner');
 
-  // Posição do Goleiro saindo
-  const [gkY, setGkY] = useState(150);
+  const onGoalRef = useRef(onScoreGoal);
+  const onMissRef = useRef(onMiss);
 
   useEffect(() => {
-    if (boxState !== 'aiming') return;
-    const interval = setInterval(() => {
-      setGkY((y) => {
-        if (y >= 230) return 230;
-        return y + 3;
-      });
-    }, 60);
-    return () => clearInterval(interval);
-  }, [boxState]);
+    onGoalRef.current = onScoreGoal;
+    onMissRef.current = onMiss;
+  }, [onScoreGoal, onMiss]);
 
-  // Render do Canvas
+  const simRef = useRef({
+    state: 'aiming' as 'aiming' | 'resolving' | 'goal' | 'saved',
+    option: 'corner' as 'chip' | 'corner' | 'dribble_gk',
+    cornerX: 165,
+    gkX: 280,
+    gkY: 104,
+    gkTilt: 0,
+    playerX: 280,
+    playerY: 318,
+    ballX: 280,
+    ballY: 300,
+    ballZ: 0,
+    trail: [] as { x: number; y: number; z: number }[],
+    progress: 0,
+    willScore: false,
+    netStretch: 0,
+  });
+
+  const resetPlay = useCallback(() => {
+    simRef.current = {
+      state: 'aiming',
+      option: chosenOption,
+      cornerX: 165,
+      gkX: 280,
+      gkY: 104,
+      gkTilt: 0,
+      playerX: 280,
+      playerY: 318,
+      ballX: 280,
+      ballY: 300,
+      ballZ: 0,
+      trail: [],
+      progress: 0,
+      willScore: false,
+      netStretch: 0,
+    };
+    setBoxState('aiming');
+    setFeedbackText('O goleiro está saindo! Escolha a jogada ou toque no canto do gol!');
+  }, [chosenOption]);
+
+  useEffect(() => {
+    simRef.current.option = chosenOption;
+  }, [chosenOption]);
+
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    let animId: number;
 
-    // Gramado
-    const grassGrad = ctx.createLinearGradient(0, 0, 0, canvas.height);
-    grassGrad.addColorStop(0, '#15803d');
-    grassGrad.addColorStop(1, '#166534');
-    ctx.fillStyle = grassGrad;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    const render = () => {
+      const s = simRef.current;
+      const w = canvas.width;
+      const h = canvas.height;
 
-    // Pequena Área
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
-    ctx.lineWidth = 2.5;
-    ctx.strokeRect(180, 70, 200, 100);
+      if (s.state === 'aiming') {
+        s.gkY = Math.min(235, s.gkY + 0.55 * balanceRef.current.keeperSpeedMult);
+        s.gkX = 280 + Math.sin(Date.now() * (0.004 * balanceRef.current.keeperSpeedMult)) * 18;
+      } else if (s.state === 'resolving') {
+        s.progress = Math.min(1, s.progress + 0.045);
+        const t = s.progress;
 
-    // Gol ao Fundo
-    const goalLeft = 140;
-    const goalRight = 420;
-    const goalTop = 50;
-    const goalBottom = 130;
+        if (s.option === 'chip') {
+          s.ballX = 280;
+          s.ballY = 300 + (72 - 300) * t;
+          s.ballZ = Math.sin(t * Math.PI) * 72;
+          s.gkY = Math.min(245, s.gkY + 1.2);
+          if (!s.willScore && t > 0.6) {
+            s.gkTilt = -0.35;
+          }
+        } else if (s.option === 'corner') {
+          const targetX = s.willScore ? s.cornerX : s.cornerX < 280 ? 225 : 335;
+          s.ballX = 280 + (targetX - 280) * t;
+          s.ballY = 300 + (72 - 300) * t;
+          s.ballZ = Math.sin(t * Math.PI) * 16;
+          const diveDir = targetX < 280 ? -1 : 1;
+          s.gkX += (s.willScore ? -diveDir : diveDir) * 2.6;
+          s.gkTilt = (s.willScore ? -diveDir : diveDir) * 0.55;
+        } else {
+          // Dribble GK
+          const side = s.cornerX < 280 ? -1 : 1;
+          s.playerX = 280 + Math.sin(t * Math.PI) * side * 62;
+          s.playerY = 318 + (108 - 318) * t;
+          s.ballX = s.playerX + side * 8;
+          s.ballY = s.playerY - 14;
+          s.gkX = 280 - side * (s.willScore ? 28 : 5) * t;
+          s.gkTilt = side * 0.45 * t;
+        }
 
-    ctx.fillStyle = 'rgba(0,0,0,0.3)';
-    ctx.fillRect(goalLeft, goalTop, goalRight - goalLeft, goalBottom - goalTop);
-    ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 5;
-    ctx.strokeRect(goalLeft, goalTop, goalRight - goalLeft, goalBottom - goalTop);
+        s.trail.push({ x: s.ballX, y: s.ballY, z: s.ballZ });
+        if (s.trail.length > 9) s.trail.shift();
 
-    // Goleiro Avançando
-    ctx.fillStyle = '#f59e0b';
-    ctx.beginPath();
-    ctx.arc(280, gkY, 14, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillRect(266, gkY + 8, 28, 28);
-    // Luvas abertas
-    ctx.fillStyle = '#ffffff';
-    ctx.beginPath();
-    ctx.arc(252, gkY + 16, 7, 0, Math.PI * 2);
-    ctx.arc(308, gkY + 16, 7, 0, Math.PI * 2);
-    ctx.fill();
+        if (t >= 1) {
+          if (s.willScore) {
+            s.state = 'goal';
+            s.netStretch = 10;
+            setBoxState('goal');
+            sound.playGoal();
+            if (s.option === 'chip') {
+              setFeedbackText('CAVADINHA DE ANTOLOGIA! Encobriu o goleiro com frieza absurda! 🔥');
+            } else if (s.option === 'corner') {
+              setFeedbackText('TAPA NO CONTRA-PÉ! Chapa cirúrgica no cantinho indefensável!');
+            } else {
+              setFeedbackText('DRIBLE DA VACA NO GOLEIRO! Deixou o arqueiro no chão e guardou!');
+            }
+            confetti({
+              particleCount: 75,
+              spread: 80,
+              origin: { y: 0.6 },
+              colors: ['#10b981', '#fbbf24', '#ffffff'],
+            });
+            onGoalRef.current?.(0.5);
+          } else {
+            s.state = 'saved';
+            setBoxState('saved');
+            sound.playWoodwork();
+            setFeedbackText('MILAGRE DO GOLEIRO! Fechou o ângulo e salvou no reflexo!');
+            onMissRef.current?.();
+          }
+        }
+      } else if (s.netStretch > 0) {
+        s.netStretch = Math.max(0, s.netStretch - 0.35);
+      }
 
-    // Atleta com a Bola no Pé
-    const athleteY = 320;
-    ctx.fillStyle = '#059669';
-    ctx.beginPath();
-    ctx.arc(280, athleteY - 30, 11, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillRect(272, athleteY - 18, 16, 24);
+      drawPitchBackground(ctx, w, h, 32);
 
-    // Bola
-    ctx.beginPath();
-    ctx.arc(280, athleteY + 12, 10, 0, Math.PI * 2);
-    ctx.fillStyle = '#ffffff';
-    ctx.fill();
-    ctx.strokeStyle = '#18181b';
-    ctx.lineWidth = 2;
-    ctx.stroke();
+      // Linha de fundo/gol, pequena área e grande área a partir da linha do gol (y = 102)
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.45)';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.moveTo(12, 102);
+      ctx.lineTo(w - 12, 102);
+      ctx.stroke();
+      ctx.strokeRect(90, 102, 380, 195);
+      ctx.strokeRect(185, 102, 190, 68);
 
-    // Seta de trajetória dependendo da escolha
-    ctx.strokeStyle = '#eab308';
-    ctx.lineWidth = 2.5;
-    ctx.setLineDash([4, 4]);
-    ctx.beginPath();
-    ctx.moveTo(280, athleteY);
+      drawGoalWithNet(ctx, 140, 24, 280, 78, s.netStretch);
 
-    if (chosenOption === 'chip') {
-      ctx.quadraticCurveTo(280, (athleteY + 90) / 2 - 40, 280, 90);
-    } else if (chosenOption === 'corner') {
-      ctx.lineTo(165, 100);
-    } else {
-      ctx.quadraticCurveTo(230, (athleteY + gkY) / 2, 280, 90);
-    }
-    ctx.stroke();
-    ctx.setLineDash([]);
-  }, [gkY, chosenOption, boxState]);
+      // Prévia da trajetória durante mira
+      if (s.state === 'aiming') {
+        ctx.save();
+        ctx.strokeStyle = '#facc15';
+        ctx.lineWidth = 2.5;
+        ctx.setLineDash([5, 5]);
+        ctx.beginPath();
+        ctx.moveTo(s.ballX, s.ballY);
+        if (s.option === 'chip') {
+          ctx.quadraticCurveTo(280, 175, 280, 72);
+        } else if (s.option === 'corner') {
+          ctx.lineTo(s.cornerX, 72);
+        } else {
+          const side = s.cornerX < 280 ? -1 : 1;
+          ctx.quadraticCurveTo(280 + side * 65, (300 + s.gkY) / 2, 280, 76);
+        }
+        ctx.stroke();
+        ctx.restore();
+      }
 
-  // Resolução da Finalização
+      // Goleiro
+      drawCartoonPlayer(ctx, s.gkX, s.gkY, {
+        jerseyColor: '#f59e0b',
+        shortsColor: '#0f172a',
+        gloveColor: '#22c55e',
+        label: 'GOL',
+        labelColor: '#fde68a',
+        scale: 1.05,
+        divingTilt: s.gkTilt,
+      });
+
+      // Atacante (Você)
+      drawCartoonPlayer(ctx, s.playerX, s.playerY, {
+        jerseyColor: '#10b981',
+        shortsColor: '#0f172a',
+        label: 'VOCÊ',
+        labelColor: '#6ee7b7',
+        scale: 1.1,
+      });
+
+      // Bola com altura e rastro
+      drawStyledBall(ctx, s.ballX, s.ballY, 9, s.ballZ, s.trail);
+
+      animId = requestAnimationFrame(render);
+    };
+
+    animId = requestAnimationFrame(render);
+    return () => cancelAnimationFrame(animId);
+  }, []);
+
+  const handleCanvasAim = (clientX: number, clientY: number) => {
+    const s = simRef.current;
+    if (s.state !== 'aiming' || !canvasRef.current) return;
+    const { x } = getCanvasPointerCoords(canvasRef.current, clientX, clientY);
+    s.cornerX = Math.max(158, Math.min(402, x));
+  };
+
   const handleResolve = () => {
-    if (boxState !== 'aiming') return;
-    setBoxState('resolving');
+    const s = simRef.current;
+    if (s.state !== 'aiming') return;
 
-    // Chance de Sucesso ponderada pelos atributos do jogador e opção
     const playerFinishing = playerProfile?.attributes?.finishing || 75;
     const playerDribbling = playerProfile?.attributes?.dribbling || 75;
 
-    let successChance = 0.65;
-    if (chosenOption === 'chip') {
-      // Cavadinha é mais fácil se o goleiro saiu muito (gkY >= 190)
-      successChance = gkY >= 190 ? 0.85 : 0.45;
-    } else if (chosenOption === 'corner') {
-      successChance = (playerFinishing / 100) * 0.82;
-    } else if (chosenOption === 'dribble_gk') {
-      successChance = (playerDribbling / 100) * 0.80;
+    let successChance = 0.68;
+    if (s.option === 'chip') {
+      successChance = s.gkY >= 185 ? 0.88 : 0.48;
+    } else if (s.option === 'corner') {
+      const edgeBonus = Math.abs(s.cornerX - 280) > 65 ? 0.1 : 0;
+      successChance = Math.min(0.92, (playerFinishing / 100) * 0.8 + edgeBonus);
+    } else {
+      successChance = Math.min(0.9, (playerDribbling / 100) * 0.82);
     }
 
-    setTimeout(() => {
-      if (Math.random() < successChance) {
-        setBoxState('goal');
-        sound.play('goal');
-        if (chosenOption === 'chip') {
-          setFeedbackText('CAVADINHA DE ANTOLOGIA! Encolheu a perna e encobriu o goleiro com frieza absurda! 🔥');
-        } else if (chosenOption === 'corner') {
-          setFeedbackText('TAPA NO CONTRA-PÉ! Toque consciente com a chapa no cantinho que o goleiro não alcança!');
-        } else {
-          setFeedbackText('DRIBLE DA VACA NO GOLEIRO! Deixou o arqueiro no chão e entrou com bola e tudo!');
-        }
-
-        confetti({
-          particleCount: 80,
-          spread: 80,
-          origin: { y: 0.6 },
-          colors: ['#10b981', '#fbbf24', '#ffffff'],
-        });
-
-        if (onScoreGoal) onScoreGoal(0.5);
-      } else {
-        setBoxState('saved');
-        sound.play('whistle');
-        setFeedbackText('O goleiro cresceu! Espalmou de forma milagrosa no reflexo!');
-        if (onMiss) onMiss();
-      }
-    }, 600);
+    const balancedChance = Math.max(0.24, Math.min(0.96, successChance - balance.aiReactionBonus * 0.85));
+    s.willScore = Math.random() < balancedChance;
+    s.state = 'resolving';
+    s.progress = 0;
+    s.trail = [];
+    setBoxState('resolving');
+    sound.playKick();
   };
 
   return (
@@ -190,22 +298,39 @@ export function NSSInsideBoxMinigame({
               </span>
             </h3>
             <span className="text-[10px] font-bold text-muted-foreground">
-              O arqueiro se adiantou! Escolha a melhor decisão para balançar a rede!
+              {chosenOption === 'chip'
+                ? 'Espere o goleiro avançar bastante para encobrir!'
+                : 'Toque no canto do gol para mirar e finalize!'}
             </span>
           </div>
         </div>
 
-        {matchInfo && (
-          <span className="text-[11px] font-black px-2.5 py-1 rounded-lg bg-secondary text-foreground">
-            {matchInfo.oppClubName} • {matchInfo.minute}'
-          </span>
-        )}
+        <div className="flex items-center gap-2 flex-wrap justify-end">
+          <DifficultyBadge balance={balance} compact />
+          {matchInfo && (
+            <span className="text-[11px] font-black px-2.5 py-1 rounded-lg bg-secondary text-foreground">
+              {matchInfo.oppClubName} • {matchInfo.minute}&apos;
+            </span>
+          )}
+        </div>
       </div>
 
       <div className="relative w-full aspect-[560/380] bg-zinc-950 rounded-2xl overflow-hidden border border-border/60 shadow-inner">
-        <canvas ref={canvasRef} width={560} height={380} className="w-full h-full touch-none" />
+        <canvas
+          ref={canvasRef}
+          width={560}
+          height={380}
+          onClick={(e) => handleCanvasAim(e.clientX, e.clientY)}
+          onTouchStart={(e) => {
+            if (e.touches[0]) {
+              e.preventDefault();
+              handleCanvasAim(e.touches[0].clientX, e.touches[0].clientY);
+            }
+          }}
+          className="w-full h-full cursor-crosshair touch-none"
+        />
 
-        {boxState !== 'aiming' && boxState !== 'resolving' && (
+        {(boxState === 'goal' || boxState === 'saved') && (
           <div className="absolute inset-0 bg-black/75 backdrop-blur-sm flex flex-col items-center justify-center p-4 text-center animate-in fade-in duration-200">
             {boxState === 'goal' ? (
               <div className="flex flex-col items-center">
@@ -221,25 +346,35 @@ export function NSSInsideBoxMinigame({
               </div>
             )}
 
-            {onClose && (
-              <button
-                type="button"
-                onClick={onClose}
-                className="mt-4 px-6 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-black text-xs transition-all shadow-lg cursor-pointer"
-              >
-                Voltar à Partida
-              </button>
-            )}
+            <div className="mt-4 flex gap-2">
+              {!matchInfo && (
+                <button
+                  type="button"
+                  onClick={resetPlay}
+                  className="px-4 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" /> Novo Lance
+                </button>
+              )}
+              {onClose && (
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="px-6 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-black text-xs transition-all shadow-lg cursor-pointer"
+                >
+                  Voltar à Partida
+                </button>
+              )}
+            </div>
           </div>
         )}
       </div>
 
-      {/* Opções de Tomada de Decisão */}
       <div className="grid grid-cols-3 gap-2 w-full mt-4 pt-3 border-t border-border">
         <button
           type="button"
           onClick={() => setChosenOption('corner')}
-          className={`py-2.5 px-2 rounded-xl text-xs font-black transition-all flex flex-col items-center gap-1 border ${
+          className={`py-2.5 px-2 rounded-xl text-xs font-black transition-all flex flex-col items-center gap-1 border cursor-pointer ${
             chosenOption === 'corner'
               ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300'
               : 'bg-secondary border-border text-muted-foreground'
@@ -252,7 +387,7 @@ export function NSSInsideBoxMinigame({
         <button
           type="button"
           onClick={() => setChosenOption('chip')}
-          className={`py-2.5 px-2 rounded-xl text-xs font-black transition-all flex flex-col items-center gap-1 border ${
+          className={`py-2.5 px-2 rounded-xl text-xs font-black transition-all flex flex-col items-center gap-1 border cursor-pointer ${
             chosenOption === 'chip'
               ? 'bg-amber-500/20 border-amber-500 text-amber-300'
               : 'bg-secondary border-border text-muted-foreground'
@@ -265,13 +400,13 @@ export function NSSInsideBoxMinigame({
         <button
           type="button"
           onClick={() => setChosenOption('dribble_gk')}
-          className={`py-2.5 px-2 rounded-xl text-xs font-black transition-all flex flex-col items-center gap-1 border ${
+          className={`py-2.5 px-2 rounded-xl text-xs font-black transition-all flex flex-col items-center gap-1 border cursor-pointer ${
             chosenOption === 'dribble_gk'
               ? 'bg-blue-500/20 border-blue-500 text-blue-300'
               : 'bg-secondary border-border text-muted-foreground'
           }`}
         >
-          <span>🕺 Driblar o Goleiro</span>
+          <span>🕺 Driblar Goleiro</span>
           <span className="text-[9px] font-normal opacity-80">Finta de corpo</span>
         </button>
       </div>

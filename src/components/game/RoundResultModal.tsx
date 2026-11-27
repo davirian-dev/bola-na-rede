@@ -107,7 +107,7 @@ export function RoundResultModal({
                   <Activity className="w-3.5 h-3.5" />
                   Sua Partida • {userFixture.competition === 'sub_20' ? 'Copa Sub-20' : userFixture.competition === 'copa_brasil' ? 'Copa do Brasil' : `Série ${homeClub.division}`}
                 </span>
-                <span>Fim de Jogo (90')</span>
+                <span>Fim de Jogo (90&apos;)</span>
               </div>
 
               {/* Placar Central */}
@@ -177,7 +177,7 @@ export function RoundResultModal({
                               : 'bg-background/60 border-border text-foreground'
                           }`}
                         >
-                          ⚽ {s.minute}' {s.playerName || 'Gol'}
+                          ⚽ {s.minute}&apos; {s.playerName || 'Gol'}
                           {isUserScorer && <span className="text-[9px] bg-emerald-500 text-zinc-950 px-1 rounded uppercase font-black">Você!</span>}
                           {isUserAssist && <span className="text-[9px] bg-blue-500 text-white px-1 rounded uppercase font-black">Sua Assist!</span>}
                         </span>
